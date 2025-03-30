@@ -65,6 +65,11 @@ export function AppointmentList() {
     }
   };
 
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date) setShowAllDates(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-6">
@@ -95,15 +100,15 @@ export function AppointmentList() {
               </Button>
             </div>
             
-            <div className="border rounded-md overflow-hidden">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => {
-                  setSelectedDate(date);
-                  if (date) setShowAllDates(false);
-                }}
-              />
+            <div className="relative z-10 border rounded-md">
+              <div className="pointer-events-auto">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={handleDateSelect}
+                  initialFocus
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
