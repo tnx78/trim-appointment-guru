@@ -11,7 +11,7 @@ import { CheckCircle, Clock, XCircle, CalendarDays } from 'lucide-react';
 
 export function AppointmentList() {
   const { appointments, getServiceById, updateAppointment, cancelAppointment } = useAppContext();
-  const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(new Date());
   const [view, setView] = React.useState<'all' | 'upcoming' | 'past'>('upcoming');
   const [showAllDates, setShowAllDates] = useState(true);
 
@@ -25,7 +25,8 @@ export function AppointmentList() {
     appointmentDate.setHours(0, 0, 0, 0);
     
     // If showAllDates is true, don't filter by date
-    const dateMatches = showAllDates || appointmentDate.getTime() === selectedDate.getTime();
+    const dateMatches = showAllDates || 
+      (selectedDate && appointmentDate.getTime() === selectedDate.getTime());
     
     if (!dateMatches) return false;
     
@@ -90,15 +91,17 @@ export function AppointmentList() {
               </Button>
             </div>
             
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => {
-                setSelectedDate(date || new Date());
-                setShowAllDates(false);
-              }}
-              className="rounded-md border p-3"
-            />
+            <div className="rounded-md border">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => {
+                  setSelectedDate(date);
+                  setShowAllDates(false);
+                }}
+                className="rounded-md"
+              />
+            </div>
           </div>
         </div>
         <div className="flex-1">
@@ -110,9 +113,9 @@ export function AppointmentList() {
                   <CardDescription>
                     {showAllDates 
                       ? `All appointments (${filteredAppointments.length})`
-                      : selectedDate.toDateString() === new Date().toDateString()
+                      : selectedDate && selectedDate.toDateString() === new Date().toDateString()
                         ? "Today's schedule"
-                        : `Schedule for ${format(selectedDate, 'PPP')}`}
+                        : selectedDate ? `Schedule for ${format(selectedDate, 'PPP')}` : "No date selected"}
                   </CardDescription>
                 </div>
                 <Tabs defaultValue="upcoming" onValueChange={(value) => setView(value as any)}>
