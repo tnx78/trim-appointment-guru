@@ -11,8 +11,8 @@ import { CheckCircle, Clock, XCircle, CalendarDays } from 'lucide-react';
 
 export function AppointmentList() {
   const { appointments, getServiceById, updateAppointment, cancelAppointment } = useAppContext();
-  const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(new Date());
-  const [view, setView] = React.useState<'all' | 'upcoming' | 'past'>('upcoming');
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [view, setView] = useState<'all' | 'upcoming' | 'past'>('upcoming');
   const [showAllDates, setShowAllDates] = useState(true);
 
   // Get today's date with time set to start of day
@@ -68,9 +68,13 @@ export function AppointmentList() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-6">
-        <div className="md:w-auto">
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2 mb-2">
+        <Card className="md:w-auto">
+          <CardHeader>
+            <CardTitle className="text-lg">Date Filter</CardTitle>
+            <CardDescription>Select a date or view all appointments</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-2">
               <Button 
                 variant={showAllDates ? "default" : "outline"} 
                 size="sm"
@@ -91,19 +95,19 @@ export function AppointmentList() {
               </Button>
             </div>
             
-            <div className="rounded-md border">
+            <div className="border rounded-md overflow-hidden">
               <Calendar
                 mode="single"
                 selected={selectedDate}
                 onSelect={(date) => {
                   setSelectedDate(date);
-                  setShowAllDates(false);
+                  if (date) setShowAllDates(false);
                 }}
-                className="rounded-md"
               />
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
+
         <div className="flex-1">
           <Card>
             <CardHeader>
