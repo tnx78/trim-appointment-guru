@@ -37,7 +37,7 @@ export function DateFilterCard({
 
   // Custom day class names
   const modifiersClassNames = {
-    withAppointments: "bg-purple-100 text-purple-900 relative before:absolute before:top-0 before:right-0 before:w-2 before:h-2 before:bg-purple-500 before:rounded-full before:mr-1 before:mt-1"
+    withAppointments: "relative after:absolute after:top-1 after:right-1 after:w-2 after:h-2 after:bg-purple-500 after:rounded-full"
   };
 
   return (
