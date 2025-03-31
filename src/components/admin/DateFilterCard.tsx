@@ -41,21 +41,22 @@ export function DateFilterCard({
             onClick={() => onToggleAllDates(false)}
             className="flex items-center"
           >
-            <Calendar className="mr-1 h-4 w-4" />
+            <CalendarDays className="mr-1 h-4 w-4" />
             Specific Date
           </Button>
         </div>
         
-        <div className="relative z-10 border rounded-md">
-          <div className="pointer-events-auto">
+        {!showAllDates && (
+          <div className="rounded-md border">
             <Calendar
               mode="single"
               selected={selectedDate}
               onSelect={onDateSelect}
               initialFocus
+              className="pointer-events-auto"
             />
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );
