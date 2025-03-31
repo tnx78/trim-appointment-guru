@@ -5,10 +5,13 @@ import { DateFilterCard } from './DateFilterCard';
 import { AppointmentListCard } from './AppointmentListCard';
 
 export function AppointmentList() {
-  const { appointments, getServiceById, updateAppointment, cancelAppointment } = useAppContext();
+  const { appointments, getServiceById, updateAppointment, cancelAppointment, getAppointmentDates } = useAppContext();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [view, setView] = useState<'all' | 'upcoming' | 'past'>('upcoming');
   const [showAllDates, setShowAllDates] = useState(true);
+
+  // Get dates with appointments for calendar indicators
+  const appointmentDates = getAppointmentDates();
 
   // Get today's date with time set to start of day
   const today = new Date();
@@ -63,6 +66,7 @@ export function AppointmentList() {
           showAllDates={showAllDates}
           onDateSelect={handleDateSelect}
           onToggleAllDates={handleToggleAllDates}
+          appointmentDates={appointmentDates}
         />
 
         <div className="flex-1">

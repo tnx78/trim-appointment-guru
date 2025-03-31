@@ -1,72 +1,8 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Service, ServiceCategory, Appointment, TimeSlot } from '@/types';
 import { toast } from 'sonner';
-
-// Sample data
-const sampleCategories: ServiceCategory[] = [
-  { id: '1', name: 'Haircut', description: 'Professional haircut services' },
-  { id: '2', name: 'Color', description: 'Hair coloring services' },
-  { id: '3', name: 'Treatment', description: 'Hair treatments and care' },
-  { id: '4', name: 'Styling', description: 'Hair styling services' },
-];
-
-const sampleServices: Service[] = [
-  { id: '1', categoryId: '1', name: 'Men\'s Haircut', description: 'Classic men\'s haircut', duration: 30, price: 25 },
-  { id: '2', categoryId: '1', name: 'Women\'s Haircut', description: 'Women\'s haircut and styling', duration: 45, price: 45 },
-  { id: '3', categoryId: '1', name: 'Children\'s Haircut', description: 'Haircut for children under 12', duration: 20, price: 18 },
-  { id: '4', categoryId: '2', name: 'Root Touch-up', description: 'Color for roots only', duration: 60, price: 65 },
-  { id: '5', categoryId: '2', name: 'Full Color', description: 'Full head color', duration: 90, price: 90 },
-  { id: '6', categoryId: '2', name: 'Highlights', description: 'Partial or full highlights', duration: 120, price: 110 },
-  { id: '7', categoryId: '3', name: 'Deep Conditioning', description: 'Intense moisture treatment', duration: 20, price: 20 },
-  { id: '8', categoryId: '3', name: 'Keratin Treatment', description: 'Smoothing keratin treatment', duration: 120, price: 150 },
-  { id: '9', categoryId: '4', name: 'Blowout', description: 'Wash and blowdry', duration: 45, price: 40 },
-  { id: '10', categoryId: '4', name: 'Special Occasion Style', description: 'Formal styling for events', duration: 60, price: 65 },
-];
-
-const sampleAppointments: Appointment[] = [
-  {
-    id: '1',
-    serviceId: '2',
-    clientName: 'Jane Smith',
-    clientEmail: 'jane@example.com',
-    clientPhone: '555-123-4567',
-    date: new Date(new Date().setDate(new Date().getDate() + 2)),
-    startTime: '10:00',
-    endTime: '10:45',
-    status: 'confirmed'
-  },
-  {
-    id: '2',
-    serviceId: '5',
-    clientName: 'Michael Johnson',
-    clientEmail: 'michael@example.com',
-    clientPhone: '555-987-6543',
-    date: new Date(new Date().setDate(new Date().getDate() + 1)),
-    startTime: '14:00',
-    endTime: '15:30',
-    status: 'confirmed'
-  },
-];
-
-// Generate time slots from 9:00 AM to 5:00 PM
-const generateTimeSlots = (): TimeSlot[] => {
-  const slots: TimeSlot[] = [];
-  const startHour = 9; // 9:00 AM
-  const endHour = 17; // 5:00 PM
-  
-  for (let hour = startHour; hour < endHour; hour++) {
-    ['00', '30'].forEach((minutes, index) => {
-      const time = `${hour}:${minutes}`;
-      slots.push({
-        id: `slot-${hour}-${minutes}`,
-        time,
-        available: true,
-      });
-    });
-  }
-  
-  return slots;
-};
+import { supabase } from '@/integrations/supabase/client';
 
 // Context type
 interface AppContextType {
@@ -99,6 +35,7 @@ interface AppContextType {
   getAvailableTimeSlots: (date: Date, duration: number) => TimeSlot[];
   getAppointmentsForDate: (date: Date) => Appointment[];
   getCategoryById: (id: string) => ServiceCategory | undefined;
+  getAppointmentDates: () => Date[];
   reset: () => void;
 }
 
@@ -107,116 +44,279 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // Provider component
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [categories, setCategories] = useState<ServiceCategory[]>(sampleCategories);
-  const [services, setServices] = useState<Service[]>(sampleServices);
-  const [appointments, setAppointments] = useState<Appointment[]>(sampleAppointments);
+  const [categories, setCategories] = useState<ServiceCategory[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>(generateTimeSlots());
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load data from localStorage
+  // Fetch data from Supabase
   useEffect(() => {
-    const storedCategories = localStorage.getItem('categories');
-    const storedServices = localStorage.getItem('services');
-    const storedAppointments = localStorage.getItem('appointments');
-
-    if (storedCategories) setCategories(JSON.parse(storedCategories));
-    if (storedServices) setServices(JSON.parse(storedServices));
-    if (storedAppointments) {
-      const parsedAppointments = JSON.parse(storedAppointments);
-      // Convert date strings back to Date objects
-      setAppointments(parsedAppointments.map((app: any) => ({
-        ...app,
-        date: new Date(app.date)
-      })));
+    async function fetchData() {
+      setIsLoading(true);
+      try {
+        // Fetch categories
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from('categories')
+          .select('*');
+        
+        if (categoriesError) throw categoriesError;
+        setCategories(categoriesData);
+        
+        // Fetch services
+        const { data: servicesData, error: servicesError } = await supabase
+          .from('services')
+          .select('*');
+        
+        if (servicesError) throw servicesError;
+        setServices(servicesData);
+        
+        // Fetch appointments
+        const { data: appointmentsData, error: appointmentsError } = await supabase
+          .from('appointments')
+          .select('*');
+        
+        if (appointmentsError) throw appointmentsError;
+        
+        // Convert date strings to Date objects
+        const formattedAppointments = appointmentsData.map((app: any) => ({
+          ...app,
+          date: new Date(app.date)
+        }));
+        
+        setAppointments(formattedAppointments);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load data from database');
+      } finally {
+        setIsLoading(false);
+      }
     }
+    
+    fetchData();
   }, []);
 
-  // Save data to localStorage
-  useEffect(() => {
-    localStorage.setItem('categories', JSON.stringify(categories));
-    localStorage.setItem('services', JSON.stringify(services));
-    localStorage.setItem('appointments', JSON.stringify(appointments));
-  }, [categories, services, appointments]);
+  // Generate time slots from 9:00 AM to 5:00 PM
+  const generateTimeSlots = (): TimeSlot[] => {
+    const slots: TimeSlot[] = [];
+    const startHour = 9; // 9:00 AM
+    const endHour = 17; // 5:00 PM
+    
+    for (let hour = startHour; hour < endHour; hour++) {
+      ['00', '30'].forEach((minutes, index) => {
+        const time = `${hour}:${minutes}`;
+        slots.push({
+          id: `slot-${hour}-${minutes}`,
+          time,
+          available: true,
+        });
+      });
+    }
+    
+    return slots;
+  };
 
   // Category operations
-  const addCategory = (category: Omit<ServiceCategory, 'id'>) => {
-    const newCategory = {
-      ...category,
-      id: crypto.randomUUID()
-    };
-    setCategories([...categories, newCategory]);
-    toast.success(`Category "${category.name}" added successfully`);
+  const addCategory = async (category: Omit<ServiceCategory, 'id'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .insert(category)
+        .select();
+      
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setCategories([...categories, data[0]]);
+        toast.success(`Category "${category.name}" added successfully`);
+      }
+    } catch (error) {
+      console.error('Error adding category:', error);
+      toast.error('Failed to add category');
+    }
   };
 
-  const updateCategory = (id: string, updatedData: Partial<ServiceCategory>) => {
-    setCategories(categories.map(category => 
-      category.id === id ? { ...category, ...updatedData } : category
-    ));
-    toast.success(`Category updated successfully`);
+  const updateCategory = async (id: string, updatedData: Partial<ServiceCategory>) => {
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update(updatedData)
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setCategories(categories.map(category => 
+        category.id === id ? { ...category, ...updatedData } : category
+      ));
+      toast.success(`Category updated successfully`);
+    } catch (error) {
+      console.error('Error updating category:', error);
+      toast.error('Failed to update category');
+    }
   };
 
-  const deleteCategory = (id: string) => {
+  const deleteCategory = async (id: string) => {
     const hasServices = services.some(service => service.categoryId === id);
     if (hasServices) {
       toast.error("Can't delete category with existing services");
       return;
     }
-    setCategories(categories.filter(category => category.id !== id));
-    toast.success("Category deleted successfully");
+    
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setCategories(categories.filter(category => category.id !== id));
+      toast.success("Category deleted successfully");
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast.error('Failed to delete category');
+    }
   };
 
   // Service operations
-  const addService = (service: Omit<Service, 'id'>) => {
-    const newService = {
-      ...service,
-      id: crypto.randomUUID()
-    };
-    setServices([...services, newService]);
-    toast.success(`Service "${service.name}" added successfully`);
+  const addService = async (service: Omit<Service, 'id'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('services')
+        .insert(service)
+        .select();
+      
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setServices([...services, data[0]]);
+        toast.success(`Service "${service.name}" added successfully`);
+      }
+    } catch (error) {
+      console.error('Error adding service:', error);
+      toast.error('Failed to add service');
+    }
   };
 
-  const updateService = (id: string, updatedData: Partial<Service>) => {
-    setServices(services.map(service => 
-      service.id === id ? { ...service, ...updatedData } : service
-    ));
-    toast.success(`Service updated successfully`);
+  const updateService = async (id: string, updatedData: Partial<Service>) => {
+    try {
+      const { error } = await supabase
+        .from('services')
+        .update(updatedData)
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setServices(services.map(service => 
+        service.id === id ? { ...service, ...updatedData } : service
+      ));
+      toast.success(`Service updated successfully`);
+    } catch (error) {
+      console.error('Error updating service:', error);
+      toast.error('Failed to update service');
+    }
   };
 
-  const deleteService = (id: string) => {
+  const deleteService = async (id: string) => {
     const hasAppointments = appointments.some(appointment => appointment.serviceId === id);
     if (hasAppointments) {
       toast.error("Can't delete service with existing appointments");
       return;
     }
-    setServices(services.filter(service => service.id !== id));
-    toast.success("Service deleted successfully");
+    
+    try {
+      const { error } = await supabase
+        .from('services')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setServices(services.filter(service => service.id !== id));
+      toast.success("Service deleted successfully");
+    } catch (error) {
+      console.error('Error deleting service:', error);
+      toast.error('Failed to delete service');
+    }
   };
 
   // Appointment operations
-  const bookAppointment = (appointment: Omit<Appointment, 'id' | 'status'>) => {
-    const newAppointment = {
-      ...appointment,
-      id: crypto.randomUUID(),
-      status: 'confirmed' as const
-    };
-    setAppointments([...appointments, newAppointment]);
-    toast.success("Appointment booked successfully");
+  const bookAppointment = async (appointment: Omit<Appointment, 'id' | 'status'>) => {
+    try {
+      const newAppointment = {
+        ...appointment,
+        status: 'confirmed' as const
+      };
+      
+      const { data, error } = await supabase
+        .from('appointments')
+        .insert(newAppointment)
+        .select();
+      
+      if (error) throw error;
+      if (data && data.length > 0) {
+        // Convert date string back to Date object
+        const formattedAppointment = {
+          ...data[0],
+          date: new Date(data[0].date)
+        };
+        
+        setAppointments([...appointments, formattedAppointment]);
+        toast.success("Appointment booked successfully");
+      }
+    } catch (error) {
+      console.error('Error booking appointment:', error);
+      toast.error('Failed to book appointment');
+    }
   };
 
-  const updateAppointment = (id: string, updatedData: Partial<Appointment>) => {
-    setAppointments(appointments.map(appointment => 
-      appointment.id === id ? { ...appointment, ...updatedData } : appointment
-    ));
-    toast.success("Appointment updated successfully");
+  const updateAppointment = async (id: string, updatedData: Partial<Appointment>) => {
+    try {
+      // If we're updating the date and it's a Date object, convert to ISO string
+      const dataToUpdate = { ...updatedData };
+      if (dataToUpdate.date instanceof Date) {
+        dataToUpdate.date = dataToUpdate.date.toISOString().split('T')[0];
+      }
+      
+      const { error } = await supabase
+        .from('appointments')
+        .update(dataToUpdate)
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setAppointments(appointments.map(appointment => 
+        appointment.id === id 
+          ? { ...appointment, ...updatedData } 
+          : appointment
+      ));
+      toast.success("Appointment updated successfully");
+    } catch (error) {
+      console.error('Error updating appointment:', error);
+      toast.error('Failed to update appointment');
+    }
   };
 
-  const cancelAppointment = (id: string) => {
-    setAppointments(appointments.map(appointment => 
-      appointment.id === id ? { ...appointment, status: 'cancelled' as const } : appointment
-    ));
-    toast.success("Appointment cancelled successfully");
+  const cancelAppointment = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'cancelled' })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setAppointments(appointments.map(appointment => 
+        appointment.id === id 
+          ? { ...appointment, status: 'cancelled' as const } 
+          : appointment
+      ));
+      toast.success("Appointment cancelled successfully");
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      toast.error('Failed to cancel appointment');
+    }
   };
 
   // Booking flow operations
@@ -247,6 +347,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       appointment.date.toDateString() === date.toDateString() && 
       appointment.status !== 'cancelled'
     );
+  };
+
+  // Get all dates that have appointments
+  const getAppointmentDates = () => {
+    // Filter out cancelled appointments and create a unique list of dates
+    const uniqueDates = new Set();
+    const datesWithAppointments = appointments
+      .filter(appointment => appointment.status !== 'cancelled')
+      .map(appointment => {
+        const dateString = appointment.date.toDateString();
+        if (!uniqueDates.has(dateString)) {
+          uniqueDates.add(dateString);
+          return appointment.date;
+        }
+        return null;
+      })
+      .filter(Boolean) as Date[];
+    
+    return datesWithAppointments;
   };
 
   const getAvailableTimeSlots = (date: Date, duration: number) => {
@@ -326,8 +445,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     getAvailableTimeSlots,
     getAppointmentsForDate,
     getCategoryById,
+    getAppointmentDates,
     reset
   };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading salon data...</div>;
+  }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

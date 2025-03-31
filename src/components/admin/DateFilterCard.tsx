@@ -10,14 +10,36 @@ interface DateFilterCardProps {
   showAllDates: boolean;
   onDateSelect: (date: Date | undefined) => void;
   onToggleAllDates: (showAll: boolean) => void;
+  appointmentDates?: Date[];
 }
 
 export function DateFilterCard({ 
   selectedDate, 
   showAllDates, 
   onDateSelect, 
-  onToggleAllDates 
+  onToggleAllDates,
+  appointmentDates = []
 }: DateFilterCardProps) {
+  // Create an object with all dates that have appointments
+  const datesWithAppointments = appointmentDates.reduce((acc, date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    acc[dateStr] = true;
+    return acc;
+  }, {} as Record<string, boolean>);
+
+  // Custom modifiers for the calendar
+  const modifiers = {
+    withAppointments: (date: Date) => {
+      const dateStr = date.toISOString().split('T')[0];
+      return !!datesWithAppointments[dateStr];
+    }
+  };
+
+  // Custom day class names
+  const modifiersClassNames = {
+    withAppointments: "bg-purple-100 text-purple-900 relative before:absolute before:top-0 before:right-0 before:w-2 before:h-2 before:bg-purple-500 before:rounded-full before:mr-1 before:mt-1"
+  };
+
   return (
     <Card className="md:w-auto">
       <CardHeader>
@@ -54,6 +76,8 @@ export function DateFilterCard({
               onSelect={onDateSelect}
               initialFocus
               className="pointer-events-auto"
+              modifiers={modifiers}
+              modifiersClassNames={modifiersClassNames}
             />
           </div>
         )}

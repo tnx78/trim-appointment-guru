@@ -9,7 +9,136 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      appointments: {
+        Row: {
+          client_email: string
+          client_name: string
+          client_phone: string | null
+          created_at: string
+          date: string
+          end_time: string
+          id: string
+          service_id: string
+          start_time: string
+          status: string
+        }
+        Insert: {
+          client_email: string
+          client_name: string
+          client_phone?: string | null
+          created_at?: string
+          date: string
+          end_time: string
+          id?: string
+          service_id: string
+          start_time: string
+          status: string
+        }
+        Update: {
+          client_email?: string
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string
+          date?: string
+          end_time?: string
+          id?: string
+          service_id?: string
+          start_time?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      salon_hours: {
+        Row: {
+          close_time: string
+          day_of_week: number
+          id: string
+          is_open: boolean
+          open_time: string
+        }
+        Insert: {
+          close_time?: string
+          day_of_week: number
+          id?: string
+          is_open?: boolean
+          open_time?: string
+        }
+        Update: {
+          close_time?: string
+          day_of_week?: number
+          id?: string
+          is_open?: boolean
+          open_time?: string
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string | null
+          duration: number
+          id: string
+          name: string
+          price: number
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description?: string | null
+          duration: number
+          id?: string
+          name: string
+          price: number
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          duration?: number
+          id?: string
+          name?: string
+          price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "services_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
