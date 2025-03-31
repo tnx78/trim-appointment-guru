@@ -39,6 +39,76 @@ interface AppContextType {
   reset: () => void;
 }
 
+// Helper functions to convert between snake_case and camelCase
+const toCamelCase = (str: string): string => {
+  return str.replace(/(_\w)/g, (m) => m[1].toUpperCase());
+};
+
+const toSnakeCase = (str: string): string => {
+  return str.replace(/([A-Z])/g, (m) => `_${m.toLowerCase()}`);
+};
+
+// Convert snake_case database record to camelCase object
+const mapServiceFromDB = (dbService: any): Service => {
+  return {
+    id: dbService.id,
+    categoryId: dbService.category_id,
+    name: dbService.name,
+    description: dbService.description,
+    duration: dbService.duration,
+    price: dbService.price
+  };
+};
+
+// Convert camelCase object to snake_case for database
+const mapServiceToDB = (service: Omit<Service, 'id'>): any => {
+  return {
+    category_id: service.categoryId,
+    name: service.name,
+    description: service.description,
+    duration: service.duration,
+    price: service.price
+  };
+};
+
+// Convert snake_case database record to camelCase object
+const mapCategoryFromDB = (dbCategory: any): ServiceCategory => {
+  return {
+    id: dbCategory.id,
+    name: dbCategory.name,
+    description: dbCategory.description
+  };
+};
+
+// Convert snake_case database record to camelCase object
+const mapAppointmentFromDB = (dbAppointment: any): Appointment => {
+  return {
+    id: dbAppointment.id,
+    serviceId: dbAppointment.service_id,
+    clientName: dbAppointment.client_name,
+    clientEmail: dbAppointment.client_email,
+    clientPhone: dbAppointment.client_phone,
+    date: new Date(dbAppointment.date),
+    startTime: dbAppointment.start_time,
+    endTime: dbAppointment.end_time,
+    status: dbAppointment.status as 'pending' | 'confirmed' | 'cancelled' | 'completed'
+  };
+};
+
+// Convert camelCase object to snake_case for database
+const mapAppointmentToDB = (appointment: Omit<Appointment, 'id' | 'status'> & { status?: string }): any => {
+  return {
+    service_id: appointment.serviceId,
+    client_name: appointment.clientName,
+    client_email: appointment.clientEmail,
+    client_phone: appointment.clientPhone,
+    date: appointment.date instanceof Date ? appointment.date.toISOString().split('T')[0] : appointment.date,
+    start_time: appointment.startTime,
+    end_time: appointment.endTime,
+    status: appointment.status || 'confirmed'
+  };
+};
+
 // Creating the context
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -64,7 +134,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           .select('*');
         
         if (categoriesError) throw categoriesError;
-        setCategories(categoriesData);
+        setCategories(categoriesData.map(mapCategoryFromDB));
         
         // Fetch services
         const { data: servicesData, error: servicesError } = await supabase
@@ -72,7 +142,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           .select('*');
         
         if (servicesError) throw servicesError;
-        setServices(servicesData);
+        setServices(servicesData.map(mapServiceFromDB));
         
         // Fetch appointments
         const { data: appointmentsData, error: appointmentsError } = await supabase
@@ -80,14 +150,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           .select('*');
         
         if (appointmentsError) throw appointmentsError;
-        
-        // Convert date strings to Date objects
-        const formattedAppointments = appointmentsData.map((app: any) => ({
-          ...app,
-          date: new Date(app.date)
-        }));
-        
-        setAppointments(formattedAppointments);
+        setAppointments(appointmentsData.map(mapAppointmentFromDB));
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('Failed to load data from database');
@@ -129,7 +192,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       
       if (error) throw error;
       if (data && data.length > 0) {
-        setCategories([...categories, data[0]]);
+        const newCategory = mapCategoryFromDB(data[0]);
+        setCategories([...categories, newCategory]);
         toast.success(`Category "${category.name}" added successfully`);
       }
     } catch (error) {
@@ -183,14 +247,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Service operations
   const addService = async (service: Omit<Service, 'id'>) => {
     try {
+      const dbService = mapServiceToDB(service);
+      
       const { data, error } = await supabase
         .from('services')
-        .insert(service)
+        .insert(dbService)
         .select();
       
       if (error) throw error;
       if (data && data.length > 0) {
-        setServices([...services, data[0]]);
+        const newService = mapServiceFromDB(data[0]);
+        setServices([...services, newService]);
         toast.success(`Service "${service.name}" added successfully`);
       }
     } catch (error) {
@@ -201,9 +268,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const updateService = async (id: string, updatedData: Partial<Service>) => {
     try {
+      // Convert camelCase to snake_case for fields that need to be updated
+      const dbUpdatedData: any = {};
+      
+      if (updatedData.categoryId !== undefined) dbUpdatedData.category_id = updatedData.categoryId;
+      if (updatedData.name !== undefined) dbUpdatedData.name = updatedData.name;
+      if (updatedData.description !== undefined) dbUpdatedData.description = updatedData.description;
+      if (updatedData.duration !== undefined) dbUpdatedData.duration = updatedData.duration;
+      if (updatedData.price !== undefined) dbUpdatedData.price = updatedData.price;
+      
       const { error } = await supabase
         .from('services')
-        .update(updatedData)
+        .update(dbUpdatedData)
         .eq('id', id);
       
       if (error) throw error;
@@ -244,25 +320,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Appointment operations
   const bookAppointment = async (appointment: Omit<Appointment, 'id' | 'status'>) => {
     try {
-      const newAppointment = {
+      const dbAppointment = mapAppointmentToDB({
         ...appointment,
-        status: 'confirmed' as const
-      };
+        status: 'confirmed'
+      });
       
       const { data, error } = await supabase
         .from('appointments')
-        .insert(newAppointment)
+        .insert(dbAppointment)
         .select();
       
       if (error) throw error;
       if (data && data.length > 0) {
-        // Convert date string back to Date object
-        const formattedAppointment = {
-          ...data[0],
-          date: new Date(data[0].date)
-        };
-        
-        setAppointments([...appointments, formattedAppointment]);
+        const newAppointment = mapAppointmentFromDB(data[0]);
+        setAppointments([...appointments, newAppointment]);
         toast.success("Appointment booked successfully");
       }
     } catch (error) {
@@ -273,15 +344,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const updateAppointment = async (id: string, updatedData: Partial<Appointment>) => {
     try {
-      // If we're updating the date and it's a Date object, convert to ISO string
-      const dataToUpdate = { ...updatedData };
-      if (dataToUpdate.date instanceof Date) {
-        dataToUpdate.date = dataToUpdate.date.toISOString().split('T')[0];
+      // Convert camelCase to snake_case for fields that need to be updated
+      const dbUpdatedData: any = {};
+      
+      if (updatedData.serviceId !== undefined) dbUpdatedData.service_id = updatedData.serviceId;
+      if (updatedData.clientName !== undefined) dbUpdatedData.client_name = updatedData.clientName;
+      if (updatedData.clientEmail !== undefined) dbUpdatedData.client_email = updatedData.clientEmail;
+      if (updatedData.clientPhone !== undefined) dbUpdatedData.client_phone = updatedData.clientPhone;
+      if (updatedData.startTime !== undefined) dbUpdatedData.start_time = updatedData.startTime;
+      if (updatedData.endTime !== undefined) dbUpdatedData.end_time = updatedData.endTime;
+      if (updatedData.status !== undefined) dbUpdatedData.status = updatedData.status;
+      
+      // Handle date conversion for the database
+      if (updatedData.date !== undefined) {
+        dbUpdatedData.date = updatedData.date instanceof Date 
+          ? updatedData.date.toISOString().split('T')[0] 
+          : updatedData.date;
       }
       
       const { error } = await supabase
         .from('appointments')
-        .update(dataToUpdate)
+        .update(dbUpdatedData)
         .eq('id', id);
       
       if (error) throw error;
