@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,10 +27,7 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
     e.preventDefault();
     setErrorMsg('');
     
-    // Check if we're in demo mode (admin flag set in localStorage)
-    const demoMode = localStorage.getItem('isAdmin') === 'true';
-    
-    if (!isAuthenticated && !demoMode) {
+    if (!isAuthenticated) {
       setErrorMsg('You must be logged in to perform this action');
       toast.error('Authentication required');
       return;
@@ -44,6 +41,12 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
     setIsSubmitting(true);
     
     try {
+      // Check for a valid authentication session
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('No active session found. Please log in again.');
+      }
+      
       console.log('Submitting category', {
         name,
         description: description || undefined,
@@ -114,7 +117,7 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
         </Button>
         <Button
           type="submit"
-          disabled={isSubmitting || (!isAuthenticated && !localStorage.getItem('isAdmin'))}
+          disabled={isSubmitting || !isAuthenticated}
         >
           {isSubmitting ? (
             <>
