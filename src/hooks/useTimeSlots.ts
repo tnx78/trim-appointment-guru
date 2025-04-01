@@ -24,19 +24,39 @@ export function generateTimeSlots(): TimeSlot[] {
 export function getAvailableTimeSlots(date: Date, duration: number, appointments: any[]) {
   const baseSlots = generateTimeSlots();
   
+  // Convert date to string for consistent comparison
+  const dateString = date.toDateString();
+  
   // Filter appointments for the selected date
   const dayAppointments = appointments.filter(
-    appointment => 
-      appointment.date.toDateString() === date.toDateString() && 
-      appointment.status !== 'cancelled'
+    appointment => {
+      // Handle different date formats/objects
+      const appDate = appointment.date instanceof Date 
+        ? appointment.date 
+        : new Date(appointment.date);
+      
+      return appDate.toDateString() === dateString && 
+        appointment.status !== 'cancelled';
+    }
   );
+  
+  console.log('Appointments for selected date:', dayAppointments);
   
   // Mark slots as unavailable if they overlap with existing appointments
   dayAppointments.forEach(appointment => {
-    const startHour = parseInt(appointment.startTime.split(':')[0]);
-    const startMinute = parseInt(appointment.startTime.split(':')[1]);
-    const endHour = parseInt(appointment.endTime.split(':')[0]);
-    const endMinute = parseInt(appointment.endTime.split(':')[1]);
+    // Handle different time formats
+    const startTime = appointment.startTime || appointment.start_time;
+    const endTime = appointment.endTime || appointment.end_time;
+    
+    if (!startTime || !endTime) {
+      console.warn('Appointment missing time information:', appointment);
+      return;
+    }
+    
+    const startHour = parseInt(startTime.split(':')[0]);
+    const startMinute = parseInt(startTime.split(':')[1]);
+    const endHour = parseInt(endTime.split(':')[0]);
+    const endMinute = parseInt(endTime.split(':')[1]);
     
     baseSlots.forEach(slot => {
       const slotHour = parseInt(slot.time.split(':')[0]);
@@ -52,6 +72,7 @@ export function getAvailableTimeSlots(date: Date, duration: number, appointments
       if ((slotTime >= appointmentStart && slotTime < appointmentEnd) ||
           (slotEnd > appointmentStart && slotEnd <= appointmentEnd) ||
           (slotTime <= appointmentStart && slotEnd >= appointmentEnd)) {
+        console.log(`Marking slot ${slot.time} as unavailable due to overlap with appointment ${startTime}-${endTime}`);
         slot.available = false;
       }
     });
