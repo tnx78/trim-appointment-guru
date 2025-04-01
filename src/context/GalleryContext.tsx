@@ -81,45 +81,72 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
         userId: user?.id 
       });
 
-      // For demo mode, we don't need to fetch from Supabase
-      if (localStorage.getItem('isAdmin') === 'true') {
-        console.log('Demo mode active, using localStorage data');
-        setIsLoading(false);
-        return;
-      }
-      
-      // Fetch categories from Supabase
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('gallery_categories')
-        .select('*')
-        .order('sort_order', { ascending: true });
+      // Always attempt to fetch from Supabase first
+      try {
+        // Fetch categories from Supabase
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from('gallery_categories')
+          .select('*')
+          .order('sort_order', { ascending: true });
 
-      if (categoriesError) {
-        console.error('Error fetching categories:', categoriesError);
-        setError(categoriesError.message);
-        toast.error('Error fetching categories: ' + categoriesError.message);
-        return;
-      }
-      
-      console.log('Fetched categories:', categoriesData);
-      setCategories(categoriesData || []);
+        if (categoriesError) {
+          console.warn('Error fetching categories from Supabase:', categoriesError);
+          throw categoriesError;
+        }
+        
+        console.log('Fetched categories from Supabase:', categoriesData);
+        if (categoriesData && categoriesData.length > 0) {
+          setCategories(categoriesData);
+        }
 
-      // Fetch images from Supabase
-      const { data: imagesData, error: imagesError } = await supabase
-        .from('gallery_images')
-        .select('*')
-        .order('sort_order', { ascending: true });
+        // Fetch images from Supabase
+        const { data: imagesData, error: imagesError } = await supabase
+          .from('gallery_images')
+          .select('*')
+          .order('sort_order', { ascending: true });
 
-      if (imagesError) {
-        console.error('Error fetching images:', imagesError);
-        setError(imagesError.message);
-        toast.error('Error fetching images: ' + imagesError.message);
-        return;
+        if (imagesError) {
+          console.warn('Error fetching images from Supabase:', imagesError);
+          throw imagesError;
+        }
+        
+        console.log('Fetched images from Supabase:', imagesData);
+        if (imagesData && imagesData.length > 0) {
+          setImages(imagesData);
+        }
+      } catch (supabaseError) {
+        console.warn('Supabase fetch failed, checking for demo mode:', supabaseError);
+        
+        // For demo mode, load from localStorage if available
+        if (localStorage.getItem('isAdmin') === 'true') {
+          const storedCategories = localStorage.getItem('demo_gallery_categories');
+          if (storedCategories) {
+            try {
+              const parsedCategories = JSON.parse(storedCategories);
+              console.log('Loaded demo categories from localStorage:', parsedCategories);
+              setCategories(parsedCategories);
+            } catch (e) {
+              console.error('Error parsing demo categories from localStorage:', e);
+            }
+          }
+          
+          const storedImages = localStorage.getItem('demo_gallery_images');
+          if (storedImages) {
+            try {
+              const parsedImages = JSON.parse(storedImages);
+              console.log('Loaded demo images from localStorage:', parsedImages);
+              setImages(parsedImages);
+            } catch (e) {
+              console.error('Error parsing demo images from localStorage:', e);
+            }
+          }
+          console.log('Demo mode active, using localStorage data');
+        } else {
+          // If we're not in demo mode and Supabase fetch failed, show the error
+          setError((supabaseError as Error).message);
+          toast.error('Error loading gallery data: ' + (supabaseError as Error).message);
+        }
       }
-      
-      console.log('Fetched images:', imagesData);
-      setImages(imagesData || []);
-      
     } catch (error: any) {
       console.error('Error loading gallery data:', error.message);
       setError(error.message);

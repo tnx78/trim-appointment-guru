@@ -5,11 +5,11 @@ VALUES
   ('gallery', 'gallery', true, false, 5242880, ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']::text[])
 ON CONFLICT (id) DO NOTHING;
 
--- Set up RLS policies to allow access to the storage bucket
+-- Set up simple, permissive RLS policies to allow public access to the storage bucket
 INSERT INTO storage.policies (name, definition, bucket_id)
 VALUES 
-  ('Public access to gallery', 'true', 'gallery'),
-  ('Anyone can insert into gallery', 'true', 'gallery'),
-  ('Anyone can update gallery content', 'true', 'gallery'),
-  ('Anyone can delete from gallery', 'true', 'gallery')
+  ('Public read access', 'true', 'gallery'),
+  ('Public insert access', 'true', 'gallery'),
+  ('Public update access', 'true', 'gallery'),
+  ('Public delete access', 'true', 'gallery')
 ON CONFLICT (name, definition, bucket_id) DO NOTHING;

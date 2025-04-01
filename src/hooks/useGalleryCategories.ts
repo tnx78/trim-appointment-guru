@@ -46,9 +46,37 @@ export function useGalleryCategories() {
         category
       });
 
-      // For demo mode, prioritize local storage
+      // For demo mode, prioritize localStorage but try Supabase too
       if (localStorage.getItem('isAdmin') === 'true') {
-        console.log('Adding category in demo mode');
+        try {
+          // Try inserting into Supabase first
+          const { data, error } = await supabase
+            .from('gallery_categories')
+            .insert(category)
+            .select()
+            .single();
+            
+          if (!error && data) {
+            console.log('Category added successfully to Supabase in demo mode:', data);
+            const newCategory = data as GalleryCategory;
+            
+            // Update local state
+            setCategories(prev => [...prev, newCategory]);
+            
+            // Save to localStorage too for persistence
+            const updatedCategories = [...categories, newCategory];
+            localStorage.setItem(DEMO_CATEGORIES_KEY, JSON.stringify(updatedCategories));
+            
+            toast.success('Category added successfully');
+            return newCategory;
+          } else {
+            console.warn('Supabase insert failed in demo mode, falling back to localStorage:', error);
+          }
+        } catch (supabaseError) {
+          console.warn('Supabase error in demo mode, using localStorage instead:', supabaseError);
+        }
+        
+        // Fall back to localStorage for demo mode
         const newCategory = { 
           id: crypto.randomUUID(), 
           created_at: new Date().toISOString(),
@@ -56,14 +84,17 @@ export function useGalleryCategories() {
         } as GalleryCategory;
         
         // Update local state
+        setCategories(prev => [...prev, newCategory]);
+        
+        // Save to localStorage for persistence
         const updatedCategories = [...categories, newCategory];
-        setCategories(updatedCategories);
         localStorage.setItem(DEMO_CATEGORIES_KEY, JSON.stringify(updatedCategories));
+        
         toast.success('Category added successfully (demo mode)');
         return newCategory;
       }
 
-      // If not in demo mode, try to insert into Supabase
+      // Not in demo mode, use only Supabase
       const { data, error } = await supabase
         .from('gallery_categories')
         .insert(category)
@@ -95,7 +126,36 @@ export function useGalleryCategories() {
     try {
       // Handle demo mode
       if (localStorage.getItem('isAdmin') === 'true') {
-        console.log('Updating category in demo mode');
+        try {
+          // Try Supabase first, but don't fail if it doesn't work
+          const { data, error } = await supabase
+            .from('gallery_categories')
+            .update(category)
+            .eq('id', category.id)
+            .select()
+            .single();
+
+          if (!error && data) {
+            console.log('Category updated successfully in Supabase:', data);
+            const updatedCategory = data as GalleryCategory;
+            
+            // Update local state
+            setCategories(prev => prev.map(c => c.id === category.id ? updatedCategory : c));
+            
+            // Update localStorage too
+            const updatedCategories = categories.map(c => c.id === category.id ? updatedCategory : c);
+            localStorage.setItem(DEMO_CATEGORIES_KEY, JSON.stringify(updatedCategories));
+            
+            toast.success('Category updated successfully');
+            return updatedCategory;
+          } else {
+            console.warn('Supabase update failed in demo mode, falling back to localStorage:', error);
+          }
+        } catch (supabaseError) {
+          console.warn('Supabase error in demo mode, using localStorage instead:', supabaseError);
+        }
+
+        // Fall back to localStorage for demo mode
         const updatedCategories = categories.map(c => c.id === category.id ? category : c);
         setCategories(updatedCategories);
         localStorage.setItem(DEMO_CATEGORIES_KEY, JSON.stringify(updatedCategories));
@@ -103,15 +163,7 @@ export function useGalleryCategories() {
         return category;
       }
 
-      // Check if user is authenticated
-      if (!isAuthenticated && !isAdmin) {
-        const errorMessage = 'Admin authentication required to update categories';
-        console.error(errorMessage);
-        toast.error(errorMessage);
-        return null;
-      }
-
-      // Update category in Supabase
+      // Not in demo mode, only use Supabase
       const { data, error } = await supabase
         .from('gallery_categories')
         .update(category)
@@ -143,7 +195,23 @@ export function useGalleryCategories() {
     try {
       // Handle demo mode
       if (localStorage.getItem('isAdmin') === 'true') {
-        console.log('Deleting category in demo mode');
+        try {
+          // Try Supabase deletion, but don't fail if it doesn't work
+          const { error } = await supabase
+            .from('gallery_categories')
+            .delete()
+            .eq('id', id);
+
+          if (!error) {
+            console.log('Category deleted successfully from Supabase');
+          } else {
+            console.warn('Supabase delete failed in demo mode, falling back to localStorage:', error);
+          }
+        } catch (supabaseError) {
+          console.warn('Supabase error in demo mode, using localStorage instead:', supabaseError);
+        }
+
+        // Always update local state in demo mode
         const updatedCategories = categories.filter(c => c.id !== id);
         setCategories(updatedCategories);
         localStorage.setItem(DEMO_CATEGORIES_KEY, JSON.stringify(updatedCategories));
@@ -151,15 +219,7 @@ export function useGalleryCategories() {
         return;
       }
       
-      // Check if user is authenticated
-      if (!isAuthenticated || !isAdmin) {
-        const errorMessage = 'Admin authentication required to delete categories';
-        console.error(errorMessage);
-        toast.error(errorMessage);
-        return;
-      }
-
-      // Delete category from Supabase
+      // Not in demo mode, only use Supabase
       const { error } = await supabase
         .from('gallery_categories')
         .delete()
