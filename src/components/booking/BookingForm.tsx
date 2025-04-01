@@ -74,13 +74,20 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
         user_id: user?.id || null
       };
       
+      console.log("Submitting appointment data:", appointmentData);
+      
       // Insert appointment without referencing the users table
       const { data, error } = await supabase
         .from('appointments')
         .insert(appointmentData)
         .select();
         
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+      
+      console.log("Appointment created successfully:", data);
       
       // Reset booking context state
       resetBookingState();

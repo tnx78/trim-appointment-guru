@@ -1,5 +1,6 @@
 
 import { Scissors } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export function Footer() {
   return (
@@ -11,10 +12,17 @@ export function Footer() {
             TrimGuru &copy; {new Date().getFullYear()}. All rights reserved.
           </p>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
           <p className="text-center text-sm text-muted-foreground">
             Built with ♥ for hairdressers
           </p>
+          <span className="text-muted-foreground mx-1">•</span>
+          <Link 
+            to="/admin" 
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Salon Admin
+          </Link>
         </div>
       </div>
     </footer>
