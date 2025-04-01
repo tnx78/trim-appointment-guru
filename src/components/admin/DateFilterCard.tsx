@@ -20,7 +20,7 @@ export function DateFilterCard({
   onToggleAllDates,
   appointmentDates = []
 }: DateFilterCardProps) {
-  // Create an object with all dates that have appointments
+  // Create a Map with date strings as keys for faster lookup
   const datesWithAppointments = appointmentDates.reduce((acc, date) => {
     const dateStr = date.toISOString().split('T')[0];
     acc[dateStr] = true;
@@ -37,7 +37,7 @@ export function DateFilterCard({
 
   // Custom day class names
   const modifiersClassNames = {
-    withAppointments: "relative after:absolute after:top-1 after:right-1 after:w-2 after:h-2 after:bg-purple-500 after:rounded-full"
+    withAppointments: "bg-gray-100 relative"
   };
 
   return (

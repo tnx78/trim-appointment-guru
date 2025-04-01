@@ -19,6 +19,7 @@ export function AppointmentList() {
 
   // Filter appointments based on the selected view and date filter
   const filteredAppointments = appointments.filter(appointment => {
+    // Make a new date object to compare only the date portion
     const appointmentDate = new Date(appointment.date);
     appointmentDate.setHours(0, 0, 0, 0);
     

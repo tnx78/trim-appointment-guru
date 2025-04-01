@@ -5,7 +5,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { format, addDays } from 'date-fns';
+import { format, addDays, isSaturday, isSunday } from 'date-fns';
 import { ChevronLeft, Clock } from 'lucide-react';
 
 export function DateTimeSelection({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
@@ -52,6 +52,14 @@ export function DateTimeSelection({ onBack, onNext }: { onBack: () => void; onNe
     return `${formattedHour}:${minutes} ${ampm}`;
   };
 
+  // Disable weekends and dates before today or after 3 months
+  const isDateDisabled = (date: Date) => {
+    return date < today || 
+           date > futureDate || 
+           isSaturday(date) || 
+           isSunday(date);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -67,7 +75,7 @@ export function DateTimeSelection({ onBack, onNext }: { onBack: () => void; onNe
             mode="single"
             selected={selectedDate}
             onSelect={handleDateSelect}
-            disabled={(date) => date < today || date > futureDate}
+            disabled={isDateDisabled}
             className="rounded-md border p-3 pointer-events-auto"
           />
         </div>
