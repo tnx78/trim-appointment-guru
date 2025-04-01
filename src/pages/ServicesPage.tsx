@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { ServiceList } from '@/components/booking/ServiceList';
 import { DateTimeSelection } from '@/components/booking/DateTimeSelection';
 import BookingForm from '@/components/booking/BookingForm';
-import { useBookingContext } from '@/context/AppContext';
+import { useBookingContext } from '@/context/BookingContext';
 
 export default function ServicesPage() {
   const [step, setStep] = useState(1);

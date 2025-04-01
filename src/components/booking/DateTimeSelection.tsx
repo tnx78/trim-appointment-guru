@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useBookingContext } from '@/context/BookingContext';
+import { useAppointmentContext } from '@/context/AppointmentContext';
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,33 +9,33 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import { useSalonHours } from '@/hooks/use-salon-hours';
 import { BookingProgressBar } from './BookingProgressBar';
+import { getAvailableTimeSlots } from '@/hooks/useTimeSlots';
 
 export function DateTimeSelection({ onBack, onNext }: { onBack?: () => void; onNext?: () => void }) {
   const { selectedService, selectedDate, selectedTime, selectDate, selectTime } = useBookingContext();
+  const { appointments } = useAppointmentContext();
   const { isDateAvailable } = useSalonHours();
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
 
-  // Generate time slots (simplified for this example)
+  // Generate time slots based on selected date and existing appointments
   useEffect(() => {
     if (selectedService && selectedDate) {
-      // For demonstration purposes, we'll just create some dummy time slots
-      const slots = [];
-      const startHour = 9; // 9 AM
-      const endHour = 17; // 5 PM
+      // Get available time slots considering existing appointments
+      const slots = getAvailableTimeSlots(selectedDate, selectedService.duration, appointments);
+      setAvailableTimeSlots(slots);
       
-      for (let hour = startHour; hour < endHour; hour++) {
-        for (let minute of ['00', '30']) {
-          slots.push({
-            id: `slot-${hour}-${minute}`,
-            time: `${hour}:${minute}`,
-            available: true
-          });
+      // If the currently selected time is no longer available, deselect it
+      if (selectedTime) {
+        const isTimeStillAvailable = slots.some(
+          slot => slot.time === selectedTime && slot.available
+        );
+        
+        if (!isTimeStillAvailable) {
+          selectTime(null);
         }
       }
-      
-      setAvailableTimeSlots(slots);
     }
-  }, [selectedDate, selectedService]);
+  }, [selectedDate, selectedService, appointments, selectedTime, selectTime]);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {

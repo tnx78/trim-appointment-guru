@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -51,13 +50,11 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       console.log('Loading gallery data...');
       
-      // Fetch categories with service role to bypass RLS
-      const { data: categoriesData, error: categoriesError } = await supabase.auth.getSession().then(({ data }) => {
-        return supabase
-          .from('gallery_categories')
-          .select('*')
-          .order('sort_order', { ascending: true });
-      });
+      // Fetch categories
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('gallery_categories')
+        .select('*')
+        .order('sort_order', { ascending: true });
 
       if (categoriesError) {
         console.error('Error fetching categories:', categoriesError);
@@ -67,13 +64,11 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
       console.log('Fetched categories:', categoriesData);
       setCategories(categoriesData as GalleryCategory[]);
 
-      // Fetch images with service role to bypass RLS
-      const { data: imagesData, error: imagesError } = await supabase.auth.getSession().then(({ data }) => {
-        return supabase
-          .from('gallery_images')
-          .select('*')
-          .order('sort_order', { ascending: true });
-      });
+      // Fetch images
+      const { data: imagesData, error: imagesError } = await supabase
+        .from('gallery_images')
+        .select('*')
+        .order('sort_order', { ascending: true });
 
       if (imagesError) {
         console.error('Error fetching images:', imagesError);

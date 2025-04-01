@@ -1,5 +1,6 @@
 
-import { TimeSlot } from '@/types';
+import { TimeSlot, Appointment } from '@/types';
+import { format, parseISO } from 'date-fns';
 
 // Generate time slots from 9:00 AM to 5:00 PM
 export function generateTimeSlots(): TimeSlot[] {
@@ -21,7 +22,7 @@ export function generateTimeSlots(): TimeSlot[] {
   return slots;
 }
 
-export function getAvailableTimeSlots(date: Date, duration: number, appointments: any[]) {
+export function getAvailableTimeSlots(date: Date, duration: number, appointments: Appointment[]) {
   const baseSlots = generateTimeSlots();
   
   // Convert date to string for consistent comparison
@@ -49,18 +50,26 @@ export function getAvailableTimeSlots(date: Date, duration: number, appointments
     const endTime = appointment.endTime || appointment.end_time;
     
     if (!startTime || !endTime) {
-      console.warn('Appointment missing time information:', appointment);
+      console.error('Appointment missing time information:', appointment);
       return;
     }
     
-    const startHour = parseInt(startTime.split(':')[0]);
-    const startMinute = parseInt(startTime.split(':')[1]);
-    const endHour = parseInt(endTime.split(':')[0]);
-    const endMinute = parseInt(endTime.split(':')[1]);
+    // Parse start and end times
+    const [startHour, startMinute] = startTime.split(':').map(n => parseInt(n));
+    const [endHour, endMinute] = endTime.split(':').map(n => parseInt(n));
+    
+    if (isNaN(startHour) || isNaN(startMinute) || isNaN(endHour) || isNaN(endMinute)) {
+      console.error('Invalid time format in appointment:', appointment);
+      return;
+    }
     
     baseSlots.forEach(slot => {
-      const slotHour = parseInt(slot.time.split(':')[0]);
-      const slotMinute = parseInt(slot.time.split(':')[1]);
+      const [slotHour, slotMinute] = slot.time.split(':').map(n => parseInt(n));
+      
+      if (isNaN(slotHour) || isNaN(slotMinute)) {
+        console.error('Invalid time format in slot:', slot);
+        return;
+      }
       
       // Convert to minutes for easier comparison
       const appointmentStart = startHour * 60 + startMinute;
@@ -80,8 +89,7 @@ export function getAvailableTimeSlots(date: Date, duration: number, appointments
   
   // Filter out slots where the service can't be completed before closing
   return baseSlots.filter(slot => {
-    const slotHour = parseInt(slot.time.split(':')[0]);
-    const slotMinute = parseInt(slot.time.split(':')[1]);
+    const [slotHour, slotMinute] = slot.time.split(':').map(n => parseInt(n));
     const slotTime = slotHour * 60 + slotMinute;
     const slotEnd = slotTime + duration;
     
