@@ -62,18 +62,21 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          order: number | null
         }
         Insert: {
           created_at?: string
           description?: string | null
           id?: string
           name: string
+          order?: number | null
         }
         Update: {
           created_at?: string
           description?: string | null
           id?: string
           name?: string
+          order?: number | null
         }
         Relationships: []
       }
@@ -109,6 +112,7 @@ export type Database = {
           duration: number
           id: string
           name: string
+          order: number | null
           price: number
         }
         Insert: {
@@ -118,6 +122,7 @@ export type Database = {
           duration: number
           id?: string
           name: string
+          order?: number | null
           price: number
         }
         Update: {
@@ -127,6 +132,7 @@ export type Database = {
           duration?: number
           id?: string
           name?: string
+          order?: number | null
           price?: number
         }
         Relationships: [

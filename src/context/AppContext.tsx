@@ -57,7 +57,9 @@ const mapServiceFromDB = (dbService: any): Service => {
     name: dbService.name,
     description: dbService.description,
     duration: dbService.duration,
-    price: dbService.price
+    price: dbService.price,
+    image: dbService.image,
+    order: dbService.order
   };
 };
 
@@ -68,7 +70,8 @@ const mapServiceToDB = (service: Omit<Service, 'id'>): any => {
     name: service.name,
     description: service.description,
     duration: service.duration,
-    price: service.price
+    price: service.price,
+    image: service.image
   };
 };
 
@@ -77,7 +80,8 @@ const mapCategoryFromDB = (dbCategory: any): ServiceCategory => {
   return {
     id: dbCategory.id,
     name: dbCategory.name,
-    description: dbCategory.description
+    description: dbCategory.description,
+    order: dbCategory.order
   };
 };
 
@@ -305,6 +309,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (updatedData.description !== undefined) dbUpdatedData.description = updatedData.description;
       if (updatedData.duration !== undefined) dbUpdatedData.duration = updatedData.duration;
       if (updatedData.price !== undefined) dbUpdatedData.price = updatedData.price;
+      if (updatedData.image !== undefined) dbUpdatedData.image = updatedData.image;
       
       const { error } = await supabase
         .from('services')
