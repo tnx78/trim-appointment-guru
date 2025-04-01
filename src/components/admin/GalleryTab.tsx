@@ -39,8 +39,9 @@ export function GalleryTab() {
   const [editingCategory, setEditingCategory] = useState<GalleryCategory | undefined>(undefined);
   const [editingImage, setEditingImage] = useState<GalleryImage | undefined>(undefined);
 
-  // Initialize or refresh data
+  // Initialize or refresh data - Force refresh on mount
   useEffect(() => {
+    console.log('GalleryTab mounted, loading data...');
     loadGalleryData();
   }, []);
 
@@ -53,6 +54,7 @@ export function GalleryTab() {
   // Handle category form submission
   const handleCategorySubmit = async (categoryData: Omit<GalleryCategory, 'id'>) => {
     try {
+      console.log('Submitting category data:', categoryData);
       if (editingCategory) {
         await updateCategory({
           ...editingCategory,
@@ -64,6 +66,7 @@ export function GalleryTab() {
       setShowCategoryModal(false);
       setEditingCategory(undefined);
     } catch (error: any) {
+      console.error('Failed to save category:', error);
       toast.error('Failed to save category: ' + error.message);
     }
   };

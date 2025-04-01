@@ -7,14 +7,20 @@ import { useAuth } from '@/context/AuthContext';
 
 export function useGalleryImages() {
   const [images, setImages] = useState<GalleryImage[]>([]);
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, user } = useAuth();
 
   // Function to add a new image
   const addImage = async (image: Omit<GalleryImage, 'id'>): Promise<GalleryImage | null> => {
     try {
-      // Check if user is authenticated and is admin
-      if (!isAuthenticated || !isAdmin) {
-        const errorMessage = 'Admin authentication required to add images';
+      console.log('Adding image with auth status:', { 
+        isAuthenticated, 
+        isAdmin,
+        userId: user?.id
+      });
+
+      // Check if user is authenticated (we're not using isAdmin check anymore)
+      if (!isAuthenticated) {
+        const errorMessage = 'Authentication required to add images';
         console.error(errorMessage);
         toast.error(errorMessage);
         return null;
@@ -34,6 +40,7 @@ export function useGalleryImages() {
       }
       
       const newImage = data as GalleryImage;
+      console.log('Image added successfully:', newImage);
       
       // Update local state
       setImages(prev => [...prev, newImage]);

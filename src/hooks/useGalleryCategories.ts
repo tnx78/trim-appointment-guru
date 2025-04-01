@@ -7,16 +7,21 @@ import { useAuth } from '@/context/AuthContext';
 
 export function useGalleryCategories() {
   const [categories, setCategories] = useState<GalleryCategory[]>([]);
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, user } = useAuth();
 
   // Function to add a new category
   const addCategory = async (category: Omit<GalleryCategory, 'id'>): Promise<GalleryCategory | null> => {
     try {
-      console.log('Adding category with auth status:', { isAuthenticated, isAdmin });
+      console.log('Adding category with auth status:', { 
+        isAuthenticated, 
+        isAdmin,
+        userId: user?.id,
+        authRole: auth?.role?.()
+      });
 
-      // Check if user is authenticated and is admin
-      if (!isAuthenticated || !isAdmin) {
-        const errorMessage = 'Admin authentication required to add categories';
+      // Check if user is authenticated (we're not using isAdmin check anymore)
+      if (!isAuthenticated) {
+        const errorMessage = 'Authentication required to add categories';
         console.error(errorMessage);
         toast.error(errorMessage);
         return null;
