@@ -40,7 +40,7 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
       const formData = { name, description };
       
       if (category) {
-        // Fix: Pass id and formData as separate arguments to match function signature
+        // Pass id and formData as separate arguments to match function signature
         updateCategory(category.id, formData);
       } else {
         addCategory(formData);

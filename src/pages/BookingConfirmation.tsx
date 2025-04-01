@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle2, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { Service } from '@/types';
-import { useServiceContext } from '@/context/AppContext';
+import { useServiceContext } from '@/context/ServiceContext';
 
 interface LocationState {
   appointment?: {
