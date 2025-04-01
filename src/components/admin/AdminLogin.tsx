@@ -19,12 +19,12 @@ export function AdminLogin() {
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
-      console.log('Current session status in AdminLogin:', data.session ? 'Active' : 'None');
+      const hasActiveSession = !!data.session;
+      console.log('Current session status in AdminLogin:', hasActiveSession ? 'Active' : 'None');
       
-      // If no session but isAdmin is set in localStorage, clear it to prevent confusion
-      if (!data.session && localStorage.getItem('isAdmin')) {
-        console.log('No session found but isAdmin was in localStorage, clearing it');
-        localStorage.removeItem('isAdmin');
+      // If no session but isAdmin is set in localStorage, don't clear it since we're using it for demo mode
+      if (!hasActiveSession && !localStorage.getItem('isAdmin')) {
+        console.log('No active session found. You can login or use demo mode.');
       }
     };
     
@@ -55,6 +55,21 @@ export function AdminLogin() {
     } catch (error: any) {
       console.error('Login error:', error);
       setErrorMessage(error.message || 'An error occurred during login');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Demo mode login for easier testing
+  const handleDemoLogin = () => {
+    setIsLoading(true);
+    try {
+      localStorage.setItem('isAdmin', 'true');
+      toast.success('Logged in as admin (Demo Mode)');
+      window.location.reload(); // Reload to apply the demo admin state
+    } catch (error) {
+      console.error('Demo login error:', error);
+      setErrorMessage('Failed to enable demo mode');
     } finally {
       setIsLoading(false);
     }
@@ -114,8 +129,21 @@ export function AdminLogin() {
             </Button>
           </form>
           
+          <div className="mt-4 text-center">
+            <Button variant="outline" className="w-full" onClick={handleDemoLogin} disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Setting up demo...
+                </>
+              ) : (
+                'Use Demo Mode (No Login Required)'
+              )}
+            </Button>
+          </div>
+          
           <div className="mt-4 text-sm text-muted-foreground text-center">
-            <p>Default credentials for demo:</p>
+            <p>Default credentials for real login:</p>
             <p>Username: admin / Password: admin123</p>
           </div>
         </CardContent>

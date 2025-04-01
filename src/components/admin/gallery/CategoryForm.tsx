@@ -22,40 +22,16 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const { isAuthenticated, isAdmin } = useAuth();
-  const [sessionChecked, setSessionChecked] = useState(false);
   
-  // Check session on mount and before form submission
-  useEffect(() => {
-    async function verifySession() {
-      try {
-        console.log('Verifying session in CategoryForm...');
-        const { data: { session } } = await supabase.auth.getSession();
-        const hasSession = !!session;
-        console.log('Session verified in CategoryForm:', hasSession ? 'Active' : 'None');
-        
-        if (!hasSession && !isAuthenticated) {
-          setErrorMsg('No active session found. Please log in again.');
-        } else {
-          setErrorMsg('');
-        }
-        
-        setSessionChecked(true);
-      } catch (error) {
-        console.error('Error verifying session:', error);
-      }
-    }
-    
-    verifySession();
-  }, [isAuthenticated]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     
-    // Double-check session right before submission
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session && !isAuthenticated) {
-      setErrorMsg('No active session found. Please log in again.');
+    // Check if we're in demo mode (admin flag set in localStorage)
+    const demoMode = localStorage.getItem('isAdmin') === 'true';
+    
+    if (!isAuthenticated && !demoMode) {
+      setErrorMsg('You must be logged in to perform this action');
       toast.error('Authentication required');
       return;
     }
@@ -66,8 +42,14 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
     }
 
     setIsSubmitting(true);
+    
     try {
-      console.log('Submitting category with session verification completed');
+      console.log('Submitting category', {
+        name,
+        description: description || undefined,
+        sort_order: category?.sort_order ?? (Date.now() % 1000)
+      });
+      
       await onSubmit({
         name,
         description: description || undefined,

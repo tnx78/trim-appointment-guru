@@ -40,6 +40,7 @@ interface GalleryContextType {
   getImagesByCategory: (categoryId: string) => GalleryImage[];
   uploadImage: (file: File) => Promise<string | null>;
   isUploading: boolean;
+  demoMode: boolean;
 }
 
 const GalleryContext = createContext<GalleryContextType | undefined>(undefined);
@@ -54,7 +55,8 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     setCategories,
     addCategory: addCategoryHook, 
     updateCategory, 
-    deleteCategory 
+    deleteCategory,
+    demoMode 
   } = useGalleryCategories();
   
   const { 
@@ -77,6 +79,30 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
       
       console.log('Loading gallery data...');
 
+      // Check if we're in demo mode
+      const { data: sessionData } = await supabase.auth.getSession();
+      const hasRealSession = !!sessionData.session;
+      const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
+      
+      if (inDemoMode) {
+        console.log('Loading gallery data in demo mode');
+        
+        // Load categories from localStorage
+        const demoCategories = JSON.parse(
+          localStorage.getItem('demoCategories') || '[]'
+        ) as GalleryCategory[];
+        
+        // Load images from localStorage
+        const demoImages = JSON.parse(
+          localStorage.getItem('demoImages') || '[]'
+        ) as GalleryImage[];
+        
+        setCategories(demoCategories);
+        setImages(demoImages);
+        return;
+      }
+
+      // With real session, load from Supabase
       // Fetch categories from Supabase
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('gallery_categories')
@@ -162,7 +188,8 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     deleteImage,
     getImagesByCategory,
     uploadImage,
-    isUploading
+    isUploading,
+    demoMode
   };
 
   return <GalleryContext.Provider value={value}>{children}</GalleryContext.Provider>;

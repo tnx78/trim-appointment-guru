@@ -11,7 +11,12 @@ export function useGalleryStorage() {
   // Upload image to Supabase storage
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
-      if (!isAuthenticated) {
+      // Check for a real Supabase session
+      const { data: sessionData } = await supabase.auth.getSession();
+      const hasRealSession = !!sessionData.session;
+      const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
+      
+      if (!hasRealSession && !inDemoMode) {
         toast.error('You must be logged in to upload images');
         return null;
       }
@@ -29,6 +34,21 @@ export function useGalleryStorage() {
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size should be less than 5MB');
         return null;
+      }
+
+      // In demo mode, we'll create a data URL for the image instead of uploading to Supabase
+      if (inDemoMode) {
+        console.log('Demo mode: Creating data URL for image');
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const dataUrl = reader.result as string;
+            console.log('Image data URL created (Demo Mode)');
+            toast.success('Image uploaded successfully (Demo Mode)');
+            resolve(dataUrl);
+          };
+          reader.readAsDataURL(file);
+        });
       }
 
       // Generate a unique file name
@@ -72,9 +92,21 @@ export function useGalleryStorage() {
   // Delete image from Supabase storage
   const deleteStorageImage = async (url: string): Promise<boolean> => {
     try {
-      if (!isAuthenticated) {
+      // Check for a real Supabase session
+      const { data: sessionData } = await supabase.auth.getSession();
+      const hasRealSession = !!sessionData.session;
+      const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
+      
+      if (!hasRealSession && !inDemoMode) {
         toast.error('You must be logged in to delete images');
         return false;
+      }
+
+      // In demo mode, we just return success since there's no actual storage to delete from
+      if (inDemoMode) {
+        console.log('Demo mode: Simulating image deletion from storage');
+        toast.success('Image deleted successfully (Demo Mode)');
+        return true;
       }
 
       // Extract file path from the URL

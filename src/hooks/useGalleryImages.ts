@@ -14,13 +14,49 @@ export function useGalleryImages() {
   // Function to add a new image
   const addImage = async (image: Omit<GalleryImage, 'id'>): Promise<GalleryImage | null> => {
     try {
-      if (!isAuthenticated) {
+      // Check for a real Supabase session
+      const { data: sessionData } = await supabase.auth.getSession();
+      const hasRealSession = !!sessionData.session;
+      const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
+      
+      if (!hasRealSession && !inDemoMode) {
         toast.error('You must be logged in to add images');
         return null;
       }
 
       console.log('Adding image:', image);
 
+      // For demo mode, we'll store in localStorage
+      if (inDemoMode) {
+        console.log('Demo mode: Simulating image creation');
+        
+        // Create a unique ID for the demo image
+        const demoId = `demo-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        
+        const newImage: GalleryImage = {
+          id: demoId,
+          ...image,
+          created_at: new Date().toISOString()
+        };
+        
+        // Get existing demo images from localStorage or initialize empty array
+        const existingDemoImages = JSON.parse(
+          localStorage.getItem('demoImages') || '[]'
+        ) as GalleryImage[];
+        
+        // Add new image to the array
+        const updatedDemoImages = [...existingDemoImages, newImage];
+        
+        // Store updated images in localStorage
+        localStorage.setItem('demoImages', JSON.stringify(updatedDemoImages));
+        
+        // Update local state
+        setImages(prev => [...prev, newImage]);
+        toast.success('Image added successfully (Demo Mode)');
+        return newImage;
+      }
+
+      // Real database operation with Supabase
       const { data, error } = await supabase
         .from('gallery_images')
         .insert(image)
@@ -50,11 +86,40 @@ export function useGalleryImages() {
   // Function to update an existing image
   const updateImage = async (image: GalleryImage): Promise<GalleryImage | null> => {
     try {
-      if (!isAuthenticated) {
+      // Check for a real Supabase session
+      const { data: sessionData } = await supabase.auth.getSession();
+      const hasRealSession = !!sessionData.session;
+      const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
+      
+      if (!hasRealSession && !inDemoMode) {
         toast.error('You must be logged in to update images');
         return null;
       }
 
+      // For demo mode, we'll update in localStorage
+      if (inDemoMode) {
+        console.log('Demo mode: Simulating image update');
+        
+        // Get existing demo images from localStorage
+        const existingDemoImages = JSON.parse(
+          localStorage.getItem('demoImages') || '[]'
+        ) as GalleryImage[];
+        
+        // Find and update the image
+        const updatedDemoImages = existingDemoImages.map(img => 
+          img.id === image.id ? { ...image } : img
+        );
+        
+        // Store updated images in localStorage
+        localStorage.setItem('demoImages', JSON.stringify(updatedDemoImages));
+        
+        // Update local state
+        setImages(prev => prev.map(img => img.id === image.id ? { ...image } : img));
+        toast.success('Image updated successfully (Demo Mode)');
+        return image;
+      }
+
+      // Real database update
       const { data, error } = await supabase
         .from('gallery_images')
         .update(image)
@@ -84,7 +149,12 @@ export function useGalleryImages() {
   // Function to delete an image
   const deleteImage = async (id: string): Promise<void> => {
     try {
-      if (!isAuthenticated) {
+      // Check for a real Supabase session
+      const { data: sessionData } = await supabase.auth.getSession();
+      const hasRealSession = !!sessionData.session;
+      const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
+      
+      if (!hasRealSession && !inDemoMode) {
         toast.error('You must be logged in to delete images');
         return;
       }
@@ -97,12 +167,34 @@ export function useGalleryImages() {
         return;
       }
 
+      // For demo mode, we'll just delete from localStorage
+      if (inDemoMode) {
+        console.log('Demo mode: Simulating image deletion');
+        
+        // Get existing demo images from localStorage
+        const existingDemoImages = JSON.parse(
+          localStorage.getItem('demoImages') || '[]'
+        ) as GalleryImage[];
+        
+        // Filter out the deleted image
+        const updatedDemoImages = existingDemoImages.filter(img => img.id !== id);
+        
+        // Store updated images in localStorage
+        localStorage.setItem('demoImages', JSON.stringify(updatedDemoImages));
+        
+        // Update local state
+        setImages(prev => prev.filter(img => img.id !== id));
+        toast.success('Image deleted successfully (Demo Mode)');
+        return;
+      }
+
       // Delete the image file from storage first
       const imageDeleted = await deleteStorageImage(imageToDelete.image_url);
       if (!imageDeleted) {
         console.warn('Could not delete image file, but will proceed with database deletion');
       }
 
+      // Delete from database
       const { error } = await supabase
         .from('gallery_images')
         .delete()
@@ -123,11 +215,51 @@ export function useGalleryImages() {
     }
   };
 
+  // Function to load images from either Supabase or localStorage
+  const loadImages = async () => {
+    try {
+      // Check for a real Supabase session
+      const { data: sessionData } = await supabase.auth.getSession();
+      const hasRealSession = !!sessionData.session;
+      const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
+      
+      // In demo mode, load from localStorage
+      if (inDemoMode) {
+        console.log('Loading images from localStorage (Demo Mode)');
+        const demoImages = JSON.parse(
+          localStorage.getItem('demoImages') || '[]'
+        ) as GalleryImage[];
+        
+        setImages(demoImages);
+        return;
+      }
+      
+      // With real session, load from Supabase
+      const { data, error } = await supabase
+        .from('gallery_images')
+        .select('*')
+        .order('sort_order', { ascending: true });
+        
+      if (error) {
+        console.error('Error loading images:', error);
+        toast.error('Error loading images: ' + error.message);
+        return;
+      }
+      
+      console.log('Images loaded from Supabase:', data);
+      setImages(data || []);
+    } catch (error: any) {
+      console.error('Error in loadImages:', error);
+      toast.error('Error loading images: ' + error.message);
+    }
+  };
+
   return {
     images,
     setImages,
     addImage,
     updateImage,
-    deleteImage
+    deleteImage,
+    loadImages
   };
 }
