@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,16 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Scissors } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AuthPage() {
   const { isAuthenticated, login, register, loading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('login');
-
-  // Redirect if already authenticated
-  if (isAuthenticated) {
-    return <Navigate to="/" />;
-  }
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -30,11 +27,36 @@ export default function AuthPage() {
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
 
+  useEffect(() => {
+    // Redirect if already authenticated
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Return null during initial auth check to avoid rendering issues
+  if (isAuthenticated === null) {
+    return null;
+  }
+  
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    return <Navigate to="/" />;
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await login(loginEmail, loginPassword);
-    if (success) {
-      navigate('/');
+    try {
+      const success = await login(loginEmail, loginPassword);
+      if (success) {
+        navigate('/');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "Please check your credentials and try again",
+        variant: "destructive"
+      });
     }
   };
 
@@ -42,18 +64,38 @@ export default function AuthPage() {
     e.preventDefault();
     
     if (regPassword !== regConfirmPassword) {
-      alert('Passwords do not match');
+      toast({
+        title: "Passwords do not match",
+        description: "Please ensure your passwords match",
+        variant: "destructive"
+      });
       return;
     }
     
     if (regPassword.length < 6) {
-      alert('Password must be at least 6 characters long');
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive"
+      });
       return;
     }
     
-    const success = await register(regEmail, regPassword, regName, regPhone);
-    if (success) {
-      setActiveTab('login');
+    try {
+      const success = await register(regEmail, regPassword, regName, regPhone);
+      if (success) {
+        toast({
+          title: "Registration successful",
+          description: "Your account has been created. You can now log in.",
+        });
+        setActiveTab('login');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Registration failed",
+        description: error.message || "Please try again with different credentials",
+        variant: "destructive"
+      });
     }
   };
 

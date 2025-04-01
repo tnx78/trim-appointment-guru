@@ -53,9 +53,9 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
           // Auto-fill form with user data
           setFormData(prev => ({
             ...prev,
-            name: data.full_name || '',
+            name: data?.full_name || '',
             email: user.email || '',
-            phone: data.phone || ''
+            phone: data?.phone || ''
           }));
         } catch (error) {
           console.error('Error fetching user profile:', error);

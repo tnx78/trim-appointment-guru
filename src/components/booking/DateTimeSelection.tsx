@@ -1,16 +1,15 @@
 
 import { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
-import { format, addDays, startOfDay, isSameDay, parse } from 'date-fns';
+import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { ArrowLeft, ArrowRight, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSalonHours } from '@/hooks/use-salon-hours';
 
-export function DateTimeSelection({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
+export function DateTimeSelection({ onBack, onNext }: { onBack?: () => void; onNext?: () => void }) {
   const { selectedService, selectedDate, selectedTime, selectDate, selectTime, timeSlots, getAvailableTimeSlots } = useAppContext();
   const { isDateAvailable } = useSalonHours();
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
@@ -32,6 +31,20 @@ export function DateTimeSelection({ onBack, onNext }: { onBack: () => void; onNe
 
   const handleTimeSelect = (time: string) => {
     selectTime(time);
+  };
+
+  const handleBackButton = () => {
+    if (currentView === 'time') {
+      setCurrentView('calendar');
+    } else if (onBack) {
+      onBack();
+    }
+  };
+
+  const handleNextButton = () => {
+    if (onNext) {
+      onNext();
+    }
   };
 
   const isDateDisabled = (date: Date) => {
@@ -77,7 +90,7 @@ export function DateTimeSelection({ onBack, onNext }: { onBack: () => void; onNe
     <div className="space-y-6">
       <div>
         <Button 
-          onClick={onBack} 
+          onClick={handleBackButton} 
           variant="ghost" 
           className="flex items-center mb-4"
         >
@@ -163,7 +176,7 @@ export function DateTimeSelection({ onBack, onNext }: { onBack: () => void; onNe
                 </Button>
                 
                 <Button 
-                  onClick={onNext}
+                  onClick={handleNextButton}
                   disabled={!selectedTime}
                 >
                   Continue

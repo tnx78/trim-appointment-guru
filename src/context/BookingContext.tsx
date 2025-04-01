@@ -1,8 +1,6 @@
 
 import React, { createContext, useContext, useState } from 'react';
 import { Service } from '@/types';
-import { useServiceContext } from './ServiceContext';
-import { useAppointmentContext } from './AppointmentContext';
 
 // Context type
 interface BookingContextType {
