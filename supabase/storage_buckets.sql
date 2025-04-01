@@ -6,16 +6,10 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- Set up RLS policies to allow access to the storage bucket
-INSERT INTO storage.policies (name, definition, bucket_id, role_id)
+INSERT INTO storage.policies (name, definition, bucket_id)
 VALUES 
-  ('Public access to gallery', '(bucket_id = ''gallery''::text)', 'gallery', 'anon'),
-  ('Authenticated users can upload gallery images', '((bucket_id = ''gallery''::text) AND (auth.role() = ''authenticated''::text))', 'gallery', 'authenticated')
-ON CONFLICT (name, definition, bucket_id, role_id) DO NOTHING;
-
--- Add more permissive policies for demo purposes - allow anonymous uploads
-INSERT INTO storage.policies (name, definition, bucket_id, role_id)
-VALUES 
-  ('Anyone can insert into gallery', 'true', 'gallery', 'anon'),
-  ('Anyone can update gallery content', 'true', 'gallery', 'anon'),
-  ('Anyone can delete from gallery', 'true', 'gallery', 'anon')
-ON CONFLICT (name, definition, bucket_id, role_id) DO NOTHING;
+  ('Public access to gallery', 'true', 'gallery'),
+  ('Anyone can insert into gallery', 'true', 'gallery'),
+  ('Anyone can update gallery content', 'true', 'gallery'),
+  ('Anyone can delete from gallery', 'true', 'gallery')
+ON CONFLICT (name, definition, bucket_id) DO NOTHING;

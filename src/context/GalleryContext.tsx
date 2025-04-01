@@ -80,8 +80,15 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
         isAdmin, 
         userId: user?.id 
       });
+
+      // For demo mode, we don't need to fetch from Supabase
+      if (localStorage.getItem('isAdmin') === 'true') {
+        console.log('Demo mode active, using localStorage data');
+        setIsLoading(false);
+        return;
+      }
       
-      // Always fetch data from Supabase regardless of auth state
+      // Fetch categories from Supabase
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('gallery_categories')
         .select('*')
@@ -97,6 +104,7 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
       console.log('Fetched categories:', categoriesData);
       setCategories(categoriesData || []);
 
+      // Fetch images from Supabase
       const { data: imagesData, error: imagesError } = await supabase
         .from('gallery_images')
         .select('*')
@@ -125,8 +133,7 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
   const addCategory = async (category: Omit<GalleryCategory, 'id'>): Promise<GalleryCategory | null> => {
     const result = await addCategoryHook(category);
     if (result) {
-      // Force reload data to ensure we have the latest from the database
-      await loadGalleryData();
+      console.log('Category added:', result);
     }
     return result;
   };
@@ -134,8 +141,7 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
   const addImage = async (image: Omit<GalleryImage, 'id'>): Promise<GalleryImage | null> => {
     const result = await addImageHook(image);
     if (result) {
-      // Force reload data to ensure we have the latest from the database
-      await loadGalleryData();
+      console.log('Image added:', result);
     }
     return result;
   };

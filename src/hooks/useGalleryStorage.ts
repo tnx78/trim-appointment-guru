@@ -26,12 +26,26 @@ export function useGalleryStorage() {
         return null;
       }
 
+      // For demo mode or if storage is not available, use Data URL
+      if (localStorage.getItem('isAdmin') === 'true') {
+        console.log('Using data URL for demo mode');
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const imageUrl = reader.result as string;
+            toast.success('Image uploaded as data URL (demo mode)');
+            resolve(imageUrl);
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
       // Generate a unique file name
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // Always attempt to upload to Supabase storage
+      // Try to upload to Supabase storage
       const { data, error } = await supabase.storage
         .from('gallery')
         .upload(filePath, file, {
@@ -42,22 +56,16 @@ export function useGalleryStorage() {
       if (error) {
         console.error('Error uploading image to storage:', error);
         
-        // If storage fails but we have admin access, create a data URL as fallback
-        if (localStorage.getItem('isAdmin') === 'true' || isAdmin) {
-          console.log('Falling back to data URL after storage error');
-          return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const imageUrl = reader.result as string;
-              toast.success('Image uploaded as data URL (demo mode)');
-              resolve(imageUrl);
-            };
-            reader.readAsDataURL(file);
-          });
-        }
-        
-        toast.error('Error uploading image: ' + error.message);
-        return null;
+        // If storage fails, create a data URL as fallback
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const imageUrl = reader.result as string;
+            toast.success('Image uploaded as data URL (fallback)');
+            resolve(imageUrl);
+          };
+          reader.readAsDataURL(file);
+        });
       }
 
       // Get public URL for the uploaded image

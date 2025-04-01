@@ -46,7 +46,24 @@ export function useGalleryCategories() {
         category
       });
 
-      // Always try to insert into Supabase first
+      // For demo mode, prioritize local storage
+      if (localStorage.getItem('isAdmin') === 'true') {
+        console.log('Adding category in demo mode');
+        const newCategory = { 
+          id: crypto.randomUUID(), 
+          created_at: new Date().toISOString(),
+          ...category 
+        } as GalleryCategory;
+        
+        // Update local state
+        const updatedCategories = [...categories, newCategory];
+        setCategories(updatedCategories);
+        localStorage.setItem(DEMO_CATEGORIES_KEY, JSON.stringify(updatedCategories));
+        toast.success('Category added successfully (demo mode)');
+        return newCategory;
+      }
+
+      // If not in demo mode, try to insert into Supabase
       const { data, error } = await supabase
         .from('gallery_categories')
         .insert(category)
@@ -55,23 +72,6 @@ export function useGalleryCategories() {
         
       if (error) {
         console.error('Error adding category to database:', error);
-        
-        // Fall back to local storage in demo mode
-        if (localStorage.getItem('isAdmin') === 'true') {
-          console.log('Falling back to demo mode after database error');
-          const newCategory = { 
-            id: crypto.randomUUID(), 
-            created_at: new Date().toISOString(),
-            ...category 
-          } as GalleryCategory;
-          
-          // Update local state
-          setCategories(prev => [...prev, newCategory]);
-          localStorage.setItem(DEMO_CATEGORIES_KEY, JSON.stringify([...categories, newCategory]));
-          toast.success('Category added successfully (demo mode, local only)');
-          return newCategory;
-        }
-        
         toast.error('Error adding category: ' + error.message);
         return null;
       }
@@ -94,7 +94,7 @@ export function useGalleryCategories() {
   const updateCategory = async (category: GalleryCategory): Promise<GalleryCategory | null> => {
     try {
       // Handle demo mode
-      if (!isAuthenticated && localStorage.getItem('isAdmin') === 'true') {
+      if (localStorage.getItem('isAdmin') === 'true') {
         console.log('Updating category in demo mode');
         const updatedCategories = categories.map(c => c.id === category.id ? category : c);
         setCategories(updatedCategories);
@@ -142,7 +142,7 @@ export function useGalleryCategories() {
   const deleteCategory = async (id: string): Promise<void> => {
     try {
       // Handle demo mode
-      if (!isAuthenticated && localStorage.getItem('isAdmin') === 'true') {
+      if (localStorage.getItem('isAdmin') === 'true') {
         console.log('Deleting category in demo mode');
         const updatedCategories = categories.filter(c => c.id !== id);
         setCategories(updatedCategories);
