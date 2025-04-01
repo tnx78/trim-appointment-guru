@@ -45,6 +45,15 @@ export function ServiceList({ onServiceSelect }: { onServiceSelect: () => void }
                 <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {categoryServices.map((service) => (
                     <Card key={service.id} className="overflow-hidden">
+                      {service.image && (
+                        <div className="w-full h-40 overflow-hidden">
+                          <img 
+                            src={service.image} 
+                            alt={service.name} 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
                       <div className="p-6">
                         <h3 className="text-lg font-semibold">{service.name}</h3>
                         <p className="text-sm text-muted-foreground mt-1 mb-4">{service.description}</p>

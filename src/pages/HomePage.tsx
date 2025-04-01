@@ -1,9 +1,8 @@
-
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAppContext } from '@/context/AppContext';
-import { Scissors, Calendar, UserCheck, Clock } from 'lucide-react';
+import { Scissors, Calendar, UserCheck, Clock, DollarSign } from 'lucide-react';
 
 export default function HomePage() {
   const { services, appointments } = useAppContext();
@@ -51,6 +50,15 @@ export default function HomePage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.slice(0, 6).map((service) => (
               <Card key={service.id} className="overflow-hidden">
+                {service.image && (
+                  <div className="w-full h-40 overflow-hidden">
+                    <img 
+                      src={service.image} 
+                      alt={service.name} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
                 <div className="p-6">
                   <h3 className="text-lg font-semibold">{service.name}</h3>
                   <p className="text-sm text-muted-foreground mt-1 mb-4">{service.description}</p>
@@ -59,7 +67,10 @@ export default function HomePage() {
                       <Clock className="mr-1 h-4 w-4" />
                       {service.duration} min
                     </div>
-                    <div className="font-medium">${service.price.toFixed(2)}</div>
+                    <div className="flex items-center font-medium">
+                      <DollarSign className="h-4 w-4" />
+                      {service.price.toFixed(2)}
+                    </div>
                   </div>
                 </div>
               </Card>

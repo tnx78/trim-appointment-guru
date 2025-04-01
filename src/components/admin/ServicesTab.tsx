@@ -5,16 +5,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ServiceForm } from '@/components/admin/ServiceForm';
-import { PlusCircle, Edit, Trash2, Filter } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Filter, GripVertical } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
 export function ServicesTab() {
-  const { categories, services, deleteService } = useAppContext();
+  const { categories, services, deleteService, updateServiceOrder } = useAppContext();
   
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [editingService, setEditingService] = useState<typeof services[0] | undefined>(undefined);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
+  const [draggedService, setDraggedService] = useState<string | null>(null);
 
   const handleAddService = () => {
     setEditingService(undefined);
@@ -37,9 +38,58 @@ export function ServicesTab() {
     setEditingService(undefined);
   };
 
+  const handleDragStart = (e: React.DragEvent, serviceId: string) => {
+    setDraggedService(serviceId);
+    e.dataTransfer.effectAllowed = 'move';
+    // Use a transparent image as drag ghost to create custom drag preview
+    const img = new Image();
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    e.dataTransfer.setDragImage(img, 0, 0);
+  };
+
+  const handleDragOver = (e: React.DragEvent, serviceId: string) => {
+    e.preventDefault();
+    if (draggedService && draggedService !== serviceId) {
+      const draggedIndex = filteredServices.findIndex(s => s.id === draggedService);
+      const hoverIndex = filteredServices.findIndex(s => s.id === serviceId);
+      
+      if (draggedIndex !== -1 && hoverIndex !== -1) {
+        // Get all services in the same category
+        const categoryServices = selectedCategoryId === 'all' 
+          ? services 
+          : services.filter(s => s.categoryId === selectedCategoryId);
+          
+        // Create a new array to avoid mutations
+        const newServiceOrder = [...categoryServices];
+        const [draggedItem] = newServiceOrder.splice(draggedIndex, 1);
+        newServiceOrder.splice(hoverIndex, 0, draggedItem);
+        
+        // Update order for each service
+        const updatedServices = newServiceOrder.map((service, index) => ({
+          ...service,
+          order: index
+        }));
+        
+        // Update context with new order
+        updateServiceOrder(updatedServices);
+      }
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedService(null);
+  };
+
+  // Sort services by order
+  const sortedServices = [...services].sort((a, b) => {
+    const orderA = a.order !== undefined ? a.order : 0;
+    const orderB = b.order !== undefined ? b.order : 0;
+    return orderA - orderB;
+  });
+
   const filteredServices = selectedCategoryId === 'all' 
-    ? services 
-    : services.filter(service => service.categoryId === selectedCategoryId);
+    ? sortedServices 
+    : sortedServices.filter(service => service.categoryId === selectedCategoryId);
 
   return (
     <>
@@ -86,8 +136,18 @@ export function ServicesTab() {
               {filteredServices.map((service) => {
                 const category = categories.find(c => c.id === service.categoryId);
                 return (
-                  <div key={service.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div 
+                    key={service.id} 
+                    className={`flex items-center justify-between p-4 border rounded-lg ${draggedService === service.id ? 'opacity-50 bg-gray-100' : ''}`}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, service.id)}
+                    onDragOver={(e) => handleDragOver(e, service.id)}
+                    onDragEnd={handleDragEnd}
+                  >
                     <div className="flex items-center gap-4">
+                      <div className="cursor-move">
+                        <GripVertical className="h-5 w-5 text-muted-foreground" />
+                      </div>
                       {service.image && (
                         <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-100">
                           <img 

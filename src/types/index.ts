@@ -3,6 +3,7 @@ export interface ServiceCategory {
   id: string;
   name: string;
   description?: string;
+  order?: number; // Adding order property for drag and drop
 }
 
 export interface Service {
@@ -13,6 +14,7 @@ export interface Service {
   duration: number; // in minutes
   price: number;
   image?: string; // URL to the image
+  order?: number; // Adding order property for drag and drop
 }
 
 export interface Appointment {
