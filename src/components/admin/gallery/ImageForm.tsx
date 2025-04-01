@@ -31,12 +31,29 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
       setCategoryId(image.category_id);
       setPreviewUrl(image.image_url);
       setImageFile(null);
+    } else {
+      // Reset the form for new image
+      if (categories.length > 0) {
+        setCategoryId(categories[0].id);
+      }
     }
-  }, [image]);
+  }, [image, categories]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+      
       setImageFile(file);
       
       // Create a preview URL
@@ -61,11 +78,13 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
     e.preventDefault();
     
     if (!categoryId) {
+      alert('Please select a category');
       return;
     }
     
     // For a new image, we need an image file
     if (!image && !imageFile) {
+      alert('Please upload an image');
       return;
     }
 
@@ -79,6 +98,8 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
         image_url: image?.image_url || '',
         sort_order: image?.sort_order
       }, imageFile || undefined);
+    } catch (error) {
+      console.error('Error submitting image:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -181,7 +202,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
           type="submit"
           disabled={isSubmitting || (!image && !imageFile) || !categoryId}
         >
-          {image ? 'Update' : 'Add'} Image
+          {isSubmitting ? 'Saving...' : (image ? 'Update' : 'Add')} Image
         </Button>
       </div>
     </form>

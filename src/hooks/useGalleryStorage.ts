@@ -12,7 +12,7 @@ export function useGalleryStorage() {
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
       setIsUploading(true);
-      console.log('Uploading image...');
+      console.log('Uploading image...', file.name, file.type, file.size);
 
       // Validate file type
       if (!file.type.startsWith('image/')) {
@@ -30,6 +30,8 @@ export function useGalleryStorage() {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
+
+      console.log('Uploading to path:', filePath);
 
       // Upload to Supabase storage
       const { data, error } = await supabase.storage
@@ -71,11 +73,13 @@ export function useGalleryStorage() {
       const pathWithBucket = urlObj.pathname.split('/storage/v1/object/public/')[1];
       
       if (!pathWithBucket) {
-        console.error('Invalid storage URL format');
+        console.error('Invalid storage URL format', url);
+        toast.error('Invalid image URL format');
         return false;
       }
       
       const filePath = pathWithBucket.substring(bucketName.length + 1);
+      console.log('Deleting file from storage:', filePath);
       
       // Delete from storage
       const { error } = await supabase.storage

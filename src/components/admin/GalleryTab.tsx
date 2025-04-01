@@ -45,6 +45,9 @@ export function GalleryTab() {
     loadGalleryData();
   }, []);
 
+  console.log('Current categories:', categories);
+  console.log('Current images:', images);
+
   // Count images in each category
   const imageCountMap = categories.reduce((acc, category) => {
     acc[category.id] = getImagesByCategory(category.id).length;
@@ -74,6 +77,9 @@ export function GalleryTab() {
   // Handle image form submission
   const handleImageSubmit = async (imageData: Omit<GalleryImage, 'id'>, file?: File) => {
     try {
+      console.log('Submitting image data:', imageData);
+      console.log('File provided:', file ? file.name : 'No file');
+      
       let imageUrl = imageData.image_url;
       
       // If there's a new file, upload it first
@@ -101,6 +107,7 @@ export function GalleryTab() {
       setShowImageModal(false);
       setEditingImage(undefined);
     } catch (error: any) {
+      console.error('Failed to save image:', error);
       toast.error('Failed to save image: ' + error.message);
     }
   };
