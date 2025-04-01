@@ -5,14 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash, Edit, Image, Upload } from 'lucide-react';
+import { Plus, Trash, Edit, Image, Upload, AlertCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 export function GalleryTab() {
+  const navigate = useNavigate();
+  const { isAuthenticated, isAdmin } = useAuth();
+  
+  // Use try-catch to handle potential context errors
   let galleryContext;
   try {
     galleryContext = useGalleryContext();
@@ -21,7 +26,8 @@ export function GalleryTab() {
     return (
       <Card className="mt-4">
         <CardContent className="p-6 text-center">
-          <p className="text-muted-foreground mb-4">There was an error loading the gallery module. Please try refreshing the page.</p>
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <p className="text-muted-foreground mb-4">There was an error loading the gallery module. This may be due to a missing GalleryProvider.</p>
           <Button onClick={() => window.location.reload()}>
             Refresh Page
           </Button>
@@ -34,17 +40,16 @@ export function GalleryTab() {
     categories,
     images,
     isLoading,
+    error,
+    loadGalleryData,
     addCategory,
     updateCategory,
     deleteCategory,
     addImage,
     updateImage,
     deleteImage,
-    getImagesByCategory,
-    loadGalleryData
+    getImagesByCategory
   } = galleryContext;
-
-  const { isAuthenticated, isAdmin } = useAuth();
 
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
   const [editingCategory, setEditingCategory] = useState<any>(null);
@@ -54,17 +59,20 @@ export function GalleryTab() {
   const [isUploading, setIsUploading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  // Set selected category when categories are loaded
   useEffect(() => {
     if (categories.length > 0 && !selectedCategory) {
       setSelectedCategory(categories[0].id);
     }
   }, [categories, selectedCategory]);
   
+  // Load gallery data when authenticated
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && isAdmin) {
+      console.log('Loading gallery data from GalleryTab');
       loadGalleryData();
     }
-  }, [isAuthenticated, loadGalleryData]);
+  }, [isAuthenticated, isAdmin, loadGalleryData]);
 
   const handleFileUpload = async (file: File, category_id: string) => {
     try {
@@ -75,10 +83,11 @@ export function GalleryTab() {
       const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
       const filePath = `gallery/${fileName}`;
       
-      if (!isAuthenticated) {
-        throw new Error('You must be logged in to upload images');
+      if (!isAuthenticated || !isAdmin) {
+        throw new Error('You must be logged in as an admin to upload images');
       }
       
+      // Check if the gallery bucket exists, if not this will fail
       const { error: uploadError, data } = await supabase.storage
         .from('gallery')
         .upload(filePath, file);
@@ -194,12 +203,13 @@ export function GalleryTab() {
     }
   };
 
+  // If not authenticated, prompt user to log in
   if (!isAuthenticated) {
     return (
       <Card className="mt-4">
         <CardContent className="p-6 text-center">
           <p className="text-muted-foreground mb-4">You must be logged in as an admin to manage the gallery.</p>
-          <Button onClick={() => window.location.href = '/auth'}>
+          <Button onClick={() => navigate('/auth')}>
             Go to Login
           </Button>
         </CardContent>
@@ -207,8 +217,44 @@ export function GalleryTab() {
     );
   }
 
+  // If not admin, show appropriate message
+  if (isAuthenticated && !isAdmin) {
+    return (
+      <Card className="mt-4">
+        <CardContent className="p-6 text-center">
+          <p className="text-muted-foreground mb-4">Admin privileges are required to manage the gallery.</p>
+          <Button onClick={() => navigate('/')}>
+            Return to Home
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // If there's an error, display it
+  if (error) {
+    return (
+      <Card className="mt-4">
+        <CardContent className="p-6 text-center">
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <p className="text-muted-foreground mb-4">There was an error loading the gallery data: {error}</p>
+          <Button onClick={() => loadGalleryData()}>
+            Try Again
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // If loading, show loading indicator
   if (isLoading) {
-    return <div className="flex justify-center p-4">Loading gallery data...</div>;
+    return (
+      <Card className="mt-4">
+        <CardContent className="p-6 text-center">
+          <p className="text-muted-foreground">Loading gallery data...</p>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (

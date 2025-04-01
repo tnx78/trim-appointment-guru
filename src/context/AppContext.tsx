@@ -32,25 +32,20 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
 // Custom hook to use the combined context
 export const useAppContext = () => {
-  // First try to get contexts directly - if this fails, the providers aren't properly set up
-  try {
-    const categories = useCategoryContext();
-    const services = useServiceContext();
-    const appointments = useAppointmentContext();
-    const gallery = useGalleryContext();
-    const booking = useBookingContext();
+  // Get contexts directly
+  const categories = useCategoryContext();
+  const services = useServiceContext();
+  const appointments = useAppointmentContext();
+  const gallery = useGalleryContext();
+  const booking = useBookingContext();
 
-    return {
-      ...categories,
-      ...services,
-      ...appointments,
-      ...gallery,
-      ...booking
-    };
-  } catch (error) {
-    console.error('Error accessing context:', error);
-    throw new Error('useAppContext must be used within AppProvider');
-  }
+  return {
+    ...categories,
+    ...services,
+    ...appointments,
+    ...gallery,
+    ...booking
+  };
 };
 
 // Export all individual context hooks for direct use

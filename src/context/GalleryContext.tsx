@@ -27,6 +27,7 @@ interface GalleryContextType {
   categories: GalleryCategory[];
   images: GalleryImage[];
   isLoading: boolean;
+  error: string | null;
   loadGalleryData: () => Promise<void>;
   addCategory: (category: Omit<GalleryCategory, 'id'>) => Promise<GalleryCategory | null>;
   updateCategory: (category: GalleryCategory) => Promise<GalleryCategory | null>;
@@ -45,12 +46,14 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<GalleryCategory[]>([]);
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { isAuthenticated, isAdmin } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated, isAdmin, user } = useAuth();
 
   const loadGalleryData = async () => {
     try {
       setIsLoading(true);
-      console.log('Loading gallery data...');
+      setError(null);
+      console.log('Loading gallery data...', { isAuthenticated, isAdmin, userId: user?.id });
       
       // Fetch categories
       const { data: categoriesData, error: categoriesError } = await supabase
@@ -60,11 +63,12 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
       if (categoriesError) {
         console.error('Error fetching categories:', categoriesError);
+        setError(categoriesError.message);
         throw categoriesError;
       }
       
       console.log('Fetched categories:', categoriesData);
-      setCategories(categoriesData as GalleryCategory[]);
+      setCategories(categoriesData || []);
 
       // Fetch images
       const { data: imagesData, error: imagesError } = await supabase
@@ -74,13 +78,16 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
       if (imagesError) {
         console.error('Error fetching images:', imagesError);
+        setError(imagesError.message);
         throw imagesError;
       }
       
       console.log('Fetched images:', imagesData);
-      setImages(imagesData as GalleryImage[]);
+      setImages(imagesData || []);
+      
     } catch (error: any) {
       console.error('Error loading gallery data:', error.message);
+      setError(error.message);
       toast.error('Error loading gallery data: ' + error.message);
     } finally {
       setIsLoading(false);
@@ -89,14 +96,14 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
   const addCategory = async (category: Omit<GalleryCategory, 'id'>): Promise<GalleryCategory | null> => {
     try {
-      if (!isAuthenticated) {
-        const errorMessage = 'Authentication required to add categories';
+      if (!isAuthenticated || !isAdmin) {
+        const errorMessage = 'Admin authentication required to add categories';
         console.error(errorMessage);
         toast.error(errorMessage);
         return null;
       }
 
-      console.log('Adding category with auth status:', isAuthenticated);
+      console.log('Adding category with auth status:', { isAuthenticated, isAdmin });
       
       const { data, error } = await supabase
         .from('gallery_categories')
@@ -260,15 +267,23 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     return images.filter(image => image.category_id === categoryId);
   };
 
-  // Load gallery data on component mount
+  // Load gallery data on component mount or when authentication status changes
   useEffect(() => {
-    loadGalleryData();
-  }, []);
+    if (isAuthenticated) {
+      loadGalleryData();
+    } else {
+      // Clear data when not authenticated
+      setCategories([]);
+      setImages([]);
+      setError(null);
+    }
+  }, [isAuthenticated]);
 
   const value = {
     categories,
     images,
     isLoading,
+    error,
     loadGalleryData,
     addCategory,
     updateCategory,
