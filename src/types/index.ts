@@ -3,7 +3,8 @@ export interface ServiceCategory {
   id: string;
   name: string;
   description?: string;
-  order?: number; // Adding order property for drag and drop
+  order?: number; // This is for the order property
+  sort_order?: number; // Adding sort_order property for backward compatibility
 }
 
 export interface Service {

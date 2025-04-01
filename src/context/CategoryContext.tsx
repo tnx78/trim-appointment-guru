@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 interface CategoryContextType {
   categories: ServiceCategory[];
   addCategory: (category: Omit<ServiceCategory, 'id'>) => void;
-  updateCategory: (id: string, category: Partial<ServiceCategory>) => void;
+  updateCategory: (category: ServiceCategory) => void; // Changed to accept a single category object
   deleteCategory: (id: string) => void;
   updateCategoryOrder: (updatedCategories: ServiceCategory[]) => void;
   getCategoryById: (id: string) => ServiceCategory | undefined;
@@ -63,8 +63,11 @@ export function CategoryProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateCategory = async (id: string, updatedData: Partial<ServiceCategory>) => {
+  // Updated to accept a single category object with id
+  const updateCategory = async (category: ServiceCategory) => {
     try {
+      const { id, ...updatedData } = category;
+      
       const { error } = await supabase
         .from('categories')
         .update(updatedData)
@@ -72,8 +75,8 @@ export function CategoryProvider({ children }: { children: React.ReactNode }) {
       
       if (error) throw error;
       
-      setCategories(categories.map(category => 
-        category.id === id ? { ...category, ...updatedData } : category
+      setCategories(categories.map(cat => 
+        cat.id === id ? { ...cat, ...updatedData } : cat
       ));
       toast.success(`Category updated successfully`);
     } catch (error) {

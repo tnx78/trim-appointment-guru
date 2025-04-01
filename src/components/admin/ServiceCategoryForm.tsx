@@ -49,12 +49,16 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
       const formData = { 
         name, 
         description: description || undefined,
-        sort_order: category?.sort_order ?? (Date.now() % 1000)
+        // Use either sort_order or order property from category
+        sort_order: category?.sort_order ?? category?.order ?? (Date.now() % 1000)
       };
       
       if (category) {
-        // Make sure we pass the category ID and form data separately
-        updateCategory(category.id, formData);
+        // Fixed: Pass the data as a single object with id included
+        updateCategory({
+          id: category.id,
+          ...formData
+        });
         console.log('Updating category:', category.id, formData);
         toast.success(`Category "${name}" updated successfully`);
       } else {
