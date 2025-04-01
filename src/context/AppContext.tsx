@@ -5,6 +5,12 @@ import { ServiceProvider } from '@/context/ServiceContext';
 import { AppointmentProvider } from '@/context/AppointmentContext';
 import { BookingProvider } from '@/context/BookingContext';
 
+// Import the hooks
+import { useCategoryContext } from './CategoryContext';
+import { useServiceContext } from './ServiceContext';
+import { useAppointmentContext } from './AppointmentContext';
+import { useBookingContext } from './BookingContext';
+
 // Modified AppProvider to compose all the other providers
 export function AppProvider({ children }: { children: React.ReactNode }) {
   return (

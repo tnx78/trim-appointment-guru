@@ -1,4 +1,6 @@
 
+import { Service, ServiceCategory, Appointment } from '@/types';
+
 // Helper functions to convert between snake_case and camelCase
 export const toCamelCase = (str: string): string => {
   return str.replace(/(_\w)/g, (m) => m[1].toUpperCase());
