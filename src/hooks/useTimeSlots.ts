@@ -1,29 +1,100 @@
 
 import { TimeSlot, Appointment } from '@/types';
 import { format, parseISO } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
-// Generate time slots from 9:00 AM to 5:00 PM
-export function generateTimeSlots(): TimeSlot[] {
+// Fetch salon hours from database and generate time slots based on them
+export async function generateTimeSlots(date: Date): Promise<TimeSlot[]> {
   const slots: TimeSlot[] = [];
-  const startHour = 9; // 9:00 AM
-  const endHour = 17; // 5:00 PM
   
-  for (let hour = startHour; hour < endHour; hour++) {
-    ['00', '30'].forEach((minutes) => {
-      const time = `${hour}:${minutes}`;
+  try {
+    // Determine day of week (0 = Sunday, 1 = Monday, etc.)
+    const dayOfWeek = date.getDay();
+    
+    // Fetch salon hours for this day
+    const { data, error } = await supabase
+      .from('salon_hours')
+      .select('*')
+      .eq('day_of_week', dayOfWeek)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching salon hours:', error);
+      return slots; // Return empty slots if there's an error
+    }
+    
+    // Check if salon is open
+    if (!data || !data.is_open) {
+      return slots; // Return empty slots if salon is closed
+    }
+    
+    // Parse open and close times
+    const [openHour, openMinute] = data.open_time.split(':').map(n => parseInt(n));
+    const [closeHour, closeMinute] = data.close_time.split(':').map(n => parseInt(n));
+    
+    if (isNaN(openHour) || isNaN(openMinute) || isNaN(closeHour) || isNaN(closeMinute)) {
+      console.error('Invalid time format in salon hours:', data);
+      return slots;
+    }
+    
+    // Generate slots
+    let currentHour = openHour;
+    let currentMinute = openMinute;
+    
+    while (currentHour < closeHour || (currentHour === closeHour && currentMinute < closeMinute)) {
+      const time = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
       slots.push({
-        id: `slot-${hour}-${minutes}`,
+        id: `slot-${currentHour}-${currentMinute}`,
         time,
         available: true,
       });
-    });
+      
+      // Increment by 30 minutes
+      currentMinute += 30;
+      if (currentMinute >= 60) {
+        currentHour += 1;
+        currentMinute = 0;
+      }
+    }
+    
+    return slots;
+  } catch (error) {
+    console.error('Error generating time slots:', error);
+    return slots;
   }
-  
-  return slots;
 }
 
-export function getAvailableTimeSlots(date: Date, duration: number, appointments: Appointment[]) {
-  const baseSlots = generateTimeSlots();
+export async function getAvailableTimeSlots(date: Date, duration: number, appointments: Appointment[]) {
+  // Check if salon is closed for this date (day off)
+  try {
+    const { data, error } = await supabase
+      .from('salon_settings')
+      .select('value')
+      .eq('name', 'days_off')
+      .single();
+    
+    if (!error && data && data.value) {
+      try {
+        const daysOff = JSON.parse(data.value);
+        const isDayOff = daysOff.some((dayOff: any) => {
+          const dayOffDate = new Date(dayOff.date);
+          return dayOffDate.getFullYear() === date.getFullYear() &&
+                 dayOffDate.getMonth() === date.getMonth() &&
+                 dayOffDate.getDate() === date.getDate();
+        });
+        
+        if (isDayOff) {
+          return []; // Return empty slots if the salon is closed on this day
+        }
+      } catch (parseError) {
+        console.error('Error parsing days off data:', parseError);
+      }
+    }
+  } catch (error) {
+    console.error('Error checking if date is a day off:', error);
+  }
+  
+  const baseSlots = await generateTimeSlots(date);
   
   // Convert date to string for consistent comparison
   const dateString = date.toDateString();
@@ -90,10 +161,20 @@ export function getAvailableTimeSlots(date: Date, duration: number, appointments
   // Filter out slots where the service can't be completed before closing
   return baseSlots.filter(slot => {
     const [slotHour, slotMinute] = slot.time.split(':').map(n => parseInt(n));
+    if (isNaN(slotHour) || isNaN(slotMinute)) {
+      return false;
+    }
+    
     const slotTime = slotHour * 60 + slotMinute;
     const slotEnd = slotTime + duration;
     
-    // Salon closes at 5:00 PM (17:00)
-    return slotEnd <= 17 * 60 && slot.available;
+    // Get the day of week
+    const dayOfWeek = date.getDay();
+    
+    // We'll assume a default closing time of 17:00 (5 PM), which is 17 * 60 = 1020 minutes
+    // In a production app, you'd fetch this from the database
+    const defaultClosingTime = 17 * 60;
+    
+    return slotEnd <= defaultClosingTime && slot.available;
   });
 }

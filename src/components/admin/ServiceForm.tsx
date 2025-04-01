@@ -1,13 +1,15 @@
+
 import { useState, useEffect } from 'react';
-import { useAppContext } from '@/context/AppContext';
-import { Service, ServiceCategory } from '@/types';
+import { useCategoryContext } from '@/context/CategoryContext';
+import { useServiceContext } from '@/context/ServiceContext';
+import { Service } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Image, X } from 'lucide-react';
+import { Image, X, Loader2 } from 'lucide-react';
 
 interface ServiceFormProps {
   service?: Service;
@@ -15,7 +17,9 @@ interface ServiceFormProps {
 }
 
 export function ServiceForm({ service, onComplete }: ServiceFormProps) {
-  const { categories, addService, updateService } = useAppContext();
+  const { categories } = useCategoryContext();
+  const { addService, updateService } = useServiceContext();
+  
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -24,6 +28,7 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
   const [image, setImage] = useState<string | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fileInputKey, setFileInputKey] = useState<number>(Date.now());
+  const [isLoading, setIsLoading] = useState(false);
 
   const availableDurations = [15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180];
 
@@ -63,7 +68,7 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
     setFileInputKey(Date.now());
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -84,9 +89,11 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
       };
       
       if (service) {
-        updateService(service.id, formData);
+        await updateService(service.id, formData);
+        toast.success(`Service "${name}" updated successfully`);
       } else {
-        addService(formData);
+        await addService(formData);
+        toast.success(`Service "${name}" added successfully`);
       }
       
       setName('');
@@ -104,6 +111,14 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-40">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
@@ -113,11 +128,17 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
             <SelectValue placeholder="Select category" />
           </SelectTrigger>
           <SelectContent>
-            {categories.map((category) => (
-              <SelectItem key={category.id} value={category.id}>
-                {category.name}
+            {categories.length === 0 ? (
+              <SelectItem value="no-categories" disabled>
+                No categories available
               </SelectItem>
-            ))}
+            ) : (
+              categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
       </div>
@@ -221,7 +242,14 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {service ? 'Update' : 'Add'} Service
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {service ? 'Updating...' : 'Adding...'}
+            </>
+          ) : (
+            service ? 'Update Service' : 'Add Service'
+          )}
         </Button>
       </div>
     </form>

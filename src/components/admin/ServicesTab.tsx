@@ -1,23 +1,30 @@
 
-import { useState } from 'react';
-import { useAppContext } from '@/context/AppContext';
+import { useState, useEffect } from 'react';
+import { useCategoryContext } from '@/context/CategoryContext';
+import { useServiceContext } from '@/context/ServiceContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ServiceForm } from '@/components/admin/ServiceForm';
-import { PlusCircle, Edit, Trash2, Filter, GripVertical } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Filter, GripVertical, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
 export function ServicesTab() {
-  const { categories, services, deleteService, updateServiceOrder } = useAppContext();
+  const { categories } = useCategoryContext();
+  const { services, deleteService, updateServiceOrder } = useServiceContext();
   
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [editingService, setEditingService] = useState<typeof services[0] | undefined>(undefined);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const [draggedService, setDraggedService] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleAddService = () => {
+    if (categories.length === 0) {
+      toast.error('Please create at least one category before adding services');
+      return;
+    }
     setEditingService(undefined);
     setShowServiceModal(true);
   };
@@ -91,6 +98,16 @@ export function ServicesTab() {
     ? sortedServices 
     : sortedServices.filter(service => service.categoryId === selectedCategoryId);
 
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="py-10 flex justify-center items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <>
       <Card>
@@ -125,7 +142,12 @@ export function ServicesTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {filteredServices.length === 0 ? (
+          {categories.length === 0 ? (
+            <div className="text-center py-6 text-amber-600 bg-amber-50 rounded-md p-4 border border-amber-200">
+              <p className="font-medium">No categories found</p>
+              <p className="text-sm mt-1">Please create categories first before adding services.</p>
+            </div>
+          ) : filteredServices.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">
               {selectedCategoryId === 'all' 
                 ? 'No services yet. Create your first service to get started.' 
@@ -160,7 +182,7 @@ export function ServicesTab() {
                       <div>
                         <div className="font-medium">{service.name}</div>
                         <div className="text-sm text-muted-foreground">
-                          {category?.name} • {service.duration} min • ${service.price.toFixed(2)}
+                          {category?.name || 'Uncategorized'} • {service.duration} min • ${service.price.toFixed(2)}
                         </div>
                       </div>
                     </div>

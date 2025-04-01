@@ -21,109 +21,81 @@ export const useSalonHours = () => {
   const [daysOff, setDaysOff] = useState<DayOff[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   
-  // Load salon hours and days off from Supabase or fallback to localStorage
+  // Load salon hours and days off from Supabase
   useEffect(() => {
-    const loadHours = async () => {
+    const loadData = async () => {
       try {
-        // First try to load from Supabase
-        const { data: sessionData } = await supabase.auth.getSession();
-        const hasSession = !!sessionData.session || localStorage.getItem('isAdmin') === 'true';
-        
-        if (hasSession) {
-          // Try to load hours from salon_settings table
-          const { data: hoursData, error: hoursError } = await supabase
-            .from('salon_settings')
-            .select('*')
-            .eq('name', 'salon_hours')
-            .single();
-            
-          if (hoursData && !hoursError) {
-            setSalonHours(JSON.parse(hoursData.value));
-          } else {
-            // Fallback to localStorage
-            const savedHours = localStorage.getItem('salonHours');
-            setSalonHours(savedHours ? JSON.parse(savedHours) : defaultHours);
-            
-            // Save to Supabase if we have a session
-            if (sessionData.session) {
-              await supabase
-                .from('salon_settings')
-                .upsert({
-                  name: 'salon_hours',
-                  value: savedHours || JSON.stringify(defaultHours)
-                });
-            }
-          }
+        // Fetch salon hours
+        const { data: hoursData, error: hoursError } = await supabase
+          .from('salon_hours')
+          .select('*')
+          .order('day_of_week', { ascending: true });
           
-          // Try to load days off from salon_settings table
-          const { data: daysOffData, error: daysOffError } = await supabase
-            .from('salon_settings')
-            .select('*')
-            .eq('name', 'days_off')
-            .single();
-            
-          if (daysOffData && !daysOffError) {
+        if (hoursError) {
+          throw hoursError;
+        }
+        
+        if (hoursData && hoursData.length > 0) {
+          // Convert the database format to our app format
+          const hoursMap: SalonHours = { ...defaultHours };
+          
+          const dayMapping: { [key: number]: string } = {
+            0: 'sunday',
+            1: 'monday',
+            2: 'tuesday',
+            3: 'wednesday',
+            4: 'thursday',
+            5: 'friday',
+            6: 'saturday',
+          };
+          
+          hoursData.forEach(row => {
+            const dayName = dayMapping[row.day_of_week];
+            if (dayName) {
+              hoursMap[dayName] = {
+                isOpen: row.is_open,
+                openTime: row.open_time,
+                closeTime: row.close_time
+              };
+            }
+          });
+          
+          setSalonHours(hoursMap);
+        } else {
+          // No data, set default hours
+          setSalonHours(defaultHours);
+        }
+        
+        // Fetch days off
+        const { data: daysOffData, error: daysOffError } = await supabase
+          .from('salon_settings')
+          .select('*')
+          .eq('name', 'days_off')
+          .single();
+          
+        if (!daysOffError && daysOffData) {
+          try {
             const parsedDaysOff = JSON.parse(daysOffData.value);
             setDaysOff(parsedDaysOff.map((dayOff: any) => ({
               ...dayOff,
               date: new Date(dayOff.date)
             })));
-          } else {
-            // Fallback to localStorage
-            const savedDaysOff = localStorage.getItem('daysOff');
-            if (savedDaysOff) {
-              const parsedDaysOff = JSON.parse(savedDaysOff);
-              setDaysOff(parsedDaysOff.map((dayOff: any) => ({
-                ...dayOff,
-                date: new Date(dayOff.date)
-              })));
-              
-              // Save to Supabase if we have a session
-              if (sessionData.session) {
-                await supabase
-                  .from('salon_settings')
-                  .upsert({
-                    name: 'days_off',
-                    value: savedDaysOff
-                  });
-              }
-            }
+          } catch (parseError) {
+            console.error('Error parsing days off data:', parseError);
+            setDaysOff([]);
           }
         } else {
-          // No session, use localStorage only
-          const savedHours = localStorage.getItem('salonHours');
-          setSalonHours(savedHours ? JSON.parse(savedHours) : defaultHours);
-          
-          const savedDaysOff = localStorage.getItem('daysOff');
-          if (savedDaysOff) {
-            const parsedDaysOff = JSON.parse(savedDaysOff);
-            setDaysOff(parsedDaysOff.map((dayOff: any) => ({
-              ...dayOff,
-              date: new Date(dayOff.date)
-            })));
-          }
+          setDaysOff([]);
         }
       } catch (error) {
-        console.error('Error loading salon hours:', error);
-        // Fallback to localStorage on error
-        const savedHours = localStorage.getItem('salonHours');
-        setSalonHours(savedHours ? JSON.parse(savedHours) : defaultHours);
-        
-        const savedDaysOff = localStorage.getItem('daysOff');
-        if (savedDaysOff) {
-          const parsedDaysOff = JSON.parse(savedDaysOff);
-          setDaysOff(parsedDaysOff.map((dayOff: any) => ({
-            ...dayOff,
-            date: new Date(dayOff.date)
-          })));
-        }
+        console.error('Error loading salon data:', error);
+        toast.error('Failed to load salon data, using defaults');
       } finally {
         setIsInitialized(true);
       }
     };
     
-    loadHours();
-    
+    loadData();
   }, []);
 
   const isDateAvailable = (date: Date): boolean => {
@@ -151,30 +123,24 @@ export const useSalonHours = () => {
     setDaysOff(updatedDaysOff);
     
     try {
-      // Try to save to Supabase first
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (sessionData.session) {
-        // Store in Supabase
-        await supabase
-          .from('salon_settings')
-          .upsert({
-            name: 'days_off',
-            value: JSON.stringify(updatedDaysOff.map(d => ({
-              ...d,
-              date: d.date.toISOString()
-            })))
-          });
-      }
-      
-      // Always store in localStorage as backup
-      localStorage.setItem('daysOff', JSON.stringify(updatedDaysOff.map(d => ({
+      // Store in database
+      const serializedDaysOff = JSON.stringify(updatedDaysOff.map(d => ({
         ...d,
         date: d.date.toISOString()
-      }))));
+      })));
+      
+      const { data, error } = await supabase
+        .from('salon_settings')
+        .upsert({
+          name: 'days_off',
+          value: serializedDaysOff
+        }, {
+          onConflict: 'name'
+        });
+      
+      if (error) throw error;
       
       toast.success('Day off added successfully');
-      
     } catch (error) {
       console.error('Error saving day off:', error);
       toast.error('Failed to save day off');
@@ -188,30 +154,24 @@ export const useSalonHours = () => {
     setDaysOff(updatedDaysOff);
     
     try {
-      // Try to save to Supabase first
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (sessionData.session) {
-        // Update in Supabase
-        await supabase
-          .from('salon_settings')
-          .upsert({
-            name: 'days_off',
-            value: JSON.stringify(updatedDaysOff.map(d => ({
-              ...d,
-              date: d.date.toISOString()
-            })))
-          });
-      }
-      
-      // Always update localStorage as backup
-      localStorage.setItem('daysOff', JSON.stringify(updatedDaysOff.map(d => ({
+      // Update in database
+      const serializedDaysOff = JSON.stringify(updatedDaysOff.map(d => ({
         ...d,
         date: d.date.toISOString()
-      }))));
+      })));
+      
+      const { error } = await supabase
+        .from('salon_settings')
+        .upsert({
+          name: 'days_off',
+          value: serializedDaysOff
+        }, {
+          onConflict: 'name'
+        });
+      
+      if (error) throw error;
       
       toast.success('Day off removed successfully');
-      
     } catch (error) {
       console.error('Error removing day off:', error);
       toast.error('Failed to remove day off');

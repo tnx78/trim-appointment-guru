@@ -10,8 +10,6 @@ import { Label } from '@/components/ui/label';
 import { useSalonHours } from '@/hooks/use-salon-hours';
 import { toast } from 'sonner';
 import { Calendar as CalendarIcon, Trash2, Loader2 } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 
 export function DayOffTab() {
   const { daysOff, addDayOff, removeDayOff, isInitialized } = useSalonHours();
@@ -19,7 +17,6 @@ export function DayOffTab() {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { isAuthenticated } = useAuth();
   
   const handleAddDayOff = async () => {
     if (!selectedDate) {
@@ -30,14 +27,6 @@ export function DayOffTab() {
     setIsSubmitting(true);
     
     try {
-      // Check for a valid authentication session
-      const { data: sessionData } = await supabase.auth.getSession();
-      const isDemoMode = localStorage.getItem('isAdmin') === 'true';
-      
-      if (!sessionData.session && !isDemoMode) {
-        throw new Error('No active session found. Please log in again or use Demo Mode.');
-      }
-      
       await addDayOff({
         date: selectedDate,
         reason: reason.trim() || 'Closed'
@@ -56,14 +45,6 @@ export function DayOffTab() {
   
   const handleRemoveDayOff = async (id: string) => {
     try {
-      // Check for a valid authentication session
-      const { data: sessionData } = await supabase.auth.getSession();
-      const isDemoMode = localStorage.getItem('isAdmin') === 'true';
-      
-      if (!sessionData.session && !isDemoMode) {
-        throw new Error('No active session found. Please log in again or use Demo Mode.');
-      }
-      
       await removeDayOff(id);
     } catch (error: any) {
       console.error('Error removing day off:', error);
@@ -99,18 +80,12 @@ export function DayOffTab() {
               <CardTitle>Days Off</CardTitle>
               <CardDescription>Manage days when the salon will be closed</CardDescription>
             </div>
-            <Button onClick={openAddDayOffDialog} disabled={!isAuthenticated && localStorage.getItem('isAdmin') !== 'true'}>
+            <Button onClick={openAddDayOffDialog}>
               Add Day Off
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          {!isAuthenticated && localStorage.getItem('isAdmin') !== 'true' ? (
-            <div className="bg-amber-100 border border-amber-300 text-amber-800 p-4 rounded-md mb-4">
-              You must be logged in to add or remove days off. Please login to continue.
-            </div>
-          ) : null}
-          
           {sortedDaysOff.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">
               No days off have been scheduled.
@@ -135,7 +110,6 @@ export function DayOffTab() {
                     variant="ghost" 
                     size="icon" 
                     onClick={() => handleRemoveDayOff(dayOff.id)}
-                    disabled={!isAuthenticated && localStorage.getItem('isAdmin') !== 'true'}
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
