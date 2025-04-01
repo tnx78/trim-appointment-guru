@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Service, ServiceCategory, Appointment, TimeSlot } from '@/types';
 import { toast } from 'sonner';
@@ -421,33 +422,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ];
       
       // Batch insert all scheduled emails
-      const { data, error } = await supabase
-        .from('scheduled_emails')
-        .insert(
-          emailSchedules.map(schedule => ({
+      for (const schedule of emailSchedules) {
+        const { error } = await supabase
+          .from('scheduled_emails')
+          .insert({
             appointment_id: appointmentId,
             template_name: schedule.template_name,
             send_at: schedule.send_at.toISOString(),
-          }))
-        );
-        
-      if (error) {
-        console.error('Error scheduling emails:', error);
-      } else {
-        console.log('Emails scheduled successfully');
-        
-        // Trigger immediate processing of emails
-        fetch(`${supabase.supabaseUrl}/functions/v1/process-emails`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabase.supabaseKey}`
-          },
-          body: JSON.stringify({ process: 'immediate' })
-        }).catch(err => {
-          console.error('Error triggering email processing:', err);
-        });
+          });
+          
+        if (error) {
+          console.error('Error scheduling email:', error);
+        }
       }
+      
+      console.log('Emails scheduled successfully');
+      
+      // Trigger immediate processing of emails
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-emails`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({ process: 'immediate' })
+      }).catch(err => {
+        console.error('Error triggering email processing:', err);
+      });
     } catch (error) {
       console.error('Error in scheduleEmailsForAppointment:', error);
     }
@@ -517,7 +518,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       
       // Schedule an email notification based on the update type
       if (updatedData.status === 'confirmed' && appointment) {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('scheduled_emails')
           .insert({
             appointment_id: id,
@@ -529,11 +530,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           console.error('Error scheduling confirmation email:', error);
         } else {
           // Trigger email processing
-          fetch(`${supabase.supabaseUrl}/functions/v1/process-emails`, {
+          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-emails`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabase.supabaseKey}`
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
             },
             body: JSON.stringify({ process: 'immediate' })
           }).catch(err => {
@@ -564,7 +565,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       
       // Schedule cancellation email
-      const { data, error: emailError } = await supabase
+      const { error: emailError } = await supabase
         .from('scheduled_emails')
         .insert({
           appointment_id: id,
@@ -576,11 +577,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         console.error('Error scheduling cancellation email:', emailError);
       } else {
         // Trigger email processing
-        fetch(`${supabase.supabaseUrl}/functions/v1/process-emails`, {
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-emails`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabase.supabaseKey}`
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
           },
           body: JSON.stringify({ process: 'immediate' })
         }).catch(err => {

@@ -19,6 +19,14 @@ interface EmailTemplate {
   updated_at: string;
 }
 
+interface SalonSetting {
+  id: string;
+  name: string;
+  value: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export function EmailTemplatesTab() {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,11 +170,11 @@ export function EmailTemplatesTab() {
   
   const triggerEmailProcessing = async () => {
     try {
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/process-emails`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-emails`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.supabaseKey}`
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify({ process: 'manual' })
       });

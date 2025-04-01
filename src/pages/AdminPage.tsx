@@ -35,7 +35,7 @@ export default function AdminPage() {
       </div>
 
       <Tabs defaultValue="appointments" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7 md:grid-cols-7 overflow-auto">
           <TabsTrigger value="appointments">Appointments</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
