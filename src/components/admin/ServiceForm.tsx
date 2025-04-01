@@ -43,6 +43,11 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onloadend = () => {
         setImage(reader.result as string);
@@ -172,7 +177,7 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
             </div>
           )}
           <div className="text-sm text-muted-foreground">
-            {image ? "Click the X to remove the image" : "Click to upload an image"}
+            {image ? "Click the X to remove the image" : "Click to upload an image (max 5MB)"}
           </div>
         </div>
       </div>

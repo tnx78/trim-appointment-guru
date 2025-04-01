@@ -111,6 +111,7 @@ export type Database = {
           description: string | null
           duration: number
           id: string
+          image: string | null
           name: string
           order: number | null
           price: number
@@ -121,6 +122,7 @@ export type Database = {
           description?: string | null
           duration: number
           id?: string
+          image?: string | null
           name: string
           order?: number | null
           price: number
@@ -131,6 +133,7 @@ export type Database = {
           description?: string | null
           duration?: number
           id?: string
+          image?: string | null
           name?: string
           order?: number | null
           price?: number

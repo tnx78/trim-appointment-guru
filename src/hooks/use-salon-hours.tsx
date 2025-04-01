@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { SalonHours } from '@/components/admin/SalonHoursTab';
+import { DayOff } from '@/types';
 
 export const useSalonHours = () => {
   const defaultHours: SalonHours = {
@@ -15,11 +16,22 @@ export const useSalonHours = () => {
   };
 
   const [salonHours, setSalonHours] = useState<SalonHours>(defaultHours);
+  const [daysOff, setDaysOff] = useState<DayOff[]>([]);
   
   useEffect(() => {
     const loadHours = () => {
       const savedHours = localStorage.getItem('salonHours');
       setSalonHours(savedHours ? JSON.parse(savedHours) : defaultHours);
+      
+      const savedDaysOff = localStorage.getItem('daysOff');
+      if (savedDaysOff) {
+        // Convert string dates back to Date objects
+        const parsedDaysOff = JSON.parse(savedDaysOff);
+        setDaysOff(parsedDaysOff.map((dayOff: any) => ({
+          ...dayOff,
+          date: new Date(dayOff.date)
+        })));
+      }
     };
     
     loadHours();
@@ -33,15 +45,54 @@ export const useSalonHours = () => {
   }, []);
 
   const isDateAvailable = (date: Date): boolean => {
-    // Get the day of the week as lowercase string
-    const dayOfWeek = format(date, 'EEEE').toLowerCase();
+    // First check if the date is a day off
+    const isDayOff = daysOff.some(dayOff => 
+      dayOff.date.getFullYear() === date.getFullYear() &&
+      dayOff.date.getMonth() === date.getMonth() &&
+      dayOff.date.getDate() === date.getDate()
+    );
     
-    // Check if the salon is open on that day
+    if (isDayOff) return false;
+    
+    // Then check if the salon is open on that day
+    const dayOfWeek = format(date, 'EEEE').toLowerCase();
     return salonHours[dayOfWeek]?.isOpen || false;
+  };
+
+  const addDayOff = (dayOff: Omit<DayOff, 'id'>) => {
+    const newDayOff = {
+      id: crypto.randomUUID(),
+      ...dayOff
+    };
+    
+    const updatedDaysOff = [...daysOff, newDayOff];
+    setDaysOff(updatedDaysOff);
+    
+    // Store in localStorage with date converted to string
+    localStorage.setItem('daysOff', JSON.stringify(updatedDaysOff.map(d => ({
+      ...d,
+      date: d.date.toISOString()
+    }))));
+    
+    return newDayOff;
+  };
+
+  const removeDayOff = (id: string) => {
+    const updatedDaysOff = daysOff.filter(day => day.id !== id);
+    setDaysOff(updatedDaysOff);
+    
+    // Store in localStorage with date converted to string
+    localStorage.setItem('daysOff', JSON.stringify(updatedDaysOff.map(d => ({
+      ...d,
+      date: d.date.toISOString()
+    }))));
   };
 
   return {
     salonHours,
-    isDateAvailable
+    daysOff,
+    isDateAvailable,
+    addDayOff,
+    removeDayOff
   };
 };

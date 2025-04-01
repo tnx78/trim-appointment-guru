@@ -34,3 +34,9 @@ export interface TimeSlot {
   time: string;
   available: boolean;
 }
+
+export interface DayOff {
+  id: string;
+  date: Date;
+  reason?: string;
+}
