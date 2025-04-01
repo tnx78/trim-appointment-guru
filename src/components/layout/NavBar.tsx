@@ -44,7 +44,7 @@ export function NavBar() {
                 Book Now
               </Link>
               
-              {isAuthenticated && !isAdmin && (
+              {isAuthenticated && (
                 <Link
                   to="/my-appointments"
                   className={cn(
@@ -88,9 +88,14 @@ export function NavBar() {
               </Button>
             </>
           ) : (
-            <Button asChild>
-              <Link to="/auth">Login / Register</Link>
-            </Button>
+            <>
+              <Button asChild>
+                <Link to="/auth">Login / Register</Link>
+              </Button>
+              <Button variant="link" asChild size="sm" className="text-muted-foreground">
+                <Link to="/admin">Admin</Link>
+              </Button>
+            </>
           )}
         </div>
       </div>

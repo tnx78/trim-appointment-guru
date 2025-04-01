@@ -15,12 +15,14 @@ export function useAppointmentManager() {
   useEffect(() => {
     async function fetchAppointments() {
       try {
+        // Simple query without any joins to auth.users
         const { data, error } = await supabase
           .from('appointments')
           .select('*');
         
         if (error) {
           console.error('Error fetching appointments:', error);
+          toast.error('Failed to load appointments');
           setAppointments([]);
           return;
         }
@@ -32,6 +34,7 @@ export function useAppointmentManager() {
         }
       } catch (error) {
         console.error('Error in appointment fetching process:', error);
+        toast.error('Failed to load appointments');
         setAppointments([]);
       } finally {
         setIsLoading(false);

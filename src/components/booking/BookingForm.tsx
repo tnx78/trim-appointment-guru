@@ -44,11 +44,7 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
   // Handle booking submission
   const handleSubmit = async (formData: { name: string; email: string; phone: string }) => {
     if (!selectedService || !selectedDate || !selectedTime) {
-      toast({
-        title: "Missing information",
-        description: "Please select a service, date, and time.",
-        variant: "destructive"
-      });
+      toast.error("Missing information. Please select a service, date, and time.");
       return;
     }
     
@@ -58,7 +54,7 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
       // Format date object to YYYY-MM-DD string
       const formattedDate = selectedDate.toISOString().split('T')[0];
       
-      // Create appointment data object - don't reference the users table
+      // Create appointment data object without referencing the users table
       const appointmentData = {
         service_id: selectedService.id,
         client_name: formData.name,
@@ -68,10 +64,10 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
         start_time: selectedTime,
         end_time: calculateEndTime(selectedTime, selectedService.duration),
         status: 'confirmed',
-        user_id: user?.id || null
+        user_id: user?.id || null // Just pass the user ID directly if available
       };
       
-      // Insert appointment - don't use any joins or references to auth.users
+      // Insert appointment without any joins to auth.users
       const { data, error } = await supabase
         .from('appointments')
         .insert(appointmentData)
