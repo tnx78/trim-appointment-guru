@@ -6,6 +6,14 @@ import { AppointmentProvider, useAppointmentContext } from './AppointmentContext
 import { GalleryProvider, useGalleryContext } from './GalleryContext';
 import { BookingProvider, useBookingContext } from './BookingContext';
 
+// Define a type for the context to avoid using any
+interface AppContextType {
+  [key: string]: any;
+}
+
+// Create empty context with proper type
+const AppContext = createContext<AppContextType | undefined>(undefined);
+
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <CategoryProvider>
@@ -22,20 +30,27 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+// Custom hook to use the combined context
 export const useAppContext = () => {
-  const categories = useCategoryContext();
-  const services = useServiceContext();
-  const appointments = useAppointmentContext();
-  const gallery = useGalleryContext();
-  const booking = useBookingContext();
+  // First try to get contexts directly - if this fails, the providers aren't properly set up
+  try {
+    const categories = useCategoryContext();
+    const services = useServiceContext();
+    const appointments = useAppointmentContext();
+    const gallery = useGalleryContext();
+    const booking = useBookingContext();
 
-  return {
-    ...categories,
-    ...services,
-    ...appointments,
-    ...gallery,
-    ...booking
-  };
+    return {
+      ...categories,
+      ...services,
+      ...appointments,
+      ...gallery,
+      ...booking
+    };
+  } catch (error) {
+    console.error('Error accessing context:', error);
+    throw new Error('useAppContext must be used within AppProvider');
+  }
 };
 
 // Export all individual context hooks for direct use

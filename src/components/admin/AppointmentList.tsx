@@ -1,11 +1,20 @@
 
 import React, { useState } from 'react';
-import { useAppContext } from '@/context/AppContext';
+import { useServiceContext } from '@/context/ServiceContext';
+import { useAppointmentContext } from '@/context/AppointmentContext';
 import { DateFilterCard } from './DateFilterCard';
 import { AppointmentListCard } from './AppointmentListCard';
 
 export function AppointmentList() {
-  const { appointments, getServiceById, updateAppointment, cancelAppointment, getAppointmentDates } = useAppContext();
+  // Use the specific contexts needed instead of the combined useAppContext
+  const { getServiceById } = useServiceContext();
+  const { 
+    appointments, 
+    updateAppointment, 
+    cancelAppointment, 
+    getAppointmentDates 
+  } = useAppointmentContext();
+  
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [view, setView] = useState<'all' | 'upcoming' | 'past'>('upcoming');
   const [showAllDates, setShowAllDates] = useState(true);
