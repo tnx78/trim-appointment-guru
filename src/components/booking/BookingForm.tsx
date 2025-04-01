@@ -69,14 +69,12 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
         start_time: selectedTime,
         // Calculate end time based on service duration
         end_time: calculateEndTime(selectedTime, selectedService.duration),
-        status: 'pending'
+        status: 'pending',
+        // Only add user_id if the user is authenticated
+        user_id: user?.id || null
       };
       
-      // Only add user_id if the user is authenticated
-      if (user?.id) {
-        appointmentData['user_id'] = user.id;
-      }
-      
+      // Insert appointment without referencing the users table
       const { data, error } = await supabase
         .from('appointments')
         .insert(appointmentData)
