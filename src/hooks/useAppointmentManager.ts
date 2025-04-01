@@ -19,20 +19,19 @@ export function useAppointmentManager() {
           .from('appointments')
           .select('*');
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching appointments:', error);
+          setAppointments([]);
+          return;
+        }
         
-        // Make sure data exists before mapping it
         if (data) {
           setAppointments(data.map(mapAppointmentFromDB));
         } else {
           setAppointments([]);
         }
-      } catch (error: any) {
-        console.error('Error fetching appointments:', error);
-        // Only show toast on specific errors, not when the user doesn't have permission
-        if (error.code !== 'PGRST116') {
-          toast.error('Failed to load appointments');
-        }
+      } catch (error) {
+        console.error('Error in appointment fetching process:', error);
         setAppointments([]);
       } finally {
         setIsLoading(false);

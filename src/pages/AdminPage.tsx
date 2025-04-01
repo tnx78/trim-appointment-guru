@@ -11,9 +11,10 @@ import { AdminLogin } from '@/components/admin/AdminLogin';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
 
 export default function AdminPage() {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, isAdmin } = useAuth();
   
   // This will help for showing tabs on mobile
   useEffect(() => {
@@ -22,6 +23,11 @@ export default function AdminPage() {
   
   if (!isAuthenticated) {
     return <AdminLogin />;
+  }
+  
+  // Redirect non-admin users away from admin page
+  if (isAuthenticated && !isAdmin) {
+    return <Navigate to="/" />;
   }
 
   return (
@@ -35,7 +41,7 @@ export default function AdminPage() {
       </div>
 
       <Tabs defaultValue="appointments" className="w-full">
-        <TabsList className="grid w-full grid-cols-7 md:grid-cols-7 overflow-auto">
+        <TabsList className="grid w-full grid-cols-6 md:grid-cols-6 overflow-auto">
           <TabsTrigger value="appointments">Appointments</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>

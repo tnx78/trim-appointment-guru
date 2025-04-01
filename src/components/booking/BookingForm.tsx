@@ -4,14 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { useBookingContext } from '@/context/BookingContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { BookingProgressBar } from './BookingProgressBar';
 import { UserInfoForm } from './UserInfoForm';
 import { useAuth } from '@/context/AuthContext';
 
 const BookingForm = ({ onBack }: { onBack?: () => void }) => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { user } = useAuth();
   const { 
     selectedService, 
@@ -59,7 +58,7 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
       // Format date object to YYYY-MM-DD string
       const formattedDate = selectedDate.toISOString().split('T')[0];
       
-      // Create appointment data object
+      // Create appointment data object - don't reference the users table
       const appointmentData = {
         service_id: selectedService.id,
         client_name: formData.name,
@@ -67,33 +66,28 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
         client_phone: formData.phone || null,
         date: formattedDate,
         start_time: selectedTime,
-        // Calculate end time based on service duration
         end_time: calculateEndTime(selectedTime, selectedService.duration),
-        status: 'pending',
-        // Only add user_id if the user is authenticated
+        status: 'confirmed',
         user_id: user?.id || null
       };
       
-      console.log("Submitting appointment data:", appointmentData);
-      
-      // Insert appointment without referencing the users table
+      // Insert appointment - don't use any joins or references to auth.users
       const { data, error } = await supabase
         .from('appointments')
         .insert(appointmentData)
         .select();
         
       if (error) {
-        console.error("Supabase error:", error);
-        throw error;
+        console.error("Booking error:", error);
+        throw new Error(`Failed to create appointment: ${error.message}`);
       }
-      
-      console.log("Appointment created successfully:", data);
       
       // Reset booking context state
       resetBookingState();
       
       // Navigate to confirmation page
       if (data && data.length > 0) {
+        toast.success("Appointment booked successfully!");
         navigate('/confirmation', { 
           state: { 
             appointment: data[0],
@@ -105,11 +99,7 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
       }
     } catch (error: any) {
       console.error("Error creating appointment:", error);
-      toast({
-        title: "Error creating appointment",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error(error.message || "Failed to book appointment");
     } finally {
       setLoading(false);
     }
@@ -119,7 +109,6 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
     <Card className="w-full max-w-4xl mx-auto">
       <CardContent className="p-6">
         <BookingProgressBar activeStep={3} />
-
         <div>
           <h1 className="text-3xl font-bold mb-2">Your Information</h1>
           <p className="text-muted-foreground mb-6">Please enter your details to complete the booking</p>

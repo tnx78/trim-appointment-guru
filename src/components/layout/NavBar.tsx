@@ -31,26 +31,33 @@ export function NavBar() {
           >
             Home
           </Link>
-          <Link
-            to="/services"
-            className={cn(
-              "text-sm font-medium transition-colors hover:text-primary",
-              isActive('/services') || isActive('/book') ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            Book Now
-          </Link>
-          {isAuthenticated && (
-            <Link
-              to="/my-appointments"
-              className={cn(
-                "text-sm font-medium transition-colors hover:text-primary",
-                isActive('/my-appointments') ? "text-primary" : "text-muted-foreground"
+          
+          {!isAdmin && (
+            <>
+              <Link
+                to="/services"
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-primary",
+                  isActive('/services') || isActive('/book') ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                Book Now
+              </Link>
+              
+              {isAuthenticated && !isAdmin && (
+                <Link
+                  to="/my-appointments"
+                  className={cn(
+                    "text-sm font-medium transition-colors hover:text-primary",
+                    isActive('/my-appointments') ? "text-primary" : "text-muted-foreground"
+                  )}
+                >
+                  My Appointments
+                </Link>
               )}
-            >
-              My Appointments
-            </Link>
+            </>
           )}
+          
           {isAdmin && (
             <Link
               to="/admin"
@@ -67,12 +74,14 @@ export function NavBar() {
         <div className="ml-auto flex items-center space-x-4">
           {isAuthenticated ? (
             <>
-              <Button variant="ghost" asChild>
-                <Link to="/account">
-                  <UserCircle className="h-5 w-5 mr-2" />
-                  My Account
-                </Link>
-              </Button>
+              {!isAdmin && (
+                <Button variant="ghost" asChild>
+                  <Link to="/account">
+                    <UserCircle className="h-5 w-5 mr-2" />
+                    My Account
+                  </Link>
+                </Button>
+              )}
               <Button variant="outline" onClick={() => logout()} size="sm">
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
