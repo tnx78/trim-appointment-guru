@@ -2,10 +2,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Scissors } from 'lucide-react';
+import { Scissors, UserCircle, LogOut } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export function NavBar() {
   const location = useLocation();
+  const { isAuthenticated, logout, isAdmin } = useAuth();
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -38,21 +40,49 @@ export function NavBar() {
           >
             Book Now
           </Link>
-          <Link
-            to="/admin"
-            className={cn(
-              "text-sm font-medium transition-colors hover:text-primary",
-              isActive('/admin') ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            Admin
-          </Link>
+          {isAuthenticated && (
+            <Link
+              to="/my-appointments"
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-primary",
+                isActive('/my-appointments') ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              My Appointments
+            </Link>
+          )}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-primary",
+                isActive('/admin') ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              Admin
+            </Link>
+          )}
         </nav>
         
         <div className="ml-auto flex items-center space-x-4">
-          <Button asChild>
-            <Link to="/admin">Salon Admin</Link>
-          </Button>
+          {isAuthenticated ? (
+            <>
+              <Button variant="ghost" asChild>
+                <Link to="/account">
+                  <UserCircle className="h-5 w-5 mr-2" />
+                  My Account
+                </Link>
+              </Button>
+              <Button variant="outline" onClick={() => logout()} size="sm">
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </>
+          ) : (
+            <Button asChild>
+              <Link to="/auth">Login / Register</Link>
+            </Button>
+          )}
         </div>
       </div>
     </header>
