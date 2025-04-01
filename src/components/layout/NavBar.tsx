@@ -8,7 +8,7 @@ import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMe
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export function NavBar() {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, isAdmin } = useAuth();
   const isMobile = useIsMobile();
 
   // Get first letter of user name for avatar
@@ -43,28 +43,34 @@ export function NavBar() {
                 </NavigationMenuLink>
               </Link>
             </NavigationMenuItem>
+            
+            <NavigationMenuItem>
+              <Link to="/gallery">
+                <NavigationMenuLink className="px-4 py-2">
+                  Gallery
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
 
-            {isAuthenticated && (
-              <>
-                <NavigationMenuItem>
-                  <Link to="/my-appointments">
-                    <NavigationMenuLink className="px-4 py-2">
-                      My Bookings
-                    </NavigationMenuLink>
-                  </Link>
-                </NavigationMenuItem>
+            {isAuthenticated && !isAdmin && (
+              <NavigationMenuItem>
+                <Link to="/my-appointments">
+                  <NavigationMenuLink className="px-4 py-2">
+                    My Bookings
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+            )}
                 
-                {/* Check for admin role in user metadata or use localStorage fallback */}
-                {(user?.app_metadata?.isAdmin || localStorage.getItem('isAdmin') === 'true') && (
-                  <NavigationMenuItem>
-                    <Link to="/admin">
-                      <NavigationMenuLink className="px-4 py-2">
-                        Admin
-                      </NavigationMenuLink>
-                    </Link>
-                  </NavigationMenuItem>
-                )}
-              </>
+            {/* Check for admin role in user metadata or use localStorage fallback */}
+            {(user?.app_metadata?.isAdmin || localStorage.getItem('isAdmin') === 'true') && (
+              <NavigationMenuItem>
+                <Link to="/admin">
+                  <NavigationMenuLink className="px-4 py-2">
+                    Admin
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
             )}
           </NavigationMenuList>
         </NavigationMenu>
@@ -76,13 +82,15 @@ export function NavBar() {
 
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
-              <Link to="/account">
-                <Avatar>
-                  {/* Use optional chaining and check for user_metadata for avatar */}
-                  <AvatarImage src={user?.user_metadata?.avatar || undefined} />
-                  <AvatarFallback>{getInitials()}</AvatarFallback>
-                </Avatar>
-              </Link>
+              {!isAdmin && (
+                <Link to="/account">
+                  <Avatar>
+                    {/* Use optional chaining and check for user_metadata for avatar */}
+                    <AvatarImage src={user?.user_metadata?.avatar || undefined} />
+                    <AvatarFallback>{getInitials()}</AvatarFallback>
+                  </Avatar>
+                </Link>
+              )}
               <Button variant="outline" size="sm" onClick={() => logout()}>
                 Logout
               </Button>

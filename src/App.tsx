@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
 import AccountPage from "./pages/AccountPage";
 import MyAppointmentsPage from "./pages/MyAppointmentsPage";
+import GalleryPage from "./pages/GalleryPage";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/account" element={<AccountPage />} />
                 <Route path="/my-appointments" element={<MyAppointmentsPage />} />
+                <Route path="/gallery" element={<GalleryPage />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>

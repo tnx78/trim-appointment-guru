@@ -7,6 +7,7 @@ import { AppointmentList } from '@/components/admin/AppointmentList';
 import { SalonHoursTab } from '@/components/admin/SalonHoursTab';
 import { DayOffTab } from '@/components/admin/DayOffTab';
 import { EmailTemplatesTab } from '@/components/admin/EmailTemplatesTab';
+import { GalleryTab } from '@/components/admin/GalleryTab';
 import { AdminLogin } from '@/components/admin/AdminLogin';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -41,13 +42,14 @@ export default function AdminPage() {
       </div>
 
       <Tabs defaultValue="appointments" className="w-full">
-        <TabsList className="grid w-full grid-cols-6 md:grid-cols-6 overflow-auto">
+        <TabsList className="grid w-full grid-cols-7 md:grid-cols-7 overflow-auto">
           <TabsTrigger value="appointments">Appointments</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="hours">Opening Hours</TabsTrigger>
           <TabsTrigger value="daysoff">Days Off</TabsTrigger>
           <TabsTrigger value="emails">Emails</TabsTrigger>
+          <TabsTrigger value="gallery">Gallery</TabsTrigger>
         </TabsList>
         
         <TabsContent value="appointments" className="pt-6">
@@ -72,6 +74,10 @@ export default function AdminPage() {
         
         <TabsContent value="emails" className="pt-6">
           <EmailTemplatesTab />
+        </TabsContent>
+        
+        <TabsContent value="gallery" className="pt-6">
+          <GalleryTab />
         </TabsContent>
       </Tabs>
     </div>
