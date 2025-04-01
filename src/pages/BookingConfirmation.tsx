@@ -17,6 +17,7 @@ interface LocationState {
     startTime: string;
     endTime: string;
   };
+  serviceName?: string;
 }
 
 export default function BookingConfirmation() {
@@ -27,35 +28,51 @@ export default function BookingConfirmation() {
   
   // Try to get appointment data from location state
   const appointmentData = (location.state as LocationState)?.appointment;
+  const serviceName = (location.state as LocationState)?.serviceName;
   
   useEffect(() => {
+    console.log('Location state:', location.state);
+    console.log('Appointment data:', appointmentData);
+
     if (appointmentData?.serviceId) {
+      // Try to get service data from context
       const serviceData = getServiceById(appointmentData.serviceId);
-      setService(serviceData);
+      console.log('Service data:', serviceData);
       
-      if (appointmentData.date && appointmentData.startTime && appointmentData.endTime && serviceData) {
+      if (serviceData) {
+        setService(serviceData);
+      }
+      
+      if (appointmentData.date && appointmentData.startTime && appointmentData.endTime) {
         // Create Google Calendar URL
-        const startDate = new Date(appointmentData.date);
-        const [startHour, startMinute] = appointmentData.startTime.split(':').map(Number);
-        startDate.setHours(startHour, startMinute, 0, 0);
-        
-        const endDate = new Date(startDate);
-        const [endHour, endMinute] = appointmentData.endTime.split(':').map(Number);
-        endDate.setHours(endHour, endMinute, 0, 0);
-        
-        const eventDetails = {
-          text: `${serviceData.name} Appointment`,
-          dates: `${startDate.toISOString().replace(/-|:|\.\d+/g, "")}/${endDate.toISOString().replace(/-|:|\.\d+/g, "")}`,
-          details: `Your appointment for ${serviceData.name}`,
-          location: "Our Salon"
-        };
-        
-        const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventDetails.text)}&dates=${eventDetails.dates}&details=${encodeURIComponent(eventDetails.details)}&location=${encodeURIComponent(eventDetails.location)}`;
-        
-        setGoogleCalendarUrl(calendarUrl);
+        try {
+          const startDate = new Date(appointmentData.date);
+          const [startHour, startMinute] = appointmentData.startTime.split(':').map(Number);
+          startDate.setHours(startHour, startMinute, 0, 0);
+          
+          const endDate = new Date(startDate);
+          const [endHour, endMinute] = appointmentData.endTime.split(':').map(Number);
+          endDate.setHours(endHour, endMinute, 0, 0);
+          
+          const serviceTitle = serviceData?.name || serviceName || 'Appointment';
+          
+          const eventDetails = {
+            text: `${serviceTitle} Appointment`,
+            dates: `${startDate.toISOString().replace(/-|:|\.\d+/g, "")}/${endDate.toISOString().replace(/-|:|\.\d+/g, "")}`,
+            details: `Your appointment for ${serviceTitle}`,
+            location: "Our Salon"
+          };
+          
+          const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventDetails.text)}&dates=${eventDetails.dates}&details=${encodeURIComponent(eventDetails.details)}&location=${encodeURIComponent(eventDetails.location)}`;
+          
+          console.log('Generated Google Calendar URL:', calendarUrl);
+          setGoogleCalendarUrl(calendarUrl);
+        } catch (error) {
+          console.error('Error creating Google Calendar URL:', error);
+        }
       }
     }
-  }, [appointmentData, getServiceById]);
+  }, [appointmentData, getServiceById, serviceName]);
 
   return (
     <div className="container py-10 max-w-md mx-auto">
@@ -71,11 +88,11 @@ export default function BookingConfirmation() {
             Your appointment has been successfully booked. We'll send you a confirmation email with all the details.
           </p>
           
-          {appointmentData && service && (
+          {appointmentData && (service || serviceName) && (
             <div className="bg-muted p-4 rounded-lg text-left space-y-2">
               <h3 className="font-medium">Appointment Details</h3>
               <div className="text-sm space-y-1">
-                <p><span className="font-medium">Service:</span> {service.name}</p>
+                <p><span className="font-medium">Service:</span> {service?.name || serviceName}</p>
                 <p><span className="font-medium">Date:</span> {format(new Date(appointmentData.date), 'PPPP')}</p>
                 <p><span className="font-medium">Time:</span> {appointmentData.startTime} - {appointmentData.endTime}</p>
               </div>

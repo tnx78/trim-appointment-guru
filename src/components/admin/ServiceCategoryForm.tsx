@@ -40,10 +40,12 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
       const formData = { name, description };
       
       if (category) {
-        // Pass id and formData as separate arguments to match function signature
+        // Make sure we pass the category ID and form data separately
         updateCategory(category.id, formData);
+        console.log('Updating category:', category.id, formData);
       } else {
         addCategory(formData);
+        console.log('Adding new category:', formData);
       }
       
       setName('');

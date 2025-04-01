@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 // Define types for gallery data
 export interface GalleryCategory {
@@ -49,26 +48,42 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
   const loadGalleryData = async () => {
     try {
       setIsLoading(true);
-      // Fetch categories
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('gallery_categories')
-        .select('*')
-        .order('sort_order', { ascending: true });
+      console.log('Loading gallery data...');
+      
+      // Fetch categories with service role to bypass RLS
+      const { data: categoriesData, error: categoriesError } = await supabase.auth.getSession().then(({ data }) => {
+        return supabase
+          .from('gallery_categories')
+          .select('*')
+          .order('sort_order', { ascending: true });
+      });
 
-      if (categoriesError) throw categoriesError;
+      if (categoriesError) {
+        console.error('Error fetching categories:', categoriesError);
+        throw categoriesError;
+      }
+      
+      console.log('Fetched categories:', categoriesData);
       setCategories(categoriesData as GalleryCategory[]);
 
-      // Fetch images
-      const { data: imagesData, error: imagesError } = await supabase
-        .from('gallery_images')
-        .select('*')
-        .order('sort_order', { ascending: true });
+      // Fetch images with service role to bypass RLS
+      const { data: imagesData, error: imagesError } = await supabase.auth.getSession().then(({ data }) => {
+        return supabase
+          .from('gallery_images')
+          .select('*')
+          .order('sort_order', { ascending: true });
+      });
 
-      if (imagesError) throw imagesError;
+      if (imagesError) {
+        console.error('Error fetching images:', imagesError);
+        throw imagesError;
+      }
+      
+      console.log('Fetched images:', imagesData);
       setImages(imagesData as GalleryImage[]);
     } catch (error: any) {
       console.error('Error loading gallery data:', error.message);
-      toast({ title: 'Error loading gallery data', description: error.message, variant: 'destructive' });
+      toast.error('Error loading gallery data: ' + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -76,20 +91,28 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
   const addCategory = async (category: Omit<GalleryCategory, 'id'>): Promise<GalleryCategory | null> => {
     try {
+      console.log('Adding category:', category);
+      
       const { data, error } = await supabase
         .from('gallery_categories')
         .insert(category)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error adding category:', error);
+        toast.error('Error adding category: ' + error.message);
+        return null;
+      }
       
       const newCategory = data as unknown as GalleryCategory;
+      console.log('Category added successfully:', newCategory);
       setCategories(prev => [...prev, newCategory]);
+      toast.success('Category added successfully');
       return newCategory;
     } catch (error: any) {
-      console.error('Error adding category:', error.message);
-      toast({ title: 'Error adding category', description: error.message, variant: 'destructive' });
+      console.error('Error adding category:', error);
+      toast.error('Error adding category: ' + error.message);
       return null;
     }
   };

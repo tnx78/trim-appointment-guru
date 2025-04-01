@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useGalleryContext } from '@/context/AppContext';
+import React, { useState, useEffect } from 'react';
+import { useGalleryContext } from '@/context/GalleryContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,10 +34,17 @@ export function GalleryTab() {
   const [isUploading, setIsUploading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  useEffect(() => {
+    if (categories.length > 0 && !selectedCategory) {
+      setSelectedCategory(categories[0].id);
+    }
+  }, [categories, selectedCategory]);
+
   // Handle image upload to Supabase Storage
   const handleFileUpload = async (file: File, category_id: string) => {
     try {
       setIsUploading(true);
+      console.log('Uploading file:', file.name, 'for category:', category_id);
       
       // Create a unique file name
       const fileExt = file.name.split('.').pop();
@@ -49,15 +56,22 @@ export function GalleryTab() {
         .from('gallery')
         .upload(filePath, file);
         
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+      
+      console.log('File uploaded successfully, getting public URL');
       
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('gallery')
         .getPublicUrl(filePath);
-        
+      
+      console.log('Public URL:', publicUrl);  
       return publicUrl;
     } catch (error: any) {
+      console.error('Error uploading image:', error);
       toast.error('Error uploading image: ' + error.message);
       throw error;
     } finally {
@@ -71,13 +85,18 @@ export function GalleryTab() {
       return;
     }
     
-    await addCategory({
+    console.log('Adding new category:', newCategory);
+    
+    const result = await addCategory({
       name: newCategory.name,
       description: newCategory.description,
       sort_order: categories.length + 1
     });
     
-    setNewCategory({ name: '', description: '' });
+    if (result) {
+      console.log('Category added successfully:', result);
+      setNewCategory({ name: '', description: '' });
+    }
   };
 
   const handleUpdateCategory = async () => {
@@ -85,6 +104,8 @@ export function GalleryTab() {
       toast.error('Category name is required');
       return;
     }
+    
+    console.log('Updating category:', editingCategory);
     
     await updateCategory(editingCategory);
     setEditingCategory(null);
@@ -102,11 +123,15 @@ export function GalleryTab() {
     }
     
     try {
+      console.log('Adding new image for category:', selectedCategory);
+      
       // Upload the file to storage and get the URL
       const imageUrl = await handleFileUpload(selectedFile, selectedCategory);
       
+      console.log('Image uploaded, URL:', imageUrl);
+      
       // Save the image data to the database
-      await addImage({
+      const result = await addImage({
         category_id: selectedCategory,
         title: newImage.title,
         description: newImage.description,
@@ -114,10 +139,13 @@ export function GalleryTab() {
         sort_order: getImagesByCategory(selectedCategory).length + 1
       });
       
-      // Reset form
-      setNewImage({ title: '', description: '' });
-      setSelectedFile(null);
-      setIsDialogOpen(false);
+      if (result) {
+        console.log('Image added successfully:', result);
+        // Reset form
+        setNewImage({ title: '', description: '' });
+        setSelectedFile(null);
+        setIsDialogOpen(false);
+      }
     } catch (error) {
       console.error('Failed to add image:', error);
     }
