@@ -2,12 +2,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBookingContext } from '@/context/BookingContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { BookingProgressBar } from './BookingProgressBar';
 import { UserInfoForm } from './UserInfoForm';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const BookingForm = ({ onBack }: { onBack?: () => void }) => {
   const navigate = useNavigate();
@@ -54,7 +54,7 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
       // Format date object to YYYY-MM-DD string
       const formattedDate = selectedDate.toISOString().split('T')[0];
       
-      // Create appointment data object completely without any user_id reference
+      // Create appointment data object
       const appointmentData = {
         service_id: selectedService.id,
         client_name: formData.name,
@@ -63,10 +63,13 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
         date: formattedDate,
         start_time: selectedTime,
         end_time: calculateEndTime(selectedTime, selectedService.duration),
-        status: 'confirmed'
+        status: 'confirmed',
+        user_id: user?.id || null
       };
       
-      // Insert appointment without any reference to users
+      console.log('Submitting appointment data:', appointmentData);
+      
+      // Insert appointment
       const { data, error } = await supabase
         .from('appointments')
         .insert(appointmentData)

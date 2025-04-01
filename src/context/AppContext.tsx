@@ -1,12 +1,9 @@
 
-import React, { useContext } from 'react';
-import { CategoryProvider, useCategoryContext } from '@/context/CategoryContext';
-import { ServiceProvider, useServiceContext } from '@/context/ServiceContext';
-import { AppointmentProvider, useAppointmentContext } from '@/context/AppointmentContext';
-import { BookingProvider, useBookingContext } from '@/context/BookingContext';
-
-// Create a combined context for AppContext
-const AppContext = React.createContext<any | undefined>(undefined);
+import React from 'react';
+import { CategoryProvider } from '@/context/CategoryContext';
+import { ServiceProvider } from '@/context/ServiceContext';
+import { AppointmentProvider } from '@/context/AppointmentContext';
+import { BookingProvider } from '@/context/BookingContext';
 
 // Re-export all the hooks for easier imports
 export { useCategoryContext } from './CategoryContext';
@@ -29,48 +26,82 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// For backward compatibility, create a useAppContext hook
+// For backward compatibility, create a useAppContext hook that combines all contexts
 export function useAppContext() {
-  // Import hooks directly from the source context files
-  const categoryContext = useCategoryContext();
-  const serviceContext = useServiceContext();
-  const appointmentContext = useAppointmentContext();
-  const bookingContext = useBookingContext();
+  // Import the individual context hooks from their source files
+  const { 
+    categories, 
+    addCategory, 
+    updateCategory, 
+    deleteCategory, 
+    updateCategoryOrder, 
+    getCategoryById 
+  } = useCategoryContext();
+  
+  const { 
+    services, 
+    addService, 
+    updateService, 
+    deleteService, 
+    updateServiceOrder, 
+    getServiceById 
+  } = useServiceContext();
+  
+  const { 
+    appointments, 
+    selectedDate, 
+    selectedTime, 
+    timeSlots, 
+    bookAppointment, 
+    updateAppointment, 
+    cancelAppointment, 
+    selectDate, 
+    selectTime, 
+    getAvailableTimeSlots, 
+    getAppointmentsForDate, 
+    getAppointmentDates 
+  } = useAppointmentContext();
+  
+  const { 
+    selectedService, 
+    selectService, 
+    resetBookingState 
+  } = useBookingContext();
   
   return {
     // From CategoryContext
-    categories: categoryContext.categories,
-    addCategory: categoryContext.addCategory,
-    updateCategory: categoryContext.updateCategory,
-    deleteCategory: categoryContext.deleteCategory,
-    updateCategoryOrder: categoryContext.updateCategoryOrder,
-    getCategoryById: categoryContext.getCategoryById,
+    categories,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    updateCategoryOrder,
+    getCategoryById,
     
     // From ServiceContext
-    services: serviceContext.services,
-    addService: serviceContext.addService,
-    updateService: serviceContext.updateService,
-    deleteService: serviceContext.deleteService,
-    updateServiceOrder: serviceContext.updateServiceOrder,
-    getServiceById: serviceContext.getServiceById,
+    services,
+    addService,
+    updateService,
+    deleteService,
+    updateServiceOrder,
+    getServiceById,
     
     // From AppointmentContext
-    appointments: appointmentContext.appointments,
-    selectedDate: appointmentContext.selectedDate,
-    selectedTime: appointmentContext.selectedTime,
-    timeSlots: appointmentContext.timeSlots,
-    bookAppointment: appointmentContext.bookAppointment,
-    updateAppointment: appointmentContext.updateAppointment,
-    cancelAppointment: appointmentContext.cancelAppointment,
-    selectDate: appointmentContext.selectDate,
-    selectTime: appointmentContext.selectTime,
-    getAvailableTimeSlots: appointmentContext.getAvailableTimeSlots,
-    getAppointmentsForDate: appointmentContext.getAppointmentsForDate,
-    getAppointmentDates: appointmentContext.getAppointmentDates,
+    appointments,
+    selectedDate,
+    selectedTime,
+    timeSlots,
+    bookAppointment,
+    updateAppointment,
+    cancelAppointment,
+    selectDate,
+    selectTime,
+    getAvailableTimeSlots,
+    getAppointmentsForDate,
+    getAppointmentDates,
     
     // From BookingContext
-    selectedService: bookingContext.selectedService,
-    selectService: bookingContext.selectService,
-    resetBookingState: bookingContext.resetBookingState,
+    selectedService,
+    selectService,
+    resetBookingState,
   };
 }

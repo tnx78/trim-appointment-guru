@@ -15,6 +15,8 @@ export function useAppointmentManager() {
   useEffect(() => {
     async function fetchAppointments() {
       try {
+        setIsLoading(true);
+        // Fetch appointments directly without trying to join with users table
         const { data, error } = await supabase
           .from('appointments')
           .select('*');
@@ -28,6 +30,7 @@ export function useAppointmentManager() {
         
         if (data) {
           const mappedAppointments = data.map(mapAppointmentFromDB);
+          console.log('Fetched appointments:', mappedAppointments.length);
           setAppointments(mappedAppointments);
         } else {
           setAppointments([]);

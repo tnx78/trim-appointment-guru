@@ -1,15 +1,15 @@
 
-import { useState } from 'react';
 import { Appointment } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { mapAppointmentFromDB, mapAppointmentToDB } from '@/utils/dataMappers';
 import { toast } from 'sonner';
-import { scheduleEmailsForAppointment, triggerEmailProcessing } from './useEmailScheduler';
 
 export function useAppointmentOperations(appointments: Appointment[], setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>) {
   // Book a new appointment
   const bookAppointment = async (appointment: Omit<Appointment, 'id' | 'status'>) => {
     try {
+      console.log('Booking appointment:', appointment);
+      
       const dbAppointment = mapAppointmentToDB({
         ...appointment,
         status: 'confirmed'
@@ -20,13 +20,14 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
         .insert(dbAppointment)
         .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error booking appointment:', error);
+        throw error;
+      }
+      
       if (data && data.length > 0) {
         const newAppointment = mapAppointmentFromDB(data[0]);
-        setAppointments([...appointments, newAppointment]);
-        
-        // Schedule emails for the new appointment
-        await scheduleEmailsForAppointment(data[0].id, appointment);
+        setAppointments(prev => [...prev, newAppointment]);
         
         toast.success("Appointment booked successfully");
         return data[0].id;
@@ -67,20 +68,6 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
       
       if (error) throw error;
       
-      // Schedule email notification based on status change
-      if (updatedData.status === 'confirmed') {
-        await supabase
-          .from('scheduled_emails')
-          .insert({
-            appointment_id: id,
-            template_name: 'appointment_confirmed',
-            send_at: new Date().toISOString()
-          });
-          
-        // Trigger email processing
-        await triggerEmailProcessing();
-      }
-      
       setAppointments(appointments.map(appointment => 
         appointment.id === id 
           ? { ...appointment, ...updatedData } 
@@ -102,18 +89,6 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
         .eq('id', id);
       
       if (error) throw error;
-      
-      // Schedule cancellation email
-      await supabase
-        .from('scheduled_emails')
-        .insert({
-          appointment_id: id,
-          template_name: 'appointment_cancelled',
-          send_at: new Date().toISOString()
-        });
-        
-      // Trigger email processing
-      await triggerEmailProcessing();
       
       setAppointments(appointments.map(appointment => 
         appointment.id === id 
