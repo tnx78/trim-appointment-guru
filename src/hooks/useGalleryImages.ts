@@ -28,14 +28,11 @@ export function useGalleryImages() {
       
       // Get Supabase session to ensure RLS policies work correctly
       const { data: sessionData } = await supabase.auth.getSession();
+      console.log('Current session status before adding image:', sessionData.session ? 'Active' : 'None');
+      
       if (!sessionData.session) {
-        // If we're authenticated in our React app but not in Supabase, try to refresh the session
-        const { error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError) {
-          console.error('Session refresh error:', refreshError);
-          toast.error('Your session has expired. Please log in again.');
-          return null;
-        }
+        toast.error('Your session has expired. Please log in again.');
+        return null;
       }
 
       // Insert image into Supabase
@@ -76,6 +73,15 @@ export function useGalleryImages() {
         return null;
       }
 
+      // Get Supabase session to ensure RLS policies work correctly
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('Current session status before updating image:', sessionData.session ? 'Active' : 'None');
+      
+      if (!sessionData.session) {
+        toast.error('Your session has expired. Please log in again.');
+        return null;
+      }
+
       // Update image in Supabase
       const { data, error } = await supabase
         .from('gallery_images')
@@ -111,6 +117,15 @@ export function useGalleryImages() {
         const errorMessage = 'Admin authentication required to delete images';
         console.error(errorMessage);
         toast.error(errorMessage);
+        return;
+      }
+
+      // Get Supabase session to ensure RLS policies work correctly
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('Current session status before deleting image:', sessionData.session ? 'Active' : 'None');
+      
+      if (!sessionData.session) {
+        toast.error('Your session has expired. Please log in again.');
         return;
       }
 

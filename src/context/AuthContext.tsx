@@ -96,23 +96,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Maintain backward compatibility with admin login
       if (email === 'admin' && password === 'admin123') {
         console.log('Admin login via local auth');
-        setIsAuthenticated(true);
-        setIsAdmin(true);
-        localStorage.setItem('isAdmin', 'true');
         
-        // Create a session with Supabase too, using the provided credentials
-        // This ensures RLS policies will work correctly
-        const { error } = await supabase.auth.signInWithPassword({
-          email: 'admin@example.com', // Use a default admin email for Supabase
-          password, // Use the same password
+        // For admin login, we'll create a session with a fixed email
+        // This ensures Supabase has a valid session for database operations
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: 'admin@example.com',
+          password: 'Admin123!', // Use a strong fixed password for this admin account
         });
         
         if (error) {
-          console.warn('Could not create Supabase session, but local admin login succeeded:', error.message);
-          // We don't return false here, as the local admin login was successful
-        } else {
-          console.log('Supabase session created for admin login');
+          // Try to sign up the admin user if it doesn't exist
+          console.log('Attempting to create admin account');
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: 'admin@example.com',
+            password: 'Admin123!',
+            options: {
+              data: {
+                full_name: 'Admin User',
+                is_admin: true
+              }
+            }
+          });
+          
+          if (signUpError) {
+            console.error('Could not create admin account:', signUpError.message);
+            toast.error('Admin login failed: ' + signUpError.message);
+            return false;
+          }
+          
+          // Try logging in again
+          const { error: loginError } = await supabase.auth.signInWithPassword({
+            email: 'admin@example.com',
+            password: 'Admin123!',
+          });
+          
+          if (loginError) {
+            console.error('Admin login failed after account creation:', loginError.message);
+            toast.error('Admin login failed: ' + loginError.message);
+            return false;
+          }
         }
+        
+        // Set the admin flag in local storage
+        localStorage.setItem('isAdmin', 'true');
+        setIsAuthenticated(true);
+        setIsAdmin(true);
         
         toast.success('Successfully logged in as admin');
         return true;
@@ -145,27 +173,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       
-      // Handle admin logout (backward compatibility)
-      if (localStorage.getItem('isAdmin') === 'true') {
-        console.log('Logging out admin user');
-        setIsAuthenticated(false);
-        setIsAdmin(false);
-        localStorage.removeItem('isAdmin');
-        
-        // Also sign out from Supabase
-        await supabase.auth.signOut();
-        
-        toast.success('Successfully logged out');
-        return;
-      }
-      
-      console.log('Logging out regular user');
+      console.log('Logging out user');
       const { error } = await supabase.auth.signOut();
       
       if (error) {
         toast.error(error.message);
         return;
       }
+      
+      // Clear admin flag
+      localStorage.removeItem('isAdmin');
+      setIsAuthenticated(false);
+      setIsAdmin(false);
       
       // Success is handled by onAuthStateChange
       toast.success('Successfully logged out');

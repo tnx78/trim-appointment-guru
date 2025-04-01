@@ -28,14 +28,11 @@ export function useGalleryCategories() {
       
       // Get Supabase session to ensure RLS policies work correctly
       const { data: sessionData } = await supabase.auth.getSession();
+      console.log('Current session status before adding category:', sessionData.session ? 'Active' : 'None');
+      
       if (!sessionData.session) {
-        // If we're authenticated in our React app but not in Supabase, try to refresh the session
-        const { error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError) {
-          console.error('Session refresh error:', refreshError);
-          toast.error('Your session has expired. Please log in again.');
-          return null;
-        }
+        toast.error('Your session has expired. Please log in again.');
+        return null;
       }
       
       // Insert category into Supabase
@@ -76,6 +73,15 @@ export function useGalleryCategories() {
         return null;
       }
 
+      // Get Supabase session to ensure RLS policies work correctly
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('Current session status before updating category:', sessionData.session ? 'Active' : 'None');
+      
+      if (!sessionData.session) {
+        toast.error('Your session has expired. Please log in again.');
+        return null;
+      }
+
       // Update category in Supabase
       const { data, error } = await supabase
         .from('gallery_categories')
@@ -111,6 +117,15 @@ export function useGalleryCategories() {
         const errorMessage = 'Admin authentication required to delete categories';
         console.error(errorMessage);
         toast.error(errorMessage);
+        return;
+      }
+
+      // Get Supabase session to ensure RLS policies work correctly
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('Current session status before deleting category:', sessionData.session ? 'Active' : 'None');
+      
+      if (!sessionData.session) {
+        toast.error('Your session has expired. Please log in again.');
         return;
       }
 
