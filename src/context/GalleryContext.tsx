@@ -26,6 +26,7 @@ export interface GalleryImage {
 interface GalleryContextType {
   categories: GalleryCategory[];
   images: GalleryImage[];
+  isLoading: boolean;
   loadGalleryData: () => Promise<void>;
   addCategory: (category: Omit<GalleryCategory, 'id'>) => Promise<GalleryCategory | null>;
   updateCategory: (category: GalleryCategory) => Promise<GalleryCategory | null>;
@@ -43,9 +44,11 @@ const GalleryContext = createContext<GalleryContextType | undefined>(undefined);
 export function GalleryProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<GalleryCategory[]>([]);
   const [images, setImages] = useState<GalleryImage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadGalleryData = async () => {
     try {
+      setIsLoading(true);
       // Fetch categories
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('gallery_categories')
@@ -66,6 +69,8 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       console.error('Error loading gallery data:', error.message);
       toast({ title: 'Error loading gallery data', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -195,6 +200,7 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
   const value = {
     categories,
     images,
+    isLoading,
     loadGalleryData,
     addCategory,
     updateCategory,

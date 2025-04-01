@@ -32,6 +32,7 @@ export function GalleryTab() {
   const [newImage, setNewImage] = useState<any>({ title: '', description: '' });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Handle image upload to Supabase Storage
   const handleFileUpload = async (file: File, category_id: string) => {
@@ -89,7 +90,7 @@ export function GalleryTab() {
     setEditingCategory(null);
   };
 
-  const handleAddImage = async (dialogClose: () => void) => {
+  const handleAddImage = async () => {
     if (!selectedCategory) {
       toast.error('Please select a category first');
       return;
@@ -116,7 +117,7 @@ export function GalleryTab() {
       // Reset form
       setNewImage({ title: '', description: '' });
       setSelectedFile(null);
-      dialogClose();
+      setIsDialogOpen(false);
     } catch (error) {
       console.error('Failed to add image:', error);
     }
@@ -247,7 +248,7 @@ export function GalleryTab() {
                 <TabsContent key={category.id} value={category.id}>
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-medium">{category.name} Images</h3>
-                    <Dialog>
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                       <DialogTrigger asChild>
                         <Button>
                           <Upload className="mr-2 h-4 w-4" /> Upload Image
@@ -285,15 +286,13 @@ export function GalleryTab() {
                               onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)}
                             />
                           </div>
-                          {({ close }) => (
-                            <Button
-                              onClick={() => handleAddImage(close)}
-                              disabled={isUploading || !selectedFile}
-                              className="w-full"
-                            >
-                              {isUploading ? 'Uploading...' : 'Upload Image'}
-                            </Button>
-                          )}
+                          <Button
+                            onClick={handleAddImage}
+                            disabled={isUploading || !selectedFile}
+                            className="w-full"
+                          >
+                            {isUploading ? 'Uploading...' : 'Upload Image'}
+                          </Button>
                         </div>
                       </DialogContent>
                     </Dialog>

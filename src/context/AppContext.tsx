@@ -27,12 +27,14 @@ export const useAppContext = () => {
   const services = useServiceContext();
   const appointments = useAppointmentContext();
   const gallery = useGalleryContext();
+  const booking = useBookingContext();
 
   return {
     ...categories,
     ...services,
     ...appointments,
-    ...gallery
+    ...gallery,
+    ...booking
   };
 };
 

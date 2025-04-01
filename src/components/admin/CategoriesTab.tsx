@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,7 +66,7 @@ export function CategoriesTab() {
         // Update order for each category
         const updatedCategories = newCategoryOrder.map((category, index) => ({
           ...category,
-          order: index
+          sort_order: index
         }));
         
         // Update context with new order
@@ -79,10 +79,10 @@ export function CategoriesTab() {
     setDraggedCategory(null);
   };
 
-  // Sort categories by order
+  // Sort categories by sort_order
   const sortedCategories = [...categories].sort((a, b) => {
-    const orderA = a.order !== undefined ? a.order : 0;
-    const orderB = b.order !== undefined ? b.order : 0;
+    const orderA = a.sort_order !== undefined ? a.sort_order : 0;
+    const orderB = b.sort_order !== undefined ? b.sort_order : 0;
     return orderA - orderB;
   });
 

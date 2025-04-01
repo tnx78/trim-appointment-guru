@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { ServiceCategory } from '@/types';
@@ -41,7 +42,7 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
       if (category) {
         updateCategory(category.id, formData);
       } else {
-        addCategory({ name, description });
+        addCategory(formData);
       }
       
       setName('');
