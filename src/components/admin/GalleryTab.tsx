@@ -73,7 +73,7 @@ export function GalleryTab() {
     await addCategory({
       name: newCategory.name,
       description: newCategory.description,
-      order: categories.length + 1
+      sort_order: categories.length + 1
     });
     
     setNewCategory({ name: '', description: '' });
@@ -110,7 +110,7 @@ export function GalleryTab() {
         title: newImage.title,
         description: newImage.description,
         image_url: imageUrl,
-        order: getImagesByCategory(selectedCategory).length + 1
+        sort_order: getImagesByCategory(selectedCategory).length + 1
       });
       
       // Reset form

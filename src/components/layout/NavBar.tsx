@@ -52,6 +52,7 @@ export function NavBar() {
               </Link>
             </NavigationMenuItem>
 
+            {/* Only show My Bookings for authenticated non-admin users */}
             {isAuthenticated && !isAdmin && (
               <NavigationMenuItem>
                 <Link to="/my-appointments">
@@ -82,6 +83,7 @@ export function NavBar() {
 
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
+              {/* Only show Account avatar for non-admin users */}
               {!isAdmin && (
                 <Link to="/account">
                   <Avatar>

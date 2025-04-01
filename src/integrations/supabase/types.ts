@@ -110,6 +110,68 @@ export type Database = {
         }
         Relationships: []
       }
+      gallery_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      gallery_images: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string
+          sort_order: number | null
+          title: string | null
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url: string
+          sort_order?: number | null
+          title?: string | null
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string
+          sort_order?: number | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gallery_images_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "gallery_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salon_hours: {
         Row: {
           close_time: string

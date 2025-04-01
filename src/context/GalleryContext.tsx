@@ -7,7 +7,7 @@ export interface GalleryCategory {
   id: string;
   name: string;
   description?: string;
-  order?: number;
+  sort_order?: number;
 }
 
 export interface GalleryImage {
@@ -16,7 +16,7 @@ export interface GalleryImage {
   title?: string;
   description?: string;
   image_url: string;
-  order?: number;
+  sort_order?: number;
 }
 
 interface GalleryContextType {
@@ -52,7 +52,7 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const { data, error } = await supabase
         .from('gallery_categories')
         .select('*')
-        .order('order', { ascending: true });
+        .order('sort_order', { ascending: true });
 
       if (error) throw error;
       setCategories(data || []);
@@ -70,7 +70,7 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const { data, error } = await supabase
         .from('gallery_images')
         .select('*')
-        .order('order', { ascending: true });
+        .order('sort_order', { ascending: true });
 
       if (error) throw error;
       setImages(data || []);
