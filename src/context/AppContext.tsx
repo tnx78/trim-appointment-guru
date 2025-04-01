@@ -29,45 +29,79 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 // For backward compatibility, create a useAppContext hook
 export function useAppContext() {
   // Import hooks directly to avoid circular dependencies
-  const categoryContext = useCategoryContext();
-  const serviceContext = useServiceContext();
-  const appointmentContext = useAppointmentContext();
-  const bookingContext = useBookingContext();
+  const { 
+    categories, 
+    addCategory, 
+    updateCategory, 
+    deleteCategory, 
+    updateCategoryOrder, 
+    getCategoryById 
+  } = require('./CategoryContext').useCategoryContext();
+  
+  const {
+    services,
+    addService,
+    updateService,
+    deleteService,
+    updateServiceOrder,
+    getServiceById
+  } = require('./ServiceContext').useServiceContext();
+  
+  const {
+    appointments,
+    selectedDate,
+    selectedTime,
+    timeSlots,
+    bookAppointment,
+    updateAppointment,
+    cancelAppointment,
+    selectDate,
+    selectTime,
+    getAvailableTimeSlots,
+    getAppointmentsForDate,
+    getAppointmentDates
+  } = require('./AppointmentContext').useAppointmentContext();
+  
+  const {
+    selectedService,
+    selectService,
+    resetBookingState
+  } = require('./BookingContext').useBookingContext();
   
   return {
     // From CategoryContext
-    categories: categoryContext.categories,
-    addCategory: categoryContext.addCategory,
-    updateCategory: categoryContext.updateCategory,
-    deleteCategory: categoryContext.deleteCategory,
-    updateCategoryOrder: categoryContext.updateCategoryOrder,
-    getCategoryById: categoryContext.getCategoryById,
+    categories,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    updateCategoryOrder,
+    getCategoryById,
     
     // From ServiceContext
-    services: serviceContext.services,
-    addService: serviceContext.addService,
-    updateService: serviceContext.updateService,
-    deleteService: serviceContext.deleteService,
-    updateServiceOrder: serviceContext.updateServiceOrder,
-    getServiceById: serviceContext.getServiceById,
+    services,
+    addService,
+    updateService,
+    deleteService,
+    updateServiceOrder,
+    getServiceById,
     
     // From AppointmentContext
-    appointments: appointmentContext.appointments,
-    selectedDate: appointmentContext.selectedDate,
-    selectedTime: appointmentContext.selectedTime,
-    timeSlots: appointmentContext.timeSlots,
-    bookAppointment: appointmentContext.bookAppointment,
-    updateAppointment: appointmentContext.updateAppointment,
-    cancelAppointment: appointmentContext.cancelAppointment,
-    selectDate: appointmentContext.selectDate,
-    selectTime: appointmentContext.selectTime,
-    getAvailableTimeSlots: appointmentContext.getAvailableTimeSlots,
-    getAppointmentsForDate: appointmentContext.getAppointmentsForDate,
-    getAppointmentDates: appointmentContext.getAppointmentDates,
+    appointments,
+    selectedDate,
+    selectedTime,
+    timeSlots,
+    bookAppointment,
+    updateAppointment,
+    cancelAppointment,
+    selectDate,
+    selectTime,
+    getAvailableTimeSlots,
+    getAppointmentsForDate,
+    getAppointmentDates,
     
     // From BookingContext
-    selectedService: bookingContext.selectedService,
-    selectService: bookingContext.selectService,
-    resetBookingState: bookingContext.resetBookingState,
+    selectedService,
+    selectService,
+    resetBookingState,
   };
 }
