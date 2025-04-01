@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useGalleryContext } from '@/context/GalleryContext';
 import { useAuth } from '@/context/AuthContext'; 
@@ -13,29 +14,116 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
+// Split into smaller components for better maintainability
+const CategoryForm = ({ newCategory, setNewCategory, handleAddCategory }) => {
+  return (
+    <div className="flex items-end gap-4">
+      <div className="flex-1 space-y-2">
+        <Label htmlFor="category-name">New Category Name</Label>
+        <Input
+          id="category-name"
+          value={newCategory.name}
+          onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+          placeholder="Enter category name"
+        />
+      </div>
+      <div className="flex-1 space-y-2">
+        <Label htmlFor="category-desc">Description (Optional)</Label>
+        <Input
+          id="category-desc"
+          value={newCategory.description}
+          onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+          placeholder="Enter category description"
+        />
+      </div>
+      <Button onClick={handleAddCategory}>
+        <Plus className="mr-2 h-4 w-4" /> Add Category
+      </Button>
+    </div>
+  );
+};
+
+const CategoryList = ({ categories, setEditingCategory, deleteCategory }) => {
+  if (categories.length === 0) {
+    return <p className="text-muted-foreground">No categories yet. Add your first one.</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {categories.map((category) => (
+        <div key={category.id} className="flex items-center justify-between border-b pb-2">
+          <div>
+            <h4 className="font-medium">{category.name}</h4>
+            {category.description && <p className="text-sm text-muted-foreground">{category.description}</p>}
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setEditingCategory(category)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={() => deleteCategory(category.id)}
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const ImageGrid = ({ images, deleteImage }) => {
+  if (images.length === 0) {
+    return (
+      <div className="col-span-full flex flex-col items-center justify-center border rounded-lg p-8 text-center">
+        <Image className="h-12 w-12 text-muted-foreground mb-2" />
+        <p className="text-muted-foreground">No images in this category yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {images.map((image) => (
+        <Card key={image.id}>
+          <div className="relative aspect-square overflow-hidden">
+            <img
+              src={image.image_url}
+              alt={image.title || 'Gallery image'}
+              className="object-cover w-full h-full"
+            />
+          </div>
+          <CardContent className="p-4">
+            {image.title && <h4 className="font-medium">{image.title}</h4>}
+            {image.description && <p className="text-sm text-muted-foreground">{image.description}</p>}
+            <div className="flex justify-end gap-2 mt-2">
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={() => deleteImage(image.id)}
+              >
+                <Trash className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+};
+
+// Main component
 export function GalleryTab() {
   const navigate = useNavigate();
   const { isAuthenticated, isAdmin } = useAuth();
   
-  // Use try-catch to handle potential context errors
-  let galleryContext;
-  try {
-    galleryContext = useGalleryContext();
-  } catch (error) {
-    console.error('GalleryContext error:', error);
-    return (
-      <Card className="mt-4">
-        <CardContent className="p-6 text-center">
-          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <p className="text-muted-foreground mb-4">There was an error loading the gallery module. This may be due to a missing GalleryProvider.</p>
-          <Button onClick={() => window.location.reload()}>
-            Refresh Page
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
+  // Get gallery context and handle potential errors
   const {
     categories,
     images,
@@ -46,16 +134,15 @@ export function GalleryTab() {
     updateCategory,
     deleteCategory,
     addImage,
-    updateImage,
     deleteImage,
     getImagesByCategory
-  } = galleryContext;
+  } = useGalleryContext();
 
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
-  const [editingCategory, setEditingCategory] = useState<any>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [newImage, setNewImage] = useState<any>({ title: '', description: '' });
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [newImage, setNewImage] = useState({ title: '', description: '' });
+  const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -68,13 +155,15 @@ export function GalleryTab() {
   
   // Load gallery data when authenticated
   useEffect(() => {
-    if (isAuthenticated && isAdmin) {
-      console.log('Loading gallery data from GalleryTab');
+    console.log('GalleryTab mounted with auth state:', { isAuthenticated, isAdmin });
+    
+    if (isAuthenticated) {
       loadGalleryData();
     }
   }, [isAuthenticated, isAdmin, loadGalleryData]);
 
-  const handleFileUpload = async (file: File, category_id: string) => {
+  // Handle file upload
+  const handleFileUpload = async (file, category_id) => {
     try {
       setIsUploading(true);
       console.log('Uploading file:', file.name, 'for category:', category_id);
@@ -105,7 +194,7 @@ export function GalleryTab() {
       
       console.log('Public URL:', publicUrl);  
       return publicUrl;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error uploading image:', error);
       toast.error('Error uploading image: ' + error.message);
       throw error;
@@ -114,18 +203,19 @@ export function GalleryTab() {
     }
   };
 
+  // Handle adding a new category
   const handleAddCategory = async () => {
     if (!newCategory.name.trim()) {
       toast.error('Category name is required');
       return;
     }
     
-    if (!isAuthenticated) {
-      toast.error('You must be logged in to add categories');
+    if (!isAuthenticated || !isAdmin) {
+      toast.error('You must be logged in as an admin to add categories');
       return;
     }
     
-    console.log('Adding new category:', newCategory, 'Auth status:', isAuthenticated);
+    console.log('Adding new category:', newCategory, 'Auth status:', { isAuthenticated, isAdmin });
     
     try {
       const result = await addCategory({
@@ -138,20 +228,21 @@ export function GalleryTab() {
         console.log('Category added successfully:', result);
         setNewCategory({ name: '', description: '' });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to add category:', error);
       toast.error('Failed to add category: ' + error.message);
     }
   };
 
+  // Handle updating a category
   const handleUpdateCategory = async () => {
     if (!editingCategory?.name.trim()) {
       toast.error('Category name is required');
       return;
     }
     
-    if (!isAuthenticated) {
-      toast.error('You must be logged in to update categories');
+    if (!isAuthenticated || !isAdmin) {
+      toast.error('You must be logged in as an admin to update categories');
       return;
     }
     
@@ -161,6 +252,7 @@ export function GalleryTab() {
     setEditingCategory(null);
   };
 
+  // Handle adding a new image
   const handleAddImage = async () => {
     if (!selectedCategory) {
       toast.error('Please select a category first');
@@ -172,8 +264,8 @@ export function GalleryTab() {
       return;
     }
     
-    if (!isAuthenticated) {
-      toast.error('You must be logged in to add images');
+    if (!isAuthenticated || !isAdmin) {
+      toast.error('You must be logged in as an admin to add images');
       return;
     }
     
@@ -257,75 +349,35 @@ export function GalleryTab() {
     );
   }
 
+  // Render the gallery management UI
   return (
     <div className="space-y-6">
+      {/* Categories management */}
       <Card>
         <CardHeader>
           <CardTitle>Gallery Categories</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4">
-            <div className="flex items-end gap-4">
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="category-name">New Category Name</Label>
-                <Input
-                  id="category-name"
-                  value={newCategory.name}
-                  onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                  placeholder="Enter category name"
-                />
-              </div>
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="category-desc">Description (Optional)</Label>
-                <Input
-                  id="category-desc"
-                  value={newCategory.description}
-                  onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
-                  placeholder="Enter category description"
-                />
-              </div>
-              <Button onClick={handleAddCategory}>
-                <Plus className="mr-2 h-4 w-4" /> Add Category
-              </Button>
-            </div>
+            <CategoryForm 
+              newCategory={newCategory}
+              setNewCategory={setNewCategory}
+              handleAddCategory={handleAddCategory}
+            />
             
             <div className="border rounded-md p-4 mt-4">
               <h3 className="font-medium mb-2">Existing Categories</h3>
-              {categories.length === 0 ? (
-                <p className="text-muted-foreground">No categories yet. Add your first one.</p>
-              ) : (
-                <div className="space-y-2">
-                  {categories.map((category) => (
-                    <div key={category.id} className="flex items-center justify-between border-b pb-2">
-                      <div>
-                        <h4 className="font-medium">{category.name}</h4>
-                        {category.description && <p className="text-sm text-muted-foreground">{category.description}</p>}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setEditingCategory(category)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="destructive" 
-                          size="sm" 
-                          onClick={() => deleteCategory(category.id)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <CategoryList 
+                categories={categories} 
+                setEditingCategory={setEditingCategory} 
+                deleteCategory={deleteCategory}
+              />
             </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* Edit category dialog */}
       {editingCategory && (
         <Dialog open={!!editingCategory} onOpenChange={(open) => !open && setEditingCategory(null)}>
           <DialogContent>
@@ -357,6 +409,7 @@ export function GalleryTab() {
         </Dialog>
       )}
 
+      {/* Images management */}
       {categories.length > 0 && (
         <Card>
           <CardHeader>
@@ -426,39 +479,10 @@ export function GalleryTab() {
                     </Dialog>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {getImagesByCategory(category.id).map((image) => (
-                      <Card key={image.id}>
-                        <div className="relative aspect-square overflow-hidden">
-                          <img
-                            src={image.image_url}
-                            alt={image.title || 'Gallery image'}
-                            className="object-cover w-full h-full"
-                          />
-                        </div>
-                        <CardContent className="p-4">
-                          {image.title && <h4 className="font-medium">{image.title}</h4>}
-                          {image.description && <p className="text-sm text-muted-foreground">{image.description}</p>}
-                          <div className="flex justify-end gap-2 mt-2">
-                            <Button 
-                              variant="destructive" 
-                              size="sm" 
-                              onClick={() => deleteImage(image.id)}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                    
-                    {getImagesByCategory(category.id).length === 0 && (
-                      <div className="col-span-full flex flex-col items-center justify-center border rounded-lg p-8 text-center">
-                        <Image className="h-12 w-12 text-muted-foreground mb-2" />
-                        <p className="text-muted-foreground">No images in this category yet.</p>
-                      </div>
-                    )}
-                  </div>
+                  <ImageGrid 
+                    images={getImagesByCategory(category.id)} 
+                    deleteImage={deleteImage} 
+                  />
                 </TabsContent>
               ))}
             </Tabs>

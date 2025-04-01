@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -49,13 +50,20 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated, isAdmin, user } = useAuth();
 
+  // Function to load gallery data
   const loadGalleryData = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      console.log('Loading gallery data...', { isAuthenticated, isAdmin, userId: user?.id });
       
-      // Fetch categories
+      // Log authentication status for debugging
+      console.log('Loading gallery data...', { 
+        isAuthenticated, 
+        isAdmin, 
+        userId: user?.id 
+      });
+      
+      // Get categories from Supabase
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('gallery_categories')
         .select('*')
@@ -64,13 +72,14 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
       if (categoriesError) {
         console.error('Error fetching categories:', categoriesError);
         setError(categoriesError.message);
-        throw categoriesError;
+        toast.error('Error fetching categories: ' + categoriesError.message);
+        return;
       }
       
       console.log('Fetched categories:', categoriesData);
       setCategories(categoriesData || []);
 
-      // Fetch images
+      // Get images from Supabase
       const { data: imagesData, error: imagesError } = await supabase
         .from('gallery_images')
         .select('*')
@@ -79,7 +88,8 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
       if (imagesError) {
         console.error('Error fetching images:', imagesError);
         setError(imagesError.message);
-        throw imagesError;
+        toast.error('Error fetching images: ' + imagesError.message);
+        return;
       }
       
       console.log('Fetched images:', imagesData);
@@ -94,17 +104,20 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Function to add a new category
   const addCategory = async (category: Omit<GalleryCategory, 'id'>): Promise<GalleryCategory | null> => {
     try {
+      console.log('Adding category with auth status:', { isAuthenticated, isAdmin });
+
+      // Check if user is authenticated and is admin
       if (!isAuthenticated || !isAdmin) {
         const errorMessage = 'Admin authentication required to add categories';
         console.error(errorMessage);
         toast.error(errorMessage);
         return null;
       }
-
-      console.log('Adding category with auth status:', { isAuthenticated, isAdmin });
       
+      // Insert category into Supabase
       const { data, error } = await supabase
         .from('gallery_categories')
         .insert(category)
@@ -119,6 +132,8 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
       
       const newCategory = data as GalleryCategory;
       console.log('Category added successfully:', newCategory);
+      
+      // Update local state
       setCategories(prev => [...prev, newCategory]);
       toast.success('Category added successfully');
       return newCategory;
@@ -129,15 +144,18 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Function to update an existing category
   const updateCategory = async (category: GalleryCategory): Promise<GalleryCategory | null> => {
     try {
-      if (!isAuthenticated) {
-        const errorMessage = 'Authentication required to update categories';
+      // Check if user is authenticated
+      if (!isAuthenticated || !isAdmin) {
+        const errorMessage = 'Admin authentication required to update categories';
         console.error(errorMessage);
         toast.error(errorMessage);
         return null;
       }
 
+      // Update category in Supabase
       const { data, error } = await supabase
         .from('gallery_categories')
         .update(category)
@@ -145,9 +163,15 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating category:', error);
+        toast.error('Error updating category: ' + error.message);
+        return null;
+      }
 
-      const updatedCategory = data as unknown as GalleryCategory;
+      const updatedCategory = data as GalleryCategory;
+      
+      // Update local state
       setCategories(prev => prev.map(c => c.id === category.id ? updatedCategory : c));
       toast.success('Category updated successfully');
       return updatedCategory;
@@ -158,22 +182,30 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Function to delete a category
   const deleteCategory = async (id: string): Promise<void> => {
     try {
-      if (!isAuthenticated) {
-        const errorMessage = 'Authentication required to delete categories';
+      // Check if user is authenticated
+      if (!isAuthenticated || !isAdmin) {
+        const errorMessage = 'Admin authentication required to delete categories';
         console.error(errorMessage);
         toast.error(errorMessage);
         return;
       }
 
+      // Delete category from Supabase
       const { error } = await supabase
         .from('gallery_categories')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting category:', error);
+        toast.error('Error deleting category: ' + error.message);
+        return;
+      }
       
+      // Update local state
       setCategories(prev => prev.filter(c => c.id !== id));
       toast.success('Category deleted successfully');
     } catch (error: any) {
@@ -182,24 +214,33 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Function to add a new image
   const addImage = async (image: Omit<GalleryImage, 'id'>): Promise<GalleryImage | null> => {
     try {
-      if (!isAuthenticated) {
-        const errorMessage = 'Authentication required to add images';
+      // Check if user is authenticated
+      if (!isAuthenticated || !isAdmin) {
+        const errorMessage = 'Admin authentication required to add images';
         console.error(errorMessage);
         toast.error(errorMessage);
         return null;
       }
 
+      // Insert image into Supabase
       const { data, error } = await supabase
         .from('gallery_images')
         .insert(image)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error adding image:', error);
+        toast.error('Error adding image: ' + error.message);
+        return null;
+      }
       
-      const newImage = data as unknown as GalleryImage;
+      const newImage = data as GalleryImage;
+      
+      // Update local state
       setImages(prev => [...prev, newImage]);
       toast.success('Image added successfully');
       return newImage;
@@ -210,15 +251,18 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Function to update an existing image
   const updateImage = async (image: GalleryImage): Promise<GalleryImage | null> => {
     try {
-      if (!isAuthenticated) {
-        const errorMessage = 'Authentication required to update images';
+      // Check if user is authenticated
+      if (!isAuthenticated || !isAdmin) {
+        const errorMessage = 'Admin authentication required to update images';
         console.error(errorMessage);
         toast.error(errorMessage);
         return null;
       }
 
+      // Update image in Supabase
       const { data, error } = await supabase
         .from('gallery_images')
         .update(image)
@@ -226,9 +270,15 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating image:', error);
+        toast.error('Error updating image: ' + error.message);
+        return null;
+      }
 
-      const updatedImage = data as unknown as GalleryImage;
+      const updatedImage = data as GalleryImage;
+      
+      // Update local state
       setImages(prev => prev.map(img => img.id === image.id ? updatedImage : img));
       toast.success('Image updated successfully');
       return updatedImage;
@@ -239,22 +289,30 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Function to delete an image
   const deleteImage = async (id: string): Promise<void> => {
     try {
-      if (!isAuthenticated) {
-        const errorMessage = 'Authentication required to delete images';
+      // Check if user is authenticated
+      if (!isAuthenticated || !isAdmin) {
+        const errorMessage = 'Admin authentication required to delete images';
         console.error(errorMessage);
         toast.error(errorMessage);
         return;
       }
 
+      // Delete image from Supabase
       const { error } = await supabase
         .from('gallery_images')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting image:', error);
+        toast.error('Error deleting image: ' + error.message);
+        return;
+      }
       
+      // Update local state
       setImages(prev => prev.filter(img => img.id !== id));
       toast.success('Image deleted successfully');
     } catch (error: any) {
@@ -263,22 +321,21 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Helper function to get images by category
   const getImagesByCategory = (categoryId: string): GalleryImage[] => {
     return images.filter(image => image.category_id === categoryId);
   };
 
-  // Load gallery data on component mount or when authentication status changes
+  // Load gallery data when component mounts
   useEffect(() => {
-    if (isAuthenticated) {
-      loadGalleryData();
-    } else {
-      // Clear data when not authenticated
-      setCategories([]);
-      setImages([]);
-      setError(null);
-    }
-  }, [isAuthenticated]);
+    console.log('GalleryProvider mounted with auth state:', { isAuthenticated, isAdmin });
+    
+    // We'll load data even if user is not authenticated,
+    // the RLS policies on Supabase will handle access control
+    loadGalleryData();
+  }, [isAuthenticated, isAdmin]);
 
+  // Context value
   const value = {
     categories,
     images,
