@@ -26,7 +26,7 @@ export function useGalleryCategories() {
         return null;
       }
       
-      // Get Supabase session to ensure RLS policies work correctly
+      // Make sure we have a valid session before proceeding
       const { data: sessionData } = await supabase.auth.getSession();
       console.log('Current session status before adding category:', sessionData.session ? 'Active' : 'None');
       

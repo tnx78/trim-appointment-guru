@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setIsAuthenticated(!!session);
         
-        const isAdminUser = session?.user?.email === 'admin@example.com' || localStorage.getItem('isAdmin') === 'true';
+        const isAdminUser = session?.user?.email?.includes('admin') || localStorage.getItem('isAdmin') === 'true';
         setIsAdmin(isAdminUser);
         setLoading(false);
       }
@@ -42,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       setIsAuthenticated(!!session);
       
-      const isAdminUser = session?.user?.email === 'admin@example.com' || localStorage.getItem('isAdmin') === 'true';
+      const isAdminUser = session?.user?.email?.includes('admin') || localStorage.getItem('isAdmin') === 'true';
       setIsAdmin(isAdminUser);
       setLoading(false);
     });
@@ -86,12 +87,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       
+      // Special case for admin login
       if (email === 'admin' && password === 'admin123') {
         console.log('Admin login via local auth');
         
-        const adminEmail = 'admin@example.org';
+        // Use a valid email format
+        const adminEmail = 'admin@salonapp.com'; 
         const adminPassword = 'Admin123!';
         
+        // Try to sign in with the admin credentials
         const { data, error } = await supabase.auth.signInWithPassword({
           email: adminEmail,
           password: adminPassword,
@@ -99,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (error) {
           console.log('Attempting to create admin account');
+          // Create admin account if it doesn't exist
           const { error: signUpError } = await supabase.auth.signUp({
             email: adminEmail,
             password: adminPassword,
@@ -116,6 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return false;
           }
           
+          // Try to sign in again after creating the account
           const { error: loginError } = await supabase.auth.signInWithPassword({
             email: adminEmail,
             password: adminPassword,
@@ -128,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
         
+        // Set admin status in localStorage for persistence
         localStorage.setItem('isAdmin', 'true');
         setIsAuthenticated(true);
         setIsAdmin(true);
@@ -136,6 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return true;
       }
       
+      // Regular user login
       console.log('Attempting Supabase login');
       const { error } = await supabase.auth.signInWithPassword({
         email,
