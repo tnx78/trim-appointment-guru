@@ -40,6 +40,8 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
       const formData = { name, description };
       
       if (category) {
+        // Fix here: updateCategory expects only the id and the data,
+        // not wrapped in an object
         updateCategory(category.id, formData);
       } else {
         addCategory(formData);
