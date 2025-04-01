@@ -10,8 +10,10 @@ export function AppointmentList() {
   const [view, setView] = useState<'all' | 'upcoming' | 'past'>('upcoming');
   const [showAllDates, setShowAllDates] = useState(true);
 
-  // Get dates with appointments for calendar indicators
-  const appointmentDates = getAppointmentDates();
+  // Get dates with appointments for calendar indicators - filter out cancelled appointments
+  const appointmentDates = appointments
+    .filter(app => app.status !== 'cancelled')
+    .map(app => new Date(app.date));
 
   // Get today's date with time set to start of day
   const today = new Date();

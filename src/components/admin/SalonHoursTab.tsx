@@ -12,7 +12,7 @@ interface DayHours {
   closeTime: string;
 }
 
-interface SalonHours {
+export interface SalonHours {
   [key: string]: DayHours;
 }
 
@@ -46,6 +46,7 @@ export function SalonHoursTab() {
     { id: 'sunday', label: 'Sunday' },
   ];
 
+  // Create time options from 00:00 to 23:30 in half-hour increments
   const timeOptions = [];
   for (let hour = 0; hour < 24; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
@@ -67,7 +68,11 @@ export function SalonHoursTab() {
 
   const handleSave = () => {
     localStorage.setItem('salonHours', JSON.stringify(salonHours));
-    toast.success('Salon hours saved successfully');
+    // Force a page reload to ensure all components respect the new hours
+    toast.success('Salon hours saved successfully. Refreshing page to apply changes.');
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
   };
 
   const handleReset = () => {

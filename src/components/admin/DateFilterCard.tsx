@@ -22,7 +22,10 @@ export function DateFilterCard({
 }: DateFilterCardProps) {
   // Create a Map with date strings as keys for faster lookup
   const datesWithAppointments = appointmentDates.reduce((acc, date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    // Convert each date to midnight for consistent comparison
+    const dateObj = new Date(date);
+    dateObj.setHours(0, 0, 0, 0);
+    const dateStr = dateObj.toISOString().split('T')[0];
     acc[dateStr] = true;
     return acc;
   }, {} as Record<string, boolean>);
@@ -30,14 +33,16 @@ export function DateFilterCard({
   // Custom modifiers for the calendar
   const modifiers = {
     withAppointments: (date: Date) => {
-      const dateStr = date.toISOString().split('T')[0];
+      const dateObj = new Date(date);
+      dateObj.setHours(0, 0, 0, 0);
+      const dateStr = dateObj.toISOString().split('T')[0];
       return !!datesWithAppointments[dateStr];
     }
   };
 
   // Custom day class names
   const modifiersClassNames = {
-    withAppointments: "bg-gray-100 relative"
+    withAppointments: "bg-gray-300 relative"
   };
 
   return (

@@ -5,12 +5,14 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { format, addDays, isSaturday, isSunday } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { ChevronLeft, Clock } from 'lucide-react';
+import { useSalonHours } from '@/hooks/use-salon-hours';
 
 export function DateTimeSelection({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
   const { selectedService, selectedDate, selectedTime, selectDate, selectTime, getAvailableTimeSlots } = useAppContext();
   const [availableTimeSlots, setAvailableTimeSlots] = useState<{ id: string; time: string; available: boolean }[]>([]);
+  const { isDateAvailable } = useSalonHours();
   
   // Create a date 3 months from now for the upper bound of selectable dates
   const futureDate = addDays(new Date(), 90);
@@ -52,12 +54,11 @@ export function DateTimeSelection({ onBack, onNext }: { onBack: () => void; onNe
     return `${formattedHour}:${minutes} ${ampm}`;
   };
 
-  // Disable weekends and dates before today or after 3 months
+  // Disable dates that are outside booking range or when salon is closed
   const isDateDisabled = (date: Date) => {
     return date < today || 
            date > futureDate || 
-           isSaturday(date) || 
-           isSunday(date);
+           !isDateAvailable(date);
   };
 
   return (
