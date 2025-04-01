@@ -13,6 +13,23 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 export function GalleryTab() {
+  let galleryContext;
+  try {
+    galleryContext = useGalleryContext();
+  } catch (error) {
+    console.error('GalleryContext error:', error);
+    return (
+      <Card className="mt-4">
+        <CardContent className="p-6 text-center">
+          <p className="text-muted-foreground mb-4">There was an error loading the gallery module. Please try refreshing the page.</p>
+          <Button onClick={() => window.location.reload()}>
+            Refresh Page
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const {
     categories,
     images,
@@ -25,7 +42,7 @@ export function GalleryTab() {
     deleteImage,
     getImagesByCategory,
     loadGalleryData
-  } = useGalleryContext();
+  } = galleryContext;
 
   const { isAuthenticated, isAdmin } = useAuth();
 

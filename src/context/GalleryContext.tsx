@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -111,7 +110,7 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
         return null;
       }
       
-      const newCategory = data as unknown as GalleryCategory;
+      const newCategory = data as GalleryCategory;
       console.log('Category added successfully:', newCategory);
       setCategories(prev => [...prev, newCategory]);
       toast.success('Category added successfully');
