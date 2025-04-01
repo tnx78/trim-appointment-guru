@@ -54,7 +54,8 @@ export function NavBar() {
                   </Link>
                 </NavigationMenuItem>
                 
-                {user?.isAdmin && (
+                {/* Check for admin role in user metadata or use localStorage fallback */}
+                {(user?.app_metadata?.isAdmin || localStorage.getItem('isAdmin') === 'true') && (
                   <NavigationMenuItem>
                     <Link to="/admin">
                       <NavigationMenuLink className="px-4 py-2">
@@ -77,7 +78,8 @@ export function NavBar() {
             <div className="flex items-center gap-3">
               <Link to="/account">
                 <Avatar>
-                  <AvatarImage src={user?.avatar || undefined} />
+                  {/* Use optional chaining and check for user_metadata for avatar */}
+                  <AvatarImage src={user?.user_metadata?.avatar || undefined} />
                   <AvatarFallback>{getInitials()}</AvatarFallback>
                 </Avatar>
               </Link>
