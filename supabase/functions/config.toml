@@ -1,0 +1,8 @@
+
+project_id = "vxliszlmphhaqfuyshnm"
+# Find more information about function configuration at:
+# https://supabase.com/docs/guides/functions/secrets-and-environment-variables
+[functions.send-email]
+verify_jwt = false
+[functions.process-emails]
+verify_jwt = false

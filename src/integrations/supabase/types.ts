@@ -80,6 +80,33 @@ export type Database = {
         }
         Relationships: []
       }
+      email_templates: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          name: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          name: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          name?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       salon_hours: {
         Row: {
           close_time: string
@@ -103,6 +130,75 @@ export type Database = {
           open_time?: string
         }
         Relationships: []
+      }
+      salon_settings: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      scheduled_emails: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          id: string
+          send_at: string
+          status: string
+          template_name: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          id?: string
+          send_at: string
+          status?: string
+          template_name: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          id?: string
+          send_at?: string
+          status?: string
+          template_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_emails_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_emails_template_name_fkey"
+            columns: ["template_name"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["name"]
+          },
+        ]
       }
       services: {
         Row: {

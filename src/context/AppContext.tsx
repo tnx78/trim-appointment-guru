@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Service, ServiceCategory, Appointment, TimeSlot } from '@/types';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { addDays, addHours } from 'date-fns';
 
 // Context type
 interface AppContextType {
@@ -24,7 +25,7 @@ interface AppContextType {
   deleteService: (id: string) => void;
   updateServiceOrder: (updatedServices: Service[]) => void;
   
-  bookAppointment: (appointment: Omit<Appointment, 'id' | 'status'>) => void;
+  bookAppointment: (appointment: Omit<Appointment, 'id' | 'status'>) => Promise<string | null>;
   updateAppointment: (id: string, appointment: Partial<Appointment>) => void;
   cancelAppointment: (id: string) => void;
   
@@ -384,6 +385,74 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Helper function to schedule emails for an appointment
+  const scheduleEmailsForAppointment = async (appointmentId: string, appointment: Omit<Appointment, 'id' | 'status'>) => {
+    try {
+      const appointmentDate = new Date(appointment.date);
+      const now = new Date();
+      
+      // Schedule emails
+      const emailSchedules = [
+        {
+          template_name: 'booking_confirmation',
+          send_at: now,  // immediate
+        },
+        {
+          template_name: 'admin_notification',
+          send_at: now,  // immediate
+        },
+        {
+          template_name: 'appointment_reminder_day',
+          send_at: addDays(appointmentDate, -1), // 1 day before
+        },
+        {
+          template_name: 'appointment_reminder_hours',
+          send_at: addHours(
+            new Date(
+              appointmentDate.getFullYear(),
+              appointmentDate.getMonth(),
+              appointmentDate.getDate(),
+              parseInt(appointment.startTime.split(':')[0]),
+              parseInt(appointment.startTime.split(':')[1] || '0')
+            ),
+            -2 // 2 hours before appointment
+          ),
+        }
+      ];
+      
+      // Batch insert all scheduled emails
+      const { data, error } = await supabase
+        .from('scheduled_emails')
+        .insert(
+          emailSchedules.map(schedule => ({
+            appointment_id: appointmentId,
+            template_name: schedule.template_name,
+            send_at: schedule.send_at.toISOString(),
+          }))
+        );
+        
+      if (error) {
+        console.error('Error scheduling emails:', error);
+      } else {
+        console.log('Emails scheduled successfully');
+        
+        // Trigger immediate processing of emails
+        fetch(`${supabase.supabaseUrl}/functions/v1/process-emails`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabase.supabaseKey}`
+          },
+          body: JSON.stringify({ process: 'immediate' })
+        }).catch(err => {
+          console.error('Error triggering email processing:', err);
+        });
+      }
+    } catch (error) {
+      console.error('Error in scheduleEmailsForAppointment:', error);
+    }
+  };
+
   // Appointment operations
   const bookAppointment = async (appointment: Omit<Appointment, 'id' | 'status'>) => {
     try {
@@ -401,11 +470,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (data && data.length > 0) {
         const newAppointment = mapAppointmentFromDB(data[0]);
         setAppointments([...appointments, newAppointment]);
+        
+        // Schedule emails for the new appointment
+        await scheduleEmailsForAppointment(data[0].id, appointment);
+        
         toast.success("Appointment booked successfully");
+        return data[0].id;
       }
+      return null;
     } catch (error) {
       console.error('Error booking appointment:', error);
       toast.error('Failed to book appointment');
+      return null;
     }
   };
 
@@ -436,6 +512,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       
       if (error) throw error;
       
+      // Find the appointment to get the client's email
+      const appointment = appointments.find(a => a.id === id);
+      
+      // Schedule an email notification based on the update type
+      if (updatedData.status === 'confirmed' && appointment) {
+        const { data, error } = await supabase
+          .from('scheduled_emails')
+          .insert({
+            appointment_id: id,
+            template_name: 'appointment_confirmed',
+            send_at: new Date().toISOString()
+          });
+          
+        if (error) {
+          console.error('Error scheduling confirmation email:', error);
+        } else {
+          // Trigger email processing
+          fetch(`${supabase.supabaseUrl}/functions/v1/process-emails`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabase.supabaseKey}`
+            },
+            body: JSON.stringify({ process: 'immediate' })
+          }).catch(err => {
+            console.error('Error triggering email processing:', err);
+          });
+        }
+      }
+      
       setAppointments(appointments.map(appointment => 
         appointment.id === id 
           ? { ...appointment, ...updatedData } 
@@ -456,6 +562,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         .eq('id', id);
       
       if (error) throw error;
+      
+      // Schedule cancellation email
+      const { data, error: emailError } = await supabase
+        .from('scheduled_emails')
+        .insert({
+          appointment_id: id,
+          template_name: 'appointment_cancelled',
+          send_at: new Date().toISOString()
+        });
+        
+      if (emailError) {
+        console.error('Error scheduling cancellation email:', emailError);
+      } else {
+        // Trigger email processing
+        fetch(`${supabase.supabaseUrl}/functions/v1/process-emails`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabase.supabaseKey}`
+          },
+          body: JSON.stringify({ process: 'immediate' })
+        }).catch(err => {
+          console.error('Error triggering email processing:', err);
+        });
+      }
       
       setAppointments(appointments.map(appointment => 
         appointment.id === id 

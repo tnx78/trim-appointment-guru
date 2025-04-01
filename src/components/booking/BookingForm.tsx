@@ -60,7 +60,7 @@ export function BookingForm({ onBack }: { onBack: () => void }) {
   const endTimeObject = addMinutes(timeObject, service.duration);
   const endTime = format(endTimeObject, 'H:mm');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -71,7 +71,7 @@ export function BookingForm({ onBack }: { onBack: () => void }) {
     }
 
     try {
-      bookAppointment({
+      const appointmentId = await bookAppointment({
         serviceId: service.id,
         clientName: name,
         clientEmail: email,
@@ -81,12 +81,16 @@ export function BookingForm({ onBack }: { onBack: () => void }) {
         endTime,
       });
       
-      // Reset the booking flow state
-      reset();
-      
-      // Show success message and redirect
-      toast.success('Appointment booked successfully!');
-      navigate('/confirmation');
+      if (appointmentId) {
+        // Reset the booking flow state
+        reset();
+        
+        // Show success message and redirect
+        toast.success('Appointment booked successfully!');
+        navigate('/confirmation');
+      } else {
+        throw new Error("Failed to book appointment");
+      }
     } catch (error) {
       toast.error('An error occurred while booking your appointment');
       console.error(error);
