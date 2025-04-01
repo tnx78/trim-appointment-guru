@@ -3,9 +3,11 @@ import { useState } from 'react';
 import { ServiceList } from '@/components/booking/ServiceList';
 import { DateTimeSelection } from '@/components/booking/DateTimeSelection';
 import BookingForm from '@/components/booking/BookingForm';
+import { useBookingContext } from '@/context/BookingContext';
 
 export default function ServicesPage() {
   const [step, setStep] = useState(1);
+  const { selectedService } = useBookingContext();
 
   const goToServices = () => {
     setStep(1);
@@ -22,7 +24,11 @@ export default function ServicesPage() {
   return (
     <div className="container py-10">
       {step === 1 && <ServiceList onServiceSelect={goToDateTime} />}
-      {step === 2 && <DateTimeSelection onBack={goToServices} onNext={goToBookingForm} />}
+      {step === 2 && (
+        selectedService ? 
+        <DateTimeSelection onBack={goToServices} onNext={goToBookingForm} /> :
+        goToServices()
+      )}
       {step === 3 && <BookingForm onBack={goToDateTime} />}
     </div>
   );

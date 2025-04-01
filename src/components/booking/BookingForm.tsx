@@ -5,7 +5,6 @@ import { useBookingContext } from '@/context/BookingContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ServiceList } from './ServiceList';
 import { DateTimeSelection } from './DateTimeSelection';
 import { BookingProgressBar } from './BookingProgressBar';
 import { UserInfoForm } from './UserInfoForm';
@@ -37,14 +36,9 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
     }
   };
 
-  // Handle service selection
-  const handleServiceSelect = () => {
-    setActiveStep(2);
-  };
-
   // Handle date/time selection
   const handleDateTimeNext = () => {
-    setActiveStep(3);
+    setActiveStep(2);
   };
 
   // Helper function to calculate end time based on start time and duration
@@ -125,43 +119,12 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
 
         {activeStep === 1 && (
           <div>
-            <h2 className="text-xl font-bold mb-4">Select a Service</h2>
-            <ServiceList onServiceSelect={handleServiceSelect} />
-            <div className="mt-6 flex justify-end">
-              <button 
-                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium h-10 px-4 py-2"
-                onClick={handleNext} 
-                disabled={!selectedService}
-              >
-                Continue
-              </button>
-            </div>
+            <h2 className="text-xl font-bold mb-4">Select Date & Time</h2>
+            <DateTimeSelection onBack={onBack} onNext={handleDateTimeNext} />
           </div>
         )}
 
         {activeStep === 2 && (
-          <div>
-            <h2 className="text-xl font-bold mb-4">Select Date & Time</h2>
-            <DateTimeSelection onBack={handleBack} onNext={handleDateTimeNext} />
-            <div className="mt-6 flex justify-between">
-              <button 
-                className="border border-input bg-background hover:bg-accent hover:text-accent-foreground inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium h-10 px-4 py-2"
-                onClick={handleBack}
-              >
-                Back
-              </button>
-              <button 
-                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium h-10 px-4 py-2 disabled:opacity-50 disabled:pointer-events-none"
-                onClick={handleNext} 
-                disabled={!selectedDate || !selectedTime}
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        )}
-
-        {activeStep === 3 && (
           <UserInfoForm 
             onBack={handleBack}
             onSubmit={handleSubmit}
