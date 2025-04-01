@@ -1,13 +1,15 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 
+// Define types for gallery data
 export interface GalleryCategory {
   id: string;
   name: string;
   description?: string;
   sort_order?: number;
+  created_at?: string;
 }
 
 export interface GalleryImage {
@@ -17,72 +19,57 @@ export interface GalleryImage {
   description?: string;
   image_url: string;
   sort_order?: number;
+  created_at?: string;
 }
 
+// Define context type
 interface GalleryContextType {
   categories: GalleryCategory[];
   images: GalleryImage[];
-  isLoading: boolean;
-  error: string | null;
-  addCategory: (category: Omit<GalleryCategory, 'id'>) => Promise<void>;
-  updateCategory: (category: GalleryCategory) => Promise<void>;
+  loadGalleryData: () => Promise<void>;
+  addCategory: (category: Omit<GalleryCategory, 'id'>) => Promise<GalleryCategory | null>;
+  updateCategory: (category: GalleryCategory) => Promise<GalleryCategory | null>;
   deleteCategory: (id: string) => Promise<void>;
-  addImage: (image: Omit<GalleryImage, 'id'>) => Promise<void>;
-  updateImage: (image: GalleryImage) => Promise<void>;
+  addImage: (image: Omit<GalleryImage, 'id'>) => Promise<GalleryImage | null>;
+  updateImage: (image: GalleryImage) => Promise<GalleryImage | null>;
   deleteImage: (id: string) => Promise<void>;
   getImagesByCategory: (categoryId: string) => GalleryImage[];
 }
 
+// Create context
 const GalleryContext = createContext<GalleryContextType | undefined>(undefined);
 
-export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Provider component
+export function GalleryProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<GalleryCategory[]>([]);
   const [images, setImages] = useState<GalleryImage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchCategories();
-    fetchImages();
-  }, []);
-
-  const fetchCategories = async () => {
+  const loadGalleryData = async () => {
     try {
-      setIsLoading(true);
-      const { data, error } = await supabase
+      // Fetch categories
+      const { data: categoriesData, error: categoriesError } = await supabase
         .from('gallery_categories')
         .select('*')
         .order('sort_order', { ascending: true });
 
-      if (error) throw error;
-      setCategories(data || []);
-    } catch (err: any) {
-      setError(err.message);
-      toast.error('Failed to load gallery categories');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      if (categoriesError) throw categoriesError;
+      setCategories(categoriesData as GalleryCategory[]);
 
-  const fetchImages = async () => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase
+      // Fetch images
+      const { data: imagesData, error: imagesError } = await supabase
         .from('gallery_images')
         .select('*')
         .order('sort_order', { ascending: true });
 
-      if (error) throw error;
-      setImages(data || []);
-    } catch (err: any) {
-      setError(err.message);
-      toast.error('Failed to load gallery images');
-    } finally {
-      setIsLoading(false);
+      if (imagesError) throw imagesError;
+      setImages(imagesData as GalleryImage[]);
+    } catch (error: any) {
+      console.error('Error loading gallery data:', error.message);
+      toast({ title: 'Error loading gallery data', description: error.message, variant: 'destructive' });
     }
   };
 
-  const addCategory = async (category: Omit<GalleryCategory, 'id'>) => {
+  const addCategory = async (category: Omit<GalleryCategory, 'id'>): Promise<GalleryCategory | null> => {
     try {
       const { data, error } = await supabase
         .from('gallery_categories')
@@ -91,31 +78,39 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         .single();
 
       if (error) throw error;
-      setCategories([...categories, data]);
-      toast.success('Category added successfully');
-    } catch (err: any) {
-      toast.error('Failed to add category');
-      setError(err.message);
+      
+      const newCategory = data as unknown as GalleryCategory;
+      setCategories(prev => [...prev, newCategory]);
+      return newCategory;
+    } catch (error: any) {
+      console.error('Error adding category:', error.message);
+      toast({ title: 'Error adding category', description: error.message, variant: 'destructive' });
+      return null;
     }
   };
 
-  const updateCategory = async (category: GalleryCategory) => {
+  const updateCategory = async (category: GalleryCategory): Promise<GalleryCategory | null> => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('gallery_categories')
         .update(category)
-        .eq('id', category.id);
+        .eq('id', category.id)
+        .select()
+        .single();
 
       if (error) throw error;
-      setCategories(categories.map(c => c.id === category.id ? category : c));
-      toast.success('Category updated successfully');
-    } catch (err: any) {
-      toast.error('Failed to update category');
-      setError(err.message);
+
+      const updatedCategory = data as unknown as GalleryCategory;
+      setCategories(prev => prev.map(c => c.id === category.id ? updatedCategory : c));
+      return updatedCategory;
+    } catch (error: any) {
+      console.error('Error updating category:', error.message);
+      toast({ title: 'Error updating category', description: error.message, variant: 'destructive' });
+      return null;
     }
   };
 
-  const deleteCategory = async (id: string) => {
+  const deleteCategory = async (id: string): Promise<void> => {
     try {
       const { error } = await supabase
         .from('gallery_categories')
@@ -123,15 +118,15 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         .eq('id', id);
 
       if (error) throw error;
-      setCategories(categories.filter(c => c.id !== id));
-      toast.success('Category deleted successfully');
-    } catch (err: any) {
-      toast.error('Failed to delete category');
-      setError(err.message);
+      
+      setCategories(prev => prev.filter(c => c.id !== id));
+    } catch (error: any) {
+      console.error('Error deleting category:', error.message);
+      toast({ title: 'Error deleting category', description: error.message, variant: 'destructive' });
     }
   };
 
-  const addImage = async (image: Omit<GalleryImage, 'id'>) => {
+  const addImage = async (image: Omit<GalleryImage, 'id'>): Promise<GalleryImage | null> => {
     try {
       const { data, error } = await supabase
         .from('gallery_images')
@@ -140,31 +135,39 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         .single();
 
       if (error) throw error;
-      setImages([...images, data]);
-      toast.success('Image added successfully');
-    } catch (err: any) {
-      toast.error('Failed to add image');
-      setError(err.message);
+      
+      const newImage = data as unknown as GalleryImage;
+      setImages(prev => [...prev, newImage]);
+      return newImage;
+    } catch (error: any) {
+      console.error('Error adding image:', error.message);
+      toast({ title: 'Error adding image', description: error.message, variant: 'destructive' });
+      return null;
     }
   };
 
-  const updateImage = async (image: GalleryImage) => {
+  const updateImage = async (image: GalleryImage): Promise<GalleryImage | null> => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('gallery_images')
         .update(image)
-        .eq('id', image.id);
+        .eq('id', image.id)
+        .select()
+        .single();
 
       if (error) throw error;
-      setImages(images.map(i => i.id === image.id ? image : i));
-      toast.success('Image updated successfully');
-    } catch (err: any) {
-      toast.error('Failed to update image');
-      setError(err.message);
+
+      const updatedImage = data as unknown as GalleryImage;
+      setImages(prev => prev.map(img => img.id === image.id ? updatedImage : img));
+      return updatedImage;
+    } catch (error: any) {
+      console.error('Error updating image:', error.message);
+      toast({ title: 'Error updating image', description: error.message, variant: 'destructive' });
+      return null;
     }
   };
 
-  const deleteImage = async (id: string) => {
+  const deleteImage = async (id: string): Promise<void> => {
     try {
       const { error } = await supabase
         .from('gallery_images')
@@ -172,43 +175,44 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         .eq('id', id);
 
       if (error) throw error;
-      setImages(images.filter(i => i.id !== id));
-      toast.success('Image deleted successfully');
-    } catch (err: any) {
-      toast.error('Failed to delete image');
-      setError(err.message);
+      
+      setImages(prev => prev.filter(img => img.id !== id));
+    } catch (error: any) {
+      console.error('Error deleting image:', error.message);
+      toast({ title: 'Error deleting image', description: error.message, variant: 'destructive' });
     }
   };
 
-  const getImagesByCategory = (categoryId: string) => {
+  const getImagesByCategory = (categoryId: string): GalleryImage[] => {
     return images.filter(image => image.category_id === categoryId);
   };
 
-  return (
-    <GalleryContext.Provider
-      value={{
-        categories,
-        images,
-        isLoading,
-        error,
-        addCategory,
-        updateCategory,
-        deleteCategory,
-        addImage,
-        updateImage,
-        deleteImage,
-        getImagesByCategory
-      }}
-    >
-      {children}
-    </GalleryContext.Provider>
-  );
-};
+  // Load gallery data on component mount
+  useEffect(() => {
+    loadGalleryData();
+  }, []);
 
-export const useGalleryContext = () => {
+  const value = {
+    categories,
+    images,
+    loadGalleryData,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    addImage,
+    updateImage,
+    deleteImage,
+    getImagesByCategory
+  };
+
+  return <GalleryContext.Provider value={value}>{children}</GalleryContext.Provider>;
+}
+
+// Custom hook to use the GalleryContext
+export function useGalleryContext() {
   const context = useContext(GalleryContext);
   if (context === undefined) {
     throw new Error('useGalleryContext must be used within a GalleryProvider');
   }
   return context;
-};
+}

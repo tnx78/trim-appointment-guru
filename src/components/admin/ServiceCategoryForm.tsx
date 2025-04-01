@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { ServiceCategory } from '@/types';
@@ -19,7 +18,6 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // If editing, populate form with category data
   useEffect(() => {
     if (category) {
       setName(category.name);
@@ -43,10 +41,9 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
       if (category) {
         updateCategory(category.id, formData);
       } else {
-        addCategory(formData);
+        addCategory({ name, description });
       }
       
-      // Reset form
       setName('');
       setDescription('');
       onComplete();

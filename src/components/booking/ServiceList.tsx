@@ -1,6 +1,6 @@
 
-import { useServiceContext, useBookingContext } from '@/context/AppContext';
-import { useCategoryContext } from '@/context/CategoryContext';
+import { useServiceContext, useCategoryContext } from '@/context/AppContext';
+import { useBookingContext } from '@/context/BookingContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';

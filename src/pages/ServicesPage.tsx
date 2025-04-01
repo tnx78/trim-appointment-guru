@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { ServiceList } from '@/components/booking/ServiceList';
 import { DateTimeSelection } from '@/components/booking/DateTimeSelection';
 import BookingForm from '@/components/booking/BookingForm';
-import { useBookingContext } from '@/context/BookingContext';
+import { useBookingContext } from '@/context/AppContext';
 
 export default function ServicesPage() {
   const [step, setStep] = useState(1);
@@ -21,7 +20,6 @@ export default function ServicesPage() {
     setStep(3);
   };
 
-  // Redirect to step 1 if no service is selected when on step 2
   useEffect(() => {
     if (step === 2 && !selectedService) {
       goToServices();

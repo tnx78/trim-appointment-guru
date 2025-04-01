@@ -1,15 +1,8 @@
-
 import { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { useGalleryContext } from '@/context/AppContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
-import { 
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious
-} from '@/components/ui/carousel';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 export default function GalleryPage() {
   const { categories, getImagesByCategory, isLoading } = useGalleryContext();
