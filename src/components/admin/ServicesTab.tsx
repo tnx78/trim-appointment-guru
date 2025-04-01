@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ServiceForm } from '@/components/admin/ServiceForm';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Filter } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
 export function ServicesTab() {
@@ -13,6 +14,7 @@ export function ServicesTab() {
   
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [editingService, setEditingService] = useState<typeof services[0] | undefined>(undefined);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
 
   const handleAddService = () => {
     setEditingService(undefined);
@@ -35,6 +37,10 @@ export function ServicesTab() {
     setEditingService(undefined);
   };
 
+  const filteredServices = selectedCategoryId === 'all' 
+    ? services 
+    : services.filter(service => service.categoryId === selectedCategoryId);
+
   return (
     <>
       <Card>
@@ -44,27 +50,58 @@ export function ServicesTab() {
               <CardTitle>Services</CardTitle>
               <CardDescription>Manage your salon services</CardDescription>
             </div>
-            <Button onClick={handleAddService}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add Service
-            </Button>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleAddService}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Service
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          {services.length === 0 ? (
+          {filteredServices.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">
-              No services yet. Create your first service to get started.
+              {selectedCategoryId === 'all' 
+                ? 'No services yet. Create your first service to get started.' 
+                : 'No services in this category.'}
             </div>
           ) : (
             <div className="space-y-4">
-              {services.map((service) => {
+              {filteredServices.map((service) => {
                 const category = categories.find(c => c.id === service.categoryId);
                 return (
                   <div key={service.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <div className="font-medium">{service.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {category?.name} • {service.duration} min • ${service.price.toFixed(2)}
+                    <div className="flex items-center gap-4">
+                      {service.image && (
+                        <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-100">
+                          <img 
+                            src={service.image} 
+                            alt={service.name} 
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-medium">{service.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {category?.name} • {service.duration} min • ${service.price.toFixed(2)}
+                        </div>
                       </div>
                     </div>
                     <div className="flex space-x-2">

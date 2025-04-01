@@ -12,6 +12,7 @@ export interface Service {
   description?: string;
   duration: number; // in minutes
   price: number;
+  image?: string; // URL to the image
 }
 
 export interface Appointment {
