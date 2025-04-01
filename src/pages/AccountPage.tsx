@@ -23,17 +23,18 @@ export default function AccountPage() {
       if (!user) return;
       
       try {
+        // Use the correct typing for this query by specifying the return type
         const { data, error } = await supabase
           .from('user_profiles')
           .select('*')
           .eq('id', user.id)
-          .single();
+          .single<UserProfile>();
           
         if (error) {
           throw error;
         }
         
-        setProfile(data as UserProfile);
+        setProfile(data);
       } catch (error: any) {
         toast.error(`Error fetching profile: ${error.message}`);
       } finally {
