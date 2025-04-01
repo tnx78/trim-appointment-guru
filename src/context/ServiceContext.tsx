@@ -4,7 +4,6 @@ import { Service } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { mapServiceFromDB, mapServiceToDB } from '@/utils/dataMappers';
 import { toast } from 'sonner';
-import { useCategoryContext } from './CategoryContext';
 
 // Context type
 interface ServiceContextType {

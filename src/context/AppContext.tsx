@@ -5,11 +5,11 @@ import { ServiceProvider } from '@/context/ServiceContext';
 import { AppointmentProvider } from '@/context/AppointmentContext';
 import { BookingProvider } from '@/context/BookingContext';
 
-// Import the hooks
-import { useCategoryContext } from './CategoryContext';
-import { useServiceContext } from './ServiceContext';
-import { useAppointmentContext } from './AppointmentContext';
-import { useBookingContext } from './BookingContext';
+// Re-export all the hooks for easier imports
+export { useCategoryContext } from './CategoryContext';
+export { useServiceContext } from './ServiceContext';
+export { useAppointmentContext } from './AppointmentContext';
+export { useBookingContext } from './BookingContext';
 
 // Modified AppProvider to compose all the other providers
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -26,14 +26,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Re-export all the hooks for easier imports
-export { useCategoryContext } from './CategoryContext';
-export { useServiceContext } from './ServiceContext';
-export { useAppointmentContext } from './AppointmentContext';
-export { useBookingContext } from './BookingContext';
-
 // For backward compatibility, create a useAppContext hook
 export function useAppContext() {
+  // Import hooks directly to avoid circular dependencies
   const categoryContext = useCategoryContext();
   const serviceContext = useServiceContext();
   const appointmentContext = useAppointmentContext();
