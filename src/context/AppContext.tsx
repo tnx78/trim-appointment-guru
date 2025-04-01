@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Service, ServiceCategory, Appointment, TimeSlot } from '@/types';
 import { toast } from 'sonner';
@@ -18,10 +17,12 @@ interface AppContextType {
   addCategory: (category: Omit<ServiceCategory, 'id'>) => void;
   updateCategory: (id: string, category: Partial<ServiceCategory>) => void;
   deleteCategory: (id: string) => void;
+  updateCategoryOrder: (updatedCategories: ServiceCategory[]) => void;
   
   addService: (service: Omit<Service, 'id'>) => void;
   updateService: (id: string, service: Partial<Service>) => void;
   deleteService: (id: string) => void;
+  updateServiceOrder: (updatedServices: Service[]) => void;
   
   bookAppointment: (appointment: Omit<Appointment, 'id' | 'status'>) => void;
   updateAppointment: (id: string, appointment: Partial<Appointment>) => void;
@@ -244,6 +245,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateCategoryOrder = async (updatedCategories: ServiceCategory[]) => {
+    try {
+      // Update local state immediately for responsiveness
+      setCategories(updatedCategories);
+      
+      // For each category, update its order in the database
+      for (const category of updatedCategories) {
+        const { error } = await supabase
+          .from('categories')
+          .update({ order: category.order })
+          .eq('id', category.id);
+        
+        if (error) throw error;
+      }
+      
+      // No need for a toast here as it's a background operation
+    } catch (error) {
+      console.error('Error updating category order:', error);
+      toast.error('Failed to update category order');
+      
+      // Fetch categories again to reset to server state
+      const { data, error: fetchError } = await supabase.from('categories').select('*');
+      if (!fetchError && data) {
+        setCategories(data.map(mapCategoryFromDB));
+      }
+    }
+  };
+
   // Service operations
   const addService = async (service: Omit<Service, 'id'>) => {
     try {
@@ -314,6 +343,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error deleting service:', error);
       toast.error('Failed to delete service');
+    }
+  };
+
+  const updateServiceOrder = async (updatedServices: Service[]) => {
+    try {
+      // Update local state immediately for responsiveness
+      setServices(updatedServices);
+      
+      // For each service, update its order in the database
+      for (const service of updatedServices) {
+        const { error } = await supabase
+          .from('services')
+          .update({ order: service.order })
+          .eq('id', service.id);
+        
+        if (error) throw error;
+      }
+      
+      // No need for a toast here as it's a background operation
+    } catch (error) {
+      console.error('Error updating service order:', error);
+      toast.error('Failed to update service order');
+      
+      // Fetch services again to reset to server state
+      const { data, error: fetchError } = await supabase.from('services').select('*');
+      if (!fetchError && data) {
+        setServices(data.map(mapServiceFromDB));
+      }
     }
   };
 
@@ -511,10 +568,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     addCategory,
     updateCategory,
     deleteCategory,
+    updateCategoryOrder,
     
     addService,
     updateService,
     deleteService,
+    updateServiceOrder,
     
     bookAppointment,
     updateAppointment,
