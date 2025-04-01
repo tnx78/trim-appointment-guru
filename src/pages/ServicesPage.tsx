@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ServiceList } from '@/components/booking/ServiceList';
 import { DateTimeSelection } from '@/components/booking/DateTimeSelection';
 import BookingForm from '@/components/booking/BookingForm';
@@ -21,14 +21,17 @@ export default function ServicesPage() {
     setStep(3);
   };
 
+  // Redirect to step 1 if no service is selected when on step 2
+  useEffect(() => {
+    if (step === 2 && !selectedService) {
+      goToServices();
+    }
+  }, [step, selectedService]);
+
   return (
     <div className="container py-10">
       {step === 1 && <ServiceList onServiceSelect={goToDateTime} />}
-      {step === 2 && (
-        selectedService ? 
-        <DateTimeSelection onBack={goToServices} onNext={goToBookingForm} /> :
-        goToServices()
-      )}
+      {step === 2 && <DateTimeSelection onBack={goToServices} onNext={goToBookingForm} />}
       {step === 3 && <BookingForm onBack={goToDateTime} />}
     </div>
   );
