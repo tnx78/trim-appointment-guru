@@ -54,7 +54,7 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
       // Format date object to YYYY-MM-DD string
       const formattedDate = selectedDate.toISOString().split('T')[0];
       
-      // Create appointment data object without referencing the users table
+      // Create appointment data object completely without any user_id reference
       const appointmentData = {
         service_id: selectedService.id,
         client_name: formData.name,
@@ -63,11 +63,10 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
         date: formattedDate,
         start_time: selectedTime,
         end_time: calculateEndTime(selectedTime, selectedService.duration),
-        status: 'confirmed',
-        user_id: user?.id || null // Just pass the user ID directly if available
+        status: 'confirmed'
       };
       
-      // Insert appointment without any joins to auth.users
+      // Insert appointment without any reference to users
       const { data, error } = await supabase
         .from('appointments')
         .insert(appointmentData)

@@ -15,7 +15,6 @@ export function useAppointmentManager() {
   useEffect(() => {
     async function fetchAppointments() {
       try {
-        // Simple query without any joins to auth.users
         const { data, error } = await supabase
           .from('appointments')
           .select('*');
