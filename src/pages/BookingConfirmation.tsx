@@ -74,7 +74,7 @@ export default function BookingConfirmation() {
           const endDate = new Date(appointmentDate);
           endDate.setHours(endHour, endMinute, 0, 0);
           
-          const serviceTitle = serviceData?.name || serviceName || 'Appointment';
+          const serviceTitle = service?.name || serviceName || 'Appointment';
           
           const eventDetails = {
             text: `${serviceTitle} Appointment`,
@@ -98,7 +98,7 @@ export default function BookingConfirmation() {
         console.error('Error creating Google Calendar URL:', error);
       }
     }
-  }, [appointmentData, getServiceById, serviceName]);
+  }, [appointmentData, getServiceById, serviceName, service]);
 
   const formatTimeDisplay = (timeString?: string) => {
     if (!timeString) return '';
