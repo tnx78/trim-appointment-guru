@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { Service, ServiceCategory } from '@/types';
@@ -24,11 +23,10 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
   const [price, setPrice] = useState('0');
   const [image, setImage] = useState<string | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState<number>(Date.now());
 
-  // Define available durations in 15-minute intervals
   const availableDurations = [15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180];
 
-  // If editing, populate form with service data
   useEffect(() => {
     if (service) {
       setName(service.name);
@@ -43,7 +41,7 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size should be less than 5MB');
         return;
       }
@@ -51,6 +49,10 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImage(reader.result as string);
+        console.log('Image loaded successfully');
+      };
+      reader.onerror = () => {
+        toast.error('Error reading image file');
       };
       reader.readAsDataURL(file);
     }
@@ -58,6 +60,7 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
 
   const handleRemoveImage = () => {
     setImage(undefined);
+    setFileInputKey(Date.now());
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -86,7 +89,6 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
         addService(formData);
       }
       
-      // Reset form
       setName('');
       setDescription('');
       setCategoryId('');
@@ -143,7 +145,7 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="image">Service Image</Label>
+        <Label htmlFor="service-image">Service Image</Label>
         <div className="flex items-center gap-4">
           {image ? (
             <div className="relative h-24 w-24 rounded-md overflow-hidden border">
@@ -163,18 +165,19 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
               </Button>
             </div>
           ) : (
-            <div className="relative">
+            <label htmlFor="service-image-input" className="cursor-pointer">
               <div className="h-24 w-24 border border-dashed border-gray-300 rounded-md flex items-center justify-center bg-gray-50">
                 <Image className="h-8 w-8 text-gray-400" />
               </div>
               <Input
-                id="image"
+                id="service-image-input"
+                key={fileInputKey}
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
-                className="absolute inset-0 opacity-0 cursor-pointer"
+                className="hidden"
               />
-            </div>
+            </label>
           )}
           <div className="text-sm text-muted-foreground">
             {image ? "Click the X to remove the image" : "Click to upload an image (max 5MB)"}
