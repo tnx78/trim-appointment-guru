@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { Service } from '@/types';
 import { useServiceContext } from '@/context/AppContext';
 
 interface Appointment {
@@ -29,9 +28,10 @@ export default function MyAppointmentsPage() {
 
   useEffect(() => {
     const fetchAppointments = async () => {
-      if (!user) return;
+      if (!user?.email) return;
       
       try {
+        console.log('Fetching appointments for user:', user.email);
         const { data, error } = await supabase
           .from('appointments')
           .select('*')
@@ -40,22 +40,29 @@ export default function MyAppointmentsPage() {
           .order('start_time', { ascending: true });
           
         if (error) {
+          console.error('Error fetching appointments:', error);
           throw error;
         }
         
+        console.log('Fetched appointments:', data);
         setAppointments(data as Appointment[]);
       } catch (error: any) {
+        console.error('Error fetching appointments:', error);
         toast.error(`Error fetching appointments: ${error.message}`);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchAppointments();
-  }, [user]);
+    if (isAuthenticated && user?.email) {
+      fetchAppointments();
+    } else {
+      setLoading(false);
+    }
+  }, [user, isAuthenticated]);
 
   // Redirect if not authenticated
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !loading) {
     return <Navigate to="/auth" />;
   }
 

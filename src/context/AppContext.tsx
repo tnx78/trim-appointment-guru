@@ -28,7 +28,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
 // For backward compatibility, create a useAppContext hook that combines all contexts
 export function useAppContext() {
-  // Import the individual context hooks from their source files
+  // Import the individual context hooks from their respective files
   const { 
     categories, 
     addCategory, 

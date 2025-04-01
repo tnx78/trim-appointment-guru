@@ -16,7 +16,9 @@ export function useAppointmentManager() {
     async function fetchAppointments() {
       try {
         setIsLoading(true);
-        // Fetch appointments directly without trying to join with users table
+        console.log('Fetching appointments...');
+        
+        // Fetch appointments with improved error handling
         const { data, error } = await supabase
           .from('appointments')
           .select('*');
@@ -28,11 +30,13 @@ export function useAppointmentManager() {
           return;
         }
         
-        if (data) {
+        if (data && data.length > 0) {
+          console.log(`Successfully fetched ${data.length} appointments`);
           const mappedAppointments = data.map(mapAppointmentFromDB);
-          console.log('Fetched appointments:', mappedAppointments.length);
+          console.log('Mapped appointments:', mappedAppointments);
           setAppointments(mappedAppointments);
         } else {
+          console.log('No appointments found');
           setAppointments([]);
         }
       } catch (error) {

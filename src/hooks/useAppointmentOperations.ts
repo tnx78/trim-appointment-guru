@@ -3,6 +3,7 @@ import { Appointment } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { mapAppointmentFromDB, mapAppointmentToDB } from '@/utils/dataMappers';
 import { toast } from 'sonner';
+import { scheduleEmailsForAppointment } from './useEmailScheduler';
 
 export function useAppointmentOperations(appointments: Appointment[], setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>) {
   // Book a new appointment
@@ -12,8 +13,10 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
       
       const dbAppointment = mapAppointmentToDB({
         ...appointment,
-        status: 'confirmed'
+        status: 'confirmed' as const
       });
+      
+      console.log('Transformed for DB:', dbAppointment);
       
       const { data, error } = await supabase
         .from('appointments')
@@ -22,20 +25,32 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
       
       if (error) {
         console.error('Error booking appointment:', error);
-        throw error;
+        toast.error(`Failed to book appointment: ${error.message}`);
+        return null;
       }
       
       if (data && data.length > 0) {
+        console.log('Appointment booked successfully:', data[0]);
         const newAppointment = mapAppointmentFromDB(data[0]);
         setAppointments(prev => [...prev, newAppointment]);
+        
+        // Schedule emails for the appointment
+        try {
+          await scheduleEmailsForAppointment(data[0].id, appointment);
+        } catch (emailError) {
+          console.error('Error scheduling emails:', emailError);
+          // Don't fail the booking if email scheduling fails
+        }
         
         toast.success("Appointment booked successfully");
         return data[0].id;
       }
+      
+      toast.error('Failed to book appointment: No data returned');
       return null;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error booking appointment:', error);
-      toast.error('Failed to book appointment');
+      toast.error(`Failed to book appointment: ${error.message || 'Unknown error'}`);
       return null;
     }
   };
@@ -43,6 +58,8 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
   // Update an existing appointment
   const updateAppointment = async (id: string, updatedData: Partial<Appointment>) => {
     try {
+      console.log('Updating appointment:', id, updatedData);
+      
       // Convert camelCase to snake_case for fields that need to be updated
       const dbUpdatedData: any = {};
       
@@ -66,39 +83,51 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
         .update(dbUpdatedData)
         .eq('id', id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating appointment:', error);
+        toast.error(`Failed to update appointment: ${error.message}`);
+        return;
+      }
       
       setAppointments(appointments.map(appointment => 
         appointment.id === id 
           ? { ...appointment, ...updatedData } 
           : appointment
       ));
+      
       toast.success("Appointment updated successfully");
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating appointment:', error);
-      toast.error('Failed to update appointment');
+      toast.error(`Failed to update appointment: ${error.message || 'Unknown error'}`);
     }
   };
 
   // Cancel an appointment
   const cancelAppointment = async (id: string) => {
     try {
+      console.log('Cancelling appointment:', id);
+      
       const { error } = await supabase
         .from('appointments')
         .update({ status: 'cancelled' })
         .eq('id', id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error cancelling appointment:', error);
+        toast.error(`Failed to cancel appointment: ${error.message}`);
+        return;
+      }
       
       setAppointments(appointments.map(appointment => 
         appointment.id === id 
           ? { ...appointment, status: 'cancelled' as const } 
           : appointment
       ));
+      
       toast.success("Appointment cancelled successfully");
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error cancelling appointment:', error);
-      toast.error('Failed to cancel appointment');
+      toast.error(`Failed to cancel appointment: ${error.message || 'Unknown error'}`);
     }
   };
 
