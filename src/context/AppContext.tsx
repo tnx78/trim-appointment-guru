@@ -73,6 +73,6 @@ export function useAppContext() {
     // From BookingContext
     selectedService: bookingContext.selectedService,
     selectService: bookingContext.selectService,
-    reset: bookingContext.reset,
+    resetBookingState: bookingContext.resetBookingState,
   };
 }

@@ -82,7 +82,21 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
 
   // Handle previous step
   const handleBack = () => {
-    setActiveStep(prev => prev - 1);
+    if (activeStep > 1) {
+      setActiveStep(prev => prev - 1);
+    } else if (onBack) {
+      onBack();
+    }
+  };
+
+  // Handle service selection
+  const handleServiceSelect = () => {
+    setActiveStep(2);
+  };
+
+  // Handle date/time selection
+  const handleDateTimeNext = () => {
+    setActiveStep(3);
   };
 
   // Handle booking submission
@@ -158,6 +172,7 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
     return `${endHours}:${endMinutes}`;
   };
 
+  // Always return the component with a consistent structure
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardContent className="p-6">
@@ -193,7 +208,7 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
         {activeStep === 1 && (
           <div>
             <h2 className="text-xl font-bold mb-4">Select a Service</h2>
-            <ServiceList />
+            <ServiceList onServiceSelect={handleServiceSelect} />
             <div className="mt-6 flex justify-end">
               <Button 
                 onClick={handleNext} 
@@ -208,7 +223,7 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
         {activeStep === 2 && (
           <div>
             <h2 className="text-xl font-bold mb-4">Select Date & Time</h2>
-            <DateTimeSelection />
+            <DateTimeSelection onBack={handleBack} onNext={handleDateTimeNext} />
             <div className="mt-6 flex justify-between">
               <Button variant="outline" onClick={handleBack}>
                 Back
