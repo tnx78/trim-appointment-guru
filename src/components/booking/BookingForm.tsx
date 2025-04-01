@@ -7,10 +7,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { BookingProgressBar } from './BookingProgressBar';
 import { UserInfoForm } from './UserInfoForm';
+import { useAuth } from '@/context/AuthContext';
 
 const BookingForm = ({ onBack }: { onBack?: () => void }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { 
     selectedService, 
     selectedDate, 
@@ -69,8 +71,8 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
           // Calculate end time based on service duration
           end_time: calculateEndTime(selectedTime, selectedService.duration),
           status: 'pending',
-          // Link appointment to user if authenticated
-          user_id: null
+          // Only link appointment to user if authenticated
+          user_id: user?.id || null
         })
         .select()
         .single();
