@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useGalleryContext } from '@/context/GalleryContext';
+import { useAuth } from '@/context/AuthContext'; 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,8 +23,11 @@ export function GalleryTab() {
     addImage,
     updateImage,
     deleteImage,
-    getImagesByCategory
+    getImagesByCategory,
+    loadGalleryData
   } = useGalleryContext();
+
+  const { isAuthenticated, isAdmin } = useAuth();
 
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
   const [editingCategory, setEditingCategory] = useState<any>(null);
@@ -39,19 +42,26 @@ export function GalleryTab() {
       setSelectedCategory(categories[0].id);
     }
   }, [categories, selectedCategory]);
+  
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadGalleryData();
+    }
+  }, [isAuthenticated, loadGalleryData]);
 
-  // Handle image upload to Supabase Storage
   const handleFileUpload = async (file: File, category_id: string) => {
     try {
       setIsUploading(true);
       console.log('Uploading file:', file.name, 'for category:', category_id);
       
-      // Create a unique file name
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
       const filePath = `gallery/${fileName}`;
       
-      // Upload to Supabase Storage
+      if (!isAuthenticated) {
+        throw new Error('You must be logged in to upload images');
+      }
+      
       const { error: uploadError, data } = await supabase.storage
         .from('gallery')
         .upload(filePath, file);
@@ -63,7 +73,6 @@ export function GalleryTab() {
       
       console.log('File uploaded successfully, getting public URL');
       
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('gallery')
         .getPublicUrl(filePath);
@@ -85,23 +94,38 @@ export function GalleryTab() {
       return;
     }
     
-    console.log('Adding new category:', newCategory);
+    if (!isAuthenticated) {
+      toast.error('You must be logged in to add categories');
+      return;
+    }
     
-    const result = await addCategory({
-      name: newCategory.name,
-      description: newCategory.description,
-      sort_order: categories.length + 1
-    });
+    console.log('Adding new category:', newCategory, 'Auth status:', isAuthenticated);
     
-    if (result) {
-      console.log('Category added successfully:', result);
-      setNewCategory({ name: '', description: '' });
+    try {
+      const result = await addCategory({
+        name: newCategory.name,
+        description: newCategory.description,
+        sort_order: categories.length + 1
+      });
+      
+      if (result) {
+        console.log('Category added successfully:', result);
+        setNewCategory({ name: '', description: '' });
+      }
+    } catch (error: any) {
+      console.error('Failed to add category:', error);
+      toast.error('Failed to add category: ' + error.message);
     }
   };
 
   const handleUpdateCategory = async () => {
     if (!editingCategory?.name.trim()) {
       toast.error('Category name is required');
+      return;
+    }
+    
+    if (!isAuthenticated) {
+      toast.error('You must be logged in to update categories');
       return;
     }
     
@@ -122,15 +146,18 @@ export function GalleryTab() {
       return;
     }
     
+    if (!isAuthenticated) {
+      toast.error('You must be logged in to add images');
+      return;
+    }
+    
     try {
       console.log('Adding new image for category:', selectedCategory);
       
-      // Upload the file to storage and get the URL
       const imageUrl = await handleFileUpload(selectedFile, selectedCategory);
       
       console.log('Image uploaded, URL:', imageUrl);
       
-      // Save the image data to the database
       const result = await addImage({
         category_id: selectedCategory,
         title: newImage.title,
@@ -141,7 +168,6 @@ export function GalleryTab() {
       
       if (result) {
         console.log('Image added successfully:', result);
-        // Reset form
         setNewImage({ title: '', description: '' });
         setSelectedFile(null);
         setIsDialogOpen(false);
@@ -150,6 +176,19 @@ export function GalleryTab() {
       console.error('Failed to add image:', error);
     }
   };
+
+  if (!isAuthenticated) {
+    return (
+      <Card className="mt-4">
+        <CardContent className="p-6 text-center">
+          <p className="text-muted-foreground mb-4">You must be logged in as an admin to manage the gallery.</p>
+          <Button onClick={() => window.location.href = '/auth'}>
+            Go to Login
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading) {
     return <div className="flex justify-center p-4">Loading gallery data...</div>;
@@ -224,7 +263,6 @@ export function GalleryTab() {
         </CardContent>
       </Card>
 
-      {/* Edit Category Dialog */}
       {editingCategory && (
         <Dialog open={!!editingCategory} onOpenChange={(open) => !open && setEditingCategory(null)}>
           <DialogContent>
@@ -256,7 +294,6 @@ export function GalleryTab() {
         </Dialog>
       )}
 
-      {/* Gallery Images Management */}
       {categories.length > 0 && (
         <Card>
           <CardHeader>

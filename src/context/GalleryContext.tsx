@@ -90,14 +90,14 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
   const addCategory = async (category: Omit<GalleryCategory, 'id'>): Promise<GalleryCategory | null> => {
     try {
-      if (!isAuthenticated || !isAdmin) {
-        const errorMessage = 'Authentication required: Only admins can add categories';
+      if (!isAuthenticated) {
+        const errorMessage = 'Authentication required to add categories';
         console.error(errorMessage);
         toast.error(errorMessage);
         return null;
       }
 
-      console.log('Adding category:', category);
+      console.log('Adding category with auth status:', isAuthenticated);
       
       const { data, error } = await supabase
         .from('gallery_categories')
@@ -125,8 +125,8 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
   const updateCategory = async (category: GalleryCategory): Promise<GalleryCategory | null> => {
     try {
-      if (!isAuthenticated || !isAdmin) {
-        const errorMessage = 'Authentication required: Only admins can update categories';
+      if (!isAuthenticated) {
+        const errorMessage = 'Authentication required to update categories';
         console.error(errorMessage);
         toast.error(errorMessage);
         return null;
@@ -154,8 +154,8 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
   const deleteCategory = async (id: string): Promise<void> => {
     try {
-      if (!isAuthenticated || !isAdmin) {
-        const errorMessage = 'Authentication required: Only admins can delete categories';
+      if (!isAuthenticated) {
+        const errorMessage = 'Authentication required to delete categories';
         console.error(errorMessage);
         toast.error(errorMessage);
         return;
@@ -178,8 +178,8 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
   const addImage = async (image: Omit<GalleryImage, 'id'>): Promise<GalleryImage | null> => {
     try {
-      if (!isAuthenticated || !isAdmin) {
-        const errorMessage = 'Authentication required: Only admins can add images';
+      if (!isAuthenticated) {
+        const errorMessage = 'Authentication required to add images';
         console.error(errorMessage);
         toast.error(errorMessage);
         return null;
@@ -206,8 +206,8 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
   const updateImage = async (image: GalleryImage): Promise<GalleryImage | null> => {
     try {
-      if (!isAuthenticated || !isAdmin) {
-        const errorMessage = 'Authentication required: Only admins can update images';
+      if (!isAuthenticated) {
+        const errorMessage = 'Authentication required to update images';
         console.error(errorMessage);
         toast.error(errorMessage);
         return null;
@@ -235,8 +235,8 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
   const deleteImage = async (id: string): Promise<void> => {
     try {
-      if (!isAuthenticated || !isAdmin) {
-        const errorMessage = 'Authentication required: Only admins can delete images';
+      if (!isAuthenticated) {
+        const errorMessage = 'Authentication required to delete images';
         console.error(errorMessage);
         toast.error(errorMessage);
         return;
