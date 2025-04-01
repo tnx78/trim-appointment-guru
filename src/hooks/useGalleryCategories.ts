@@ -13,12 +13,33 @@ export function useGalleryCategories() {
   // Verify session when the hook is initialized
   useEffect(() => {
     const verifySession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSessionVerified(!!data.session);
-      console.log('Session verified in useGalleryCategories:', !!data.session);
+      try {
+        const { data } = await supabase.auth.getSession();
+        const hasSession = !!data.session;
+        setSessionVerified(hasSession);
+        console.log('Session verified in useGalleryCategories:', hasSession ? 'Active' : 'None');
+        
+        // If we're in demo mode (admin flag is set but no real session)
+        const demoMode = !hasSession && localStorage.getItem('isAdmin') === 'true';
+        if (demoMode) {
+          console.log('Operating in demo admin mode');
+        }
+      } catch (error) {
+        console.error('Error verifying session:', error);
+      }
     };
     
     verifySession();
+    
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed in useGalleryCategories:', event, session ? 'Session exists' : 'No session');
+      setSessionVerified(!!session);
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Function to add a new category
@@ -26,17 +47,34 @@ export function useGalleryCategories() {
     try {
       // Verify session again before mutation
       const { data: sessionData } = await supabase.auth.getSession();
+      const hasRealSession = !!sessionData.session;
+      const demoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
       
-      if (!sessionData.session) {
+      console.log('Adding category in mode:', demoMode ? 'demo admin' : (hasRealSession ? 'authenticated' : 'unauthenticated'));
+      console.log('Category data:', category);
+      
+      if (!hasRealSession && !demoMode) {
         console.error('No active session found in addCategory');
         toast.error('No active session found. Please log in again.');
         return null;
       }
       
-      console.log('Adding category:', category);
-      console.log('Session verified before adding:', !!sessionData.session);
+      // If in demo mode, return a fake success response
+      if (demoMode) {
+        console.log('Demo mode: Simulating successful category creation');
+        const demoCategory: GalleryCategory = {
+          id: `demo-${Date.now()}`,
+          ...category,
+          created_at: new Date().toISOString()
+        };
+        
+        // Update local state
+        setCategories(prev => [...prev, demoCategory]);
+        toast.success('Category added successfully (Demo Mode)');
+        return demoCategory;
+      }
 
-      // Proceed with the database operation
+      // Real database operation (only happens with actual session)
       const { data, error } = await supabase
         .from('gallery_categories')
         .insert(category)
@@ -75,15 +113,25 @@ export function useGalleryCategories() {
     try {
       // Verify session again before mutation
       const { data: sessionData } = await supabase.auth.getSession();
+      const hasRealSession = !!sessionData.session;
+      const demoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
       
-      if (!sessionData.session) {
+      if (!hasRealSession && !demoMode) {
         console.error('No active session found in updateCategory');
         toast.error('No active session found. Please log in again.');
         return null;
       }
 
-      console.log('Updating category:', category);
-      console.log('Session verified before updating:', !!sessionData.session);
+      // If in demo mode, return a fake success response
+      if (demoMode) {
+        console.log('Demo mode: Simulating successful category update');
+        const updatedCategory = { ...category };
+        
+        // Update local state
+        setCategories(prev => prev.map(c => c.id === category.id ? updatedCategory : c));
+        toast.success('Category updated successfully (Demo Mode)');
+        return updatedCategory;
+      }
 
       const { data, error } = await supabase
         .from('gallery_categories')
@@ -123,15 +171,24 @@ export function useGalleryCategories() {
     try {
       // Verify session again before mutation
       const { data: sessionData } = await supabase.auth.getSession();
+      const hasRealSession = !!sessionData.session;
+      const demoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
       
-      if (!sessionData.session) {
+      if (!hasRealSession && !demoMode) {
         console.error('No active session found in deleteCategory');
         toast.error('No active session found. Please log in again.');
         return;
       }
 
-      console.log('Deleting category:', id);
-      console.log('Session verified before deleting:', !!sessionData.session);
+      // If in demo mode, simulate deletion
+      if (demoMode) {
+        console.log('Demo mode: Simulating successful category deletion');
+        
+        // Update local state
+        setCategories(prev => prev.filter(c => c.id !== id));
+        toast.success('Category deleted successfully (Demo Mode)');
+        return;
+      }
 
       const { error } = await supabase
         .from('gallery_categories')

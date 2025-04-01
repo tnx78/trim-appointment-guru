@@ -8,6 +8,7 @@ import { GalleryCategory } from '@/context/GalleryContext';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CategoryFormProps {
   category?: GalleryCategory;
@@ -20,23 +21,41 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
   const [description, setDescription] = useState(category?.description || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
+  const [sessionChecked, setSessionChecked] = useState(false);
   
+  // Check session on mount and before form submission
   useEffect(() => {
-    // Check authentication on mount
-    if (!isAuthenticated) {
-      setErrorMsg('You must be logged in to manage categories');
-    } else {
-      setErrorMsg('');
+    async function verifySession() {
+      try {
+        console.log('Verifying session in CategoryForm...');
+        const { data: { session } } = await supabase.auth.getSession();
+        const hasSession = !!session;
+        console.log('Session verified in CategoryForm:', hasSession ? 'Active' : 'None');
+        
+        if (!hasSession && !isAuthenticated) {
+          setErrorMsg('No active session found. Please log in again.');
+        } else {
+          setErrorMsg('');
+        }
+        
+        setSessionChecked(true);
+      } catch (error) {
+        console.error('Error verifying session:', error);
+      }
     }
+    
+    verifySession();
   }, [isAuthenticated]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     
-    if (!isAuthenticated) {
-      setErrorMsg('You must be logged in to manage categories');
+    // Double-check session right before submission
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session && !isAuthenticated) {
+      setErrorMsg('No active session found. Please log in again.');
       toast.error('Authentication required');
       return;
     }
@@ -48,11 +67,18 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
 
     setIsSubmitting(true);
     try {
+      console.log('Submitting category with session verification completed');
       await onSubmit({
         name,
         description: description || undefined,
         sort_order: category?.sort_order ?? (Date.now() % 1000) // Default sort order if not provided
       });
+      
+      // Clear form after successful submission
+      if (!category) {
+        setName('');
+        setDescription('');
+      }
     } catch (error: any) {
       console.error('Error in category form submission:', error);
       setErrorMsg(error.message || 'Failed to save category');
@@ -106,7 +132,7 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
         </Button>
         <Button
           type="submit"
-          disabled={isSubmitting || !isAuthenticated}
+          disabled={isSubmitting || (!isAuthenticated && !localStorage.getItem('isAdmin'))}
         >
           {isSubmitting ? (
             <>

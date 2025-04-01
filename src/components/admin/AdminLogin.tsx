@@ -19,7 +19,13 @@ export function AdminLogin() {
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
-      console.log('Current session status:', data.session ? 'Active' : 'None');
+      console.log('Current session status in AdminLogin:', data.session ? 'Active' : 'None');
+      
+      // If no session but isAdmin is set in localStorage, clear it to prevent confusion
+      if (!data.session && localStorage.getItem('isAdmin')) {
+        console.log('No session found but isAdmin was in localStorage, clearing it');
+        localStorage.removeItem('isAdmin');
+      }
     };
     
     checkSession();
@@ -36,6 +42,11 @@ export function AdminLogin() {
       
       if (success) {
         console.log('Login successful');
+        
+        // Verify session establishment after login
+        const { data } = await supabase.auth.getSession();
+        console.log('Session after login:', data.session ? 'Active' : 'None');
+        
         toast.success('Successfully logged in');
       } else {
         console.log('Login failed');
