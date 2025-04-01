@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
-import { format, addDays, startOfDay, isSameDay } from 'date-fns';
+import { format, addDays, startOfDay, isSameDay, parse } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,6 +45,28 @@ export function DateTimeSelection({ onBack, onNext }: { onBack: () => void; onNe
     
     // Check if the salon is open on this day
     return !isDateAvailable(date);
+  };
+
+  // Helper function to safely format time
+  const formatTimeSlot = (timeStr: string) => {
+    try {
+      // Create a valid date object using the time string (with a fixed date)
+      const timeParts = timeStr.split(':');
+      const hours = parseInt(timeParts[0], 10);
+      const minutes = parseInt(timeParts[1], 10);
+      
+      if (isNaN(hours) || isNaN(minutes)) {
+        return timeStr; // Fallback to original string if parsing fails
+      }
+      
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
+      
+      return format(date, 'h:mm a');
+    } catch (error) {
+      console.error('Error formatting time:', timeStr, error);
+      return timeStr; // Fallback to original string if formatting fails
+    }
   };
 
   if (!selectedService) {
@@ -125,7 +147,7 @@ export function DateTimeSelection({ onBack, onNext }: { onBack: () => void; onNe
                       onClick={() => handleTimeSelect(slot.time)}
                       disabled={!slot.available}
                     >
-                      {format(new Date(`2000-01-01T${slot.time}`), 'h:mm a')}
+                      {formatTimeSlot(slot.time)}
                     </Button>
                   ))}
                 </div>

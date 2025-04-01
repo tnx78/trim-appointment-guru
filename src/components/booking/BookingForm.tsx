@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { format, parse, addMinutes } from 'date-fns';
+import { format, addMinutes } from 'date-fns';
 import { ChevronLeft, Clock, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -31,8 +31,32 @@ export function BookingForm({ onBack }: { onBack: () => void }) {
     return null;
   }
 
+  // Safely parse time
+  const parseTime = (timeStr: string) => {
+    try {
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
+      return date;
+    } catch (error) {
+      console.error('Error parsing time:', timeStr, error);
+      return new Date(); // Fallback
+    }
+  };
+
+  // Format time safely
+  const formatTime = (timeStr: string) => {
+    try {
+      const date = parseTime(timeStr);
+      return format(date, 'h:mm a');
+    } catch (error) {
+      console.error('Error formatting time:', timeStr, error);
+      return timeStr; // Fallback
+    }
+  };
+
   const startTime = selectedTime;
-  const timeObject = parse(startTime, 'H:mm', new Date());
+  const timeObject = parseTime(startTime);
   const endTimeObject = addMinutes(timeObject, service.duration);
   const endTime = format(endTimeObject, 'H:mm');
 
@@ -149,7 +173,7 @@ export function BookingForm({ onBack }: { onBack: () => void }) {
                   <div className="text-sm text-muted-foreground">Time</div>
                   <div className="font-medium flex items-center">
                     <Clock className="mr-1 h-4 w-4" />
-                    {format(parse(startTime, 'H:mm', new Date()), 'h:mm a')} - {format(parse(endTime, 'H:mm', new Date()), 'h:mm a')}
+                    {formatTime(startTime)} - {formatTime(endTime)}
                   </div>
                 </div>
                 
