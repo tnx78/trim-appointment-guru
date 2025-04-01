@@ -12,8 +12,11 @@ VALUES
   ('Authenticated users can upload gallery images', '((bucket_id = ''gallery''::text) AND (auth.role() = ''authenticated''::text))', 'gallery', 'authenticated')
 ON CONFLICT (name, definition, bucket_id, role_id) DO NOTHING;
 
--- Add more permissive policies for demo purposes
+-- Add more permissive policies for demo purposes - allow anonymous uploads
 INSERT INTO storage.policies (name, definition, bucket_id, role_id)
 VALUES 
-  ('Anyone can insert into gallery', 'true', 'gallery', 'anon')
+  ('Anyone can insert into gallery', 'true', 'gallery', 'anon'),
+  ('Anyone can update gallery content', 'true', 'gallery', 'anon'),
+  ('Anyone can delete from gallery', 'true', 'gallery', 'anon')
 ON CONFLICT (name, definition, bucket_id, role_id) DO NOTHING;
+

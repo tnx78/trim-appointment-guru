@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -51,7 +52,7 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
   const { 
     categories, 
     setCategories,
-    addCategory, 
+    addCategory: addCategoryHook, 
     updateCategory, 
     deleteCategory 
   } = useGalleryCategories();
@@ -59,7 +60,7 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
   const { 
     images, 
     setImages,
-    addImage, 
+    addImage: addImageHook, 
     updateImage, 
     deleteImage 
   } = useGalleryImages();
@@ -80,9 +81,7 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
         userId: user?.id 
       });
       
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log('Current Supabase session:', sessionData.session ? 'Active' : 'None');
-      
+      // Always fetch data from Supabase regardless of auth state
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('gallery_categories')
         .select('*')
@@ -120,6 +119,25 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Wrap the hook methods to ensure they update the UI and reload data
+  const addCategory = async (category: Omit<GalleryCategory, 'id'>): Promise<GalleryCategory | null> => {
+    const result = await addCategoryHook(category);
+    if (result) {
+      // Reload data to ensure we have the latest from the database
+      await loadGalleryData();
+    }
+    return result;
+  };
+
+  const addImage = async (image: Omit<GalleryImage, 'id'>): Promise<GalleryImage | null> => {
+    const result = await addImageHook(image);
+    if (result) {
+      // Reload data to ensure we have the latest from the database
+      await loadGalleryData();
+    }
+    return result;
   };
 
   const getImagesByCategory = (categoryId: string): GalleryImage[] => {

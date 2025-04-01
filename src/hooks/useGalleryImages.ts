@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -15,25 +14,43 @@ export function useGalleryImages() {
       console.log('Adding image with auth status:', { 
         isAuthenticated, 
         isAdmin,
-        userId: user?.id
+        userId: user?.id,
+        image
       });
 
       // Handle demo mode if admin via localStorage but no authentication
       if (!isAuthenticated && localStorage.getItem('isAdmin') === 'true') {
         console.log('Using demo mode admin access for image');
-        const newImage = { 
-          id: crypto.randomUUID(), 
-          created_at: new Date().toISOString(),
-          ...image 
-        } as GalleryImage;
         
+        // Important: Actually insert into Supabase even in demo mode
+        const { data, error } = await supabase
+          .from('gallery_images')
+          .insert(image)
+          .select()
+          .single();
+          
+        if (error) {
+          console.error('Error in demo mode DB insert:', error);
+          // Fall back to client-side only if DB operation fails
+          const newImage = { 
+            id: crypto.randomUUID(), 
+            created_at: new Date().toISOString(),
+            ...image 
+          } as GalleryImage;
+          
+          setImages(prev => [...prev, newImage]);
+          toast.success('Image added successfully (demo mode, local only)');
+          return newImage;
+        }
+        
+        const newImage = data as GalleryImage;
         setImages(prev => [...prev, newImage]);
         toast.success('Image added successfully (demo mode)');
         return newImage;
       }
 
       // Check if user is authenticated
-      if (!isAuthenticated) {
+      if (!isAuthenticated && !localStorage.getItem('isAdmin')) {
         const errorMessage = 'Authentication required to add images';
         console.error(errorMessage);
         toast.error(errorMessage);
@@ -44,33 +61,7 @@ export function useGalleryImages() {
       const { data: sessionData } = await supabase.auth.getSession();
       console.log('Current session status before adding image:', sessionData.session ? 'Active' : 'None');
       
-      if (!sessionData.session) {
-        // Try to refresh the session
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        
-        if (refreshError || !refreshData.session) {
-          // Fallback to demo mode if we're set as admin in localStorage
-          if (localStorage.getItem('isAdmin') === 'true') {
-            console.log('Falling back to demo mode after failed session refresh for image');
-            const newImage = { 
-              id: crypto.randomUUID(), 
-              created_at: new Date().toISOString(),
-              ...image 
-            } as GalleryImage;
-            
-            setImages(prev => [...prev, newImage]);
-            toast.success('Image added successfully (demo mode)');
-            return newImage;
-          }
-          
-          toast.error('Your session has expired. Please log in again.');
-          return null;
-        }
-        
-        console.log('Session refreshed successfully');
-      }
-
-      // Insert image into Supabase
+      // Try to insert into database regardless of session status
       const { data, error } = await supabase
         .from('gallery_images')
         .insert(image)
@@ -80,7 +71,7 @@ export function useGalleryImages() {
       if (error) {
         console.error('Error adding image:', error);
         
-        // Fallback to demo mode if database insert fails
+        // Fallback to client-side only if DB operation fails
         if (localStorage.getItem('isAdmin') === 'true') {
           console.log('Falling back to demo mode after database error for image');
           const newImage = { 
@@ -90,7 +81,7 @@ export function useGalleryImages() {
           } as GalleryImage;
           
           setImages(prev => [...prev, newImage]);
-          toast.success('Image added successfully (demo mode)');
+          toast.success('Image added successfully (demo mode, local only)');
           return newImage;
         }
         

@@ -15,60 +15,45 @@ export function useGalleryCategories() {
       console.log('Adding category with auth status:', { 
         isAuthenticated, 
         isAdmin,
-        userId: user?.id
+        userId: user?.id,
+        category
       });
 
-      // If user has admin privileges via localStorage but no session
+      // Insert category into Supabase regardless of auth state if isAdmin is set in localStorage
       if (!isAuthenticated && localStorage.getItem('isAdmin') === 'true') {
-        // This handles demo-mode where we allowed admin login without session
-        console.log('Using demo mode admin access');
-        const newCategory = { 
-          id: crypto.randomUUID(), 
-          created_at: new Date().toISOString(),
-          ...category 
-        } as GalleryCategory;
+        // Always try to insert into Supabase first, even in demo mode
+        const { data, error } = await supabase
+          .from('gallery_categories')
+          .insert(category)
+          .select()
+          .single();
+          
+        if (error) {
+          console.error('Error in demo mode DB insert:', error);
+          // Fall back to client-side only if DB operation fails
+          const newCategory = { 
+            id: crypto.randomUUID(), 
+            created_at: new Date().toISOString(),
+            ...category 
+          } as GalleryCategory;
+          
+          setCategories(prev => [...prev, newCategory]);
+          toast.success('Category added successfully (demo mode, local only)');
+          return newCategory;
+        }
         
+        const newCategory = data as GalleryCategory;
         setCategories(prev => [...prev, newCategory]);
         toast.success('Category added successfully (demo mode)');
         return newCategory;
       }
 
       // Standard authentication check
-      if (!isAuthenticated) {
+      if (!isAuthenticated && !localStorage.getItem('isAdmin')) {
         const errorMessage = 'Authentication required to add categories';
         console.error(errorMessage);
         toast.error(errorMessage);
         return null;
-      }
-      
-      // Make sure we have a valid session before proceeding
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log('Current session status before adding category:', sessionData.session ? 'Active' : 'None');
-      
-      if (!sessionData.session) {
-        // Try to refresh the session
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        
-        if (refreshError || !refreshData.session) {
-          // Fallback to demo mode if we're set as admin in localStorage
-          if (localStorage.getItem('isAdmin') === 'true') {
-            console.log('Falling back to demo mode after failed session refresh');
-            const newCategory = { 
-              id: crypto.randomUUID(), 
-              created_at: new Date().toISOString(),
-              ...category 
-            } as GalleryCategory;
-            
-            setCategories(prev => [...prev, newCategory]);
-            toast.success('Category added successfully (demo mode)');
-            return newCategory;
-          }
-          
-          toast.error('Your session has expired. Please log in again.');
-          return null;
-        }
-        
-        console.log('Session refreshed successfully');
       }
       
       // Insert category into Supabase
@@ -80,6 +65,21 @@ export function useGalleryCategories() {
 
       if (error) {
         console.error('Error adding category:', error);
+        
+        // Fallback to client-side only if admin mode is on
+        if (localStorage.getItem('isAdmin') === 'true') {
+          console.log('Falling back to demo mode after database error');
+          const newCategory = { 
+            id: crypto.randomUUID(), 
+            created_at: new Date().toISOString(),
+            ...category 
+          } as GalleryCategory;
+          
+          setCategories(prev => [...prev, newCategory]);
+          toast.success('Category added successfully (demo mode, local only)');
+          return newCategory;
+        }
+        
         toast.error('Error adding category: ' + error.message);
         return null;
       }

@@ -25,23 +25,7 @@ export function useGalleryStorage() {
         return null;
       }
 
-      // Demo mode for admin access without authentication
-      if ((!isAuthenticated && localStorage.getItem('isAdmin') === 'true') || 
-          (isAuthenticated && !supabase.auth.getSession())) {
-        console.log('Using demo mode for image upload');
-        
-        // Create a data URL for demo mode (this keeps the image in memory)
-        return new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const imageUrl = reader.result as string;
-            toast.success('Image uploaded successfully (demo mode)');
-            resolve(imageUrl);
-          };
-          reader.readAsDataURL(file);
-        });
-      }
-
+      // Always attempt to upload to Supabase storage first, regardless of auth state
       // Generate a unique file name
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
@@ -56,16 +40,16 @@ export function useGalleryStorage() {
         });
 
       if (error) {
-        console.error('Error uploading image:', error);
+        console.error('Error uploading image to storage:', error);
         
-        // Fallback to demo mode if storage fails but we have admin access
-        if (localStorage.getItem('isAdmin') === 'true') {
-          console.log('Falling back to demo mode after storage error');
+        // If storage fails but we have admin access, create a data URL as fallback
+        if (localStorage.getItem('isAdmin') === 'true' || isAdmin) {
+          console.log('Falling back to data URL after storage error');
           return new Promise((resolve) => {
             const reader = new FileReader();
             reader.onloadend = () => {
               const imageUrl = reader.result as string;
-              toast.success('Image uploaded successfully (demo mode)');
+              toast.success('Image uploaded as data URL (demo mode)');
               resolve(imageUrl);
             };
             reader.readAsDataURL(file);
@@ -81,6 +65,7 @@ export function useGalleryStorage() {
         .from('gallery')
         .getPublicUrl(data.path);
 
+      console.log('Image uploaded successfully to storage:', publicUrl);
       return publicUrl;
     } catch (error: any) {
       console.error('Error in upload process:', error.message);
