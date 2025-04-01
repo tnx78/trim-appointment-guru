@@ -13,9 +13,12 @@ interface LocationState {
     id: string;
     serviceId: string;
     clientName: string;
-    date: Date;
-    startTime: string;
-    endTime: string;
+    date: string | Date;
+    start_time?: string;
+    startTime?: string;
+    end_time?: string;
+    endTime?: string;
+    service_id?: string;
   };
   serviceName?: string;
 }
@@ -34,24 +37,41 @@ export default function BookingConfirmation() {
     console.log('Location state:', location.state);
     console.log('Appointment data:', appointmentData);
 
-    if (appointmentData?.serviceId) {
-      // Try to get service data from context
-      const serviceData = getServiceById(appointmentData.serviceId);
-      console.log('Service data:', serviceData);
+    if (appointmentData) {
+      // Get service ID - handle both service_id (from DB) and serviceId (from frontend)
+      const serviceId = appointmentData.service_id || appointmentData.serviceId;
       
-      if (serviceData) {
-        setService(serviceData);
+      if (serviceId) {
+        // Try to get service data from context
+        const serviceData = getServiceById(serviceId);
+        console.log('Service data:', serviceData);
+        
+        if (serviceData) {
+          setService(serviceData);
+        }
       }
-      
-      if (appointmentData.date && appointmentData.startTime && appointmentData.endTime) {
-        // Create Google Calendar URL
-        try {
-          const startDate = new Date(appointmentData.date);
-          const [startHour, startMinute] = appointmentData.startTime.split(':').map(Number);
+
+      // Create Google Calendar URL
+      try {
+        // Determine start and end times from the data
+        const startTime = appointmentData.start_time || appointmentData.startTime;
+        const endTime = appointmentData.end_time || appointmentData.endTime;
+        
+        if (appointmentData.date && startTime && endTime) {
+          // Create date objects for start and end times
+          let appointmentDate;
+          if (typeof appointmentData.date === 'string') {
+            appointmentDate = new Date(appointmentData.date);
+          } else {
+            appointmentDate = appointmentData.date;
+          }
+
+          const [startHour, startMinute] = startTime.split(':').map(Number);
+          const startDate = new Date(appointmentDate);
           startDate.setHours(startHour, startMinute, 0, 0);
           
-          const endDate = new Date(startDate);
-          const [endHour, endMinute] = appointmentData.endTime.split(':').map(Number);
+          const [endHour, endMinute] = endTime.split(':').map(Number);
+          const endDate = new Date(appointmentDate);
           endDate.setHours(endHour, endMinute, 0, 0);
           
           const serviceTitle = serviceData?.name || serviceName || 'Appointment';
@@ -67,12 +87,32 @@ export default function BookingConfirmation() {
           
           console.log('Generated Google Calendar URL:', calendarUrl);
           setGoogleCalendarUrl(calendarUrl);
-        } catch (error) {
-          console.error('Error creating Google Calendar URL:', error);
+        } else {
+          console.error('Missing date, start time, or end time', {
+            date: appointmentData.date,
+            startTime,
+            endTime
+          });
         }
+      } catch (error) {
+        console.error('Error creating Google Calendar URL:', error);
       }
     }
   }, [appointmentData, getServiceById, serviceName]);
+
+  const formatTimeDisplay = (timeString?: string) => {
+    if (!timeString) return '';
+    
+    try {
+      const [hours, minutes] = timeString.split(':').map(Number);
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
+      return format(date, 'h:mm a');
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return timeString;
+    }
+  };
 
   return (
     <div className="container py-10 max-w-md mx-auto">
@@ -93,8 +133,16 @@ export default function BookingConfirmation() {
               <h3 className="font-medium">Appointment Details</h3>
               <div className="text-sm space-y-1">
                 <p><span className="font-medium">Service:</span> {service?.name || serviceName}</p>
-                <p><span className="font-medium">Date:</span> {format(new Date(appointmentData.date), 'PPPP')}</p>
-                <p><span className="font-medium">Time:</span> {appointmentData.startTime} - {appointmentData.endTime}</p>
+                <p><span className="font-medium">Date:</span> {
+                  typeof appointmentData.date === 'string' 
+                    ? format(new Date(appointmentData.date), 'PPPP') 
+                    : format(appointmentData.date, 'PPPP')
+                }</p>
+                <p><span className="font-medium">Time:</span> {
+                  formatTimeDisplay(appointmentData.start_time || appointmentData.startTime)
+                } - {
+                  formatTimeDisplay(appointmentData.end_time || appointmentData.endTime)
+                }</p>
               </div>
             </div>
           )}
