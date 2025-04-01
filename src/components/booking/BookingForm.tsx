@@ -59,21 +59,27 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
       // Format date object to YYYY-MM-DD string
       const formattedDate = selectedDate.toISOString().split('T')[0];
       
+      // Create appointment data object
+      const appointmentData = {
+        service_id: selectedService.id,
+        client_name: formData.name,
+        client_email: formData.email,
+        client_phone: formData.phone || null,
+        date: formattedDate,
+        start_time: selectedTime,
+        // Calculate end time based on service duration
+        end_time: calculateEndTime(selectedTime, selectedService.duration),
+        status: 'pending'
+      };
+      
+      // Only add user_id if the user is authenticated
+      if (user?.id) {
+        appointmentData['user_id'] = user.id;
+      }
+      
       const { data, error } = await supabase
         .from('appointments')
-        .insert({
-          service_id: selectedService.id,
-          client_name: formData.name,
-          client_email: formData.email,
-          client_phone: formData.phone || null,
-          date: formattedDate,
-          start_time: selectedTime,
-          // Calculate end time based on service duration
-          end_time: calculateEndTime(selectedTime, selectedService.duration),
-          status: 'pending',
-          // User ID is optional - only set if user is authenticated
-          user_id: user?.id || null
-        })
+        .insert(appointmentData)
         .select();
         
       if (error) throw error;
@@ -82,13 +88,18 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
       resetBookingState();
       
       // Navigate to confirmation page
-      navigate('/confirmation', { 
-        state: { 
-          appointment: data[0],
-          serviceName: selectedService.name
-        } 
-      });
+      if (data && data.length > 0) {
+        navigate('/confirmation', { 
+          state: { 
+            appointment: data[0],
+            serviceName: selectedService.name
+          } 
+        });
+      } else {
+        throw new Error("No data returned from appointment creation");
+      }
     } catch (error: any) {
+      console.error("Error creating appointment:", error);
       toast({
         title: "Error creating appointment",
         description: error.message,
@@ -105,7 +116,8 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
         <BookingProgressBar activeStep={3} />
 
         <div>
-          <h2 className="text-xl font-bold mb-4">Your Information</h2>
+          <h1 className="text-3xl font-bold mb-2">Your Information</h1>
+          <p className="text-muted-foreground mb-6">Please enter your details to complete the booking</p>
           <UserInfoForm 
             onBack={handleBack}
             onSubmit={handleSubmit}

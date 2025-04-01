@@ -6,7 +6,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Clock, Calendar as CalendarIcon } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSalonHours } from '@/hooks/use-salon-hours';
 import { BookingProgressBar } from './BookingProgressBar';
 
@@ -14,7 +13,6 @@ export function DateTimeSelection({ onBack, onNext }: { onBack?: () => void; onN
   const { selectedService, selectedDate, selectedTime, selectDate, selectTime } = useBookingContext();
   const { isDateAvailable } = useSalonHours();
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
-  const [currentView, setCurrentView] = useState<'calendar' | 'time'>(selectedDate ? 'time' : 'calendar');
 
   // Generate time slots (simplified for this example)
   useEffect(() => {
@@ -41,7 +39,6 @@ export function DateTimeSelection({ onBack, onNext }: { onBack?: () => void; onN
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       selectDate(startOfDay(date));
-      setCurrentView('time');
     }
   };
 
@@ -50,9 +47,7 @@ export function DateTimeSelection({ onBack, onNext }: { onBack?: () => void; onN
   };
 
   const handleBackButton = () => {
-    if (currentView === 'time') {
-      setCurrentView('calendar');
-    } else if (onBack) {
+    if (onBack) {
       onBack();
     }
   };
@@ -117,93 +112,76 @@ export function DateTimeSelection({ onBack, onNext }: { onBack?: () => void; onN
         <p className="text-muted-foreground">Select when you would like your {selectedService.name} appointment</p>
       </div>
 
-      <Tabs defaultValue={currentView} className="w-full" value={currentView} onValueChange={(v) => setCurrentView(v as 'calendar' | 'time')}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="calendar">
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            Choose Date
-          </TabsTrigger>
-          <TabsTrigger value="time" disabled={!selectedDate}>
-            <Clock className="mr-2 h-4 w-4" />
-            Choose Time
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="calendar" className="pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Select a Date</CardTitle>
-              <CardDescription>Choose a date for your appointment</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={handleDateSelect}
-                disabled={isDateDisabled}
-                className="rounded-md border mx-auto"
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="time" className="pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Select a Time</CardTitle>
-              <CardDescription>
-                Available time slots for {selectedDate && format(selectedDate, 'EEEE, MMMM d, yyyy')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {availableTimeSlots.length === 0 ? (
-                <div className="text-center py-10">
-                  <p className="text-muted-foreground">No available time slots for this date.</p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => setCurrentView('calendar')}
-                  >
-                    Choose Another Date
-                  </Button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {availableTimeSlots.map((slot) => (
-                    <Button
-                      key={slot.id}
-                      variant={selectedTime === slot.time ? 'default' : 'outline'}
-                      className="text-center py-6"
-                      onClick={() => handleTimeSelect(slot.time)}
-                      disabled={!slot.available}
-                    >
-                      {formatTimeSlot(slot.time)}
-                    </Button>
-                  ))}
-                </div>
-              )}
-              
-              <div className="flex justify-between mt-8">
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentView('calendar')}
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Calendar
-                </Button>
-                
-                <Button 
-                  onClick={handleNextButton}
-                  disabled={!selectedTime}
-                >
-                  Continue
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Date Selection Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Select a Date</CardTitle>
+            <CardDescription>Choose a date for your appointment</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={handleDateSelect}
+              disabled={isDateDisabled}
+              className="rounded-md border mx-auto"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Time Selection Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Select a Time</CardTitle>
+            <CardDescription>
+              {selectedDate 
+                ? `Available time slots for ${format(selectedDate, 'EEEE, MMMM d, yyyy')}` 
+                : 'Please select a date first'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!selectedDate ? (
+              <div className="text-center py-10">
+                <p className="text-muted-foreground">Please select a date first.</p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            ) : availableTimeSlots.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-muted-foreground">No available time slots for this date.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {availableTimeSlots.map((slot) => (
+                  <Button
+                    key={slot.id}
+                    variant={selectedTime === slot.time ? 'default' : 'outline'}
+                    className="text-center py-6"
+                    onClick={() => handleTimeSelect(slot.time)}
+                    disabled={!slot.available}
+                  >
+                    {formatTimeSlot(slot.time)}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="flex justify-between mt-8">
+        <Button variant="outline" onClick={handleBackButton}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+        
+        <Button 
+          onClick={handleNextButton}
+          disabled={!selectedDate || !selectedTime}
+        >
+          Continue
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 }
