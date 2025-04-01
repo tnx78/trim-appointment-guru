@@ -27,7 +27,8 @@ export function useAppointmentManager() {
         }
         
         if (data) {
-          setAppointments(data.map(mapAppointmentFromDB));
+          const mappedAppointments = data.map(mapAppointmentFromDB);
+          setAppointments(mappedAppointments);
         } else {
           setAppointments([]);
         }
