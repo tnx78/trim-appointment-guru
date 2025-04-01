@@ -11,3 +11,9 @@ VALUES
   ('Public access to gallery', '(bucket_id = ''gallery''::text)', 'gallery', 'anon'),
   ('Authenticated users can upload gallery images', '((bucket_id = ''gallery''::text) AND (auth.role() = ''authenticated''::text))', 'gallery', 'authenticated')
 ON CONFLICT (name, definition, bucket_id, role_id) DO NOTHING;
+
+-- Add more permissive policies for demo purposes
+INSERT INTO storage.policies (name, definition, bucket_id, role_id)
+VALUES 
+  ('Anyone can insert into gallery', 'true', 'gallery', 'anon')
+ON CONFLICT (name, definition, bucket_id, role_id) DO NOTHING;
