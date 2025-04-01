@@ -13,8 +13,8 @@ export function NavBar() {
 
   // Get first letter of user name for avatar
   const getInitials = () => {
-    if (!user?.name) return '?';
-    return user.name.charAt(0).toUpperCase();
+    if (!user?.email) return '?';
+    return user.email.charAt(0).toUpperCase();
   };
 
   return (
