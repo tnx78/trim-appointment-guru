@@ -64,7 +64,7 @@ export async function generateTimeSlots(date: Date): Promise<TimeSlot[]> {
   }
 }
 
-export async function getAvailableTimeSlots(date: Date, duration: number, appointments: Appointment[]) {
+export async function getAvailableTimeSlots(date: Date, duration: number, appointments: Appointment[]): Promise<TimeSlot[]> {
   // Check if salon is closed for this date (day off)
   try {
     const { data, error } = await supabase

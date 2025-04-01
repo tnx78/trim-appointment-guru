@@ -1,8 +1,9 @@
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Appointment, TimeSlot } from '@/types';
 import { useAppointmentManager } from '@/hooks/useAppointmentManager';
 import { useAppointmentSelection } from '@/hooks/useAppointmentSelection';
+import { getAvailableTimeSlots } from '@/hooks/useTimeSlots';
 
 // Context type
 interface AppointmentContextType {
@@ -19,7 +20,7 @@ interface AppointmentContextType {
   selectDate: (date: Date) => void;
   selectTime: (time: string) => void;
   
-  getAvailableTimeSlots: (date: Date, duration: number) => TimeSlot[];
+  getAvailableTimeSlots: (date: Date, duration: number) => Promise<TimeSlot[]>;
   getAppointmentsForDate: (date: Date) => Appointment[];
   getAppointmentDates: () => Date[];
 }
@@ -45,12 +46,11 @@ export function AppointmentProvider({ children }: { children: React.ReactNode })
     timeSlots,
     selectDate,
     selectTime,
-    getAvailableSlotsForDate
   } = useAppointmentSelection();
 
   // Wrapper for getAvailableTimeSlots that uses the current appointments
-  const getAvailableTimeSlots = (date: Date, duration: number) => {
-    return getAvailableSlotsForDate(date, duration, appointments);
+  const getAvailableSlotsForDate = async (date: Date, duration: number) => {
+    return await getAvailableTimeSlots(date, duration, appointments);
   };
 
   const value = {
@@ -66,7 +66,7 @@ export function AppointmentProvider({ children }: { children: React.ReactNode })
     selectDate,
     selectTime,
     
-    getAvailableTimeSlots,
+    getAvailableTimeSlots: getAvailableSlotsForDate,
     getAppointmentsForDate,
     getAppointmentDates,
   };

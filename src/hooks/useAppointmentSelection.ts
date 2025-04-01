@@ -1,7 +1,6 @@
 
 import { useState } from 'react';
 import { TimeSlot } from '@/types';
-import { getAvailableTimeSlots } from './useTimeSlots';
 
 export function useAppointmentSelection() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -19,17 +18,11 @@ export function useAppointmentSelection() {
     setSelectedTime(time);
   };
 
-  // Get available time slots
-  const getAvailableSlotsForDate = (date: Date, duration: number, appointments: any[]) => {
-    return getAvailableTimeSlots(date, duration, appointments);
-  };
-
   return {
     selectedDate,
     selectedTime,
     timeSlots,
     selectDate,
-    selectTime,
-    getAvailableSlotsForDate
+    selectTime
   };
 }

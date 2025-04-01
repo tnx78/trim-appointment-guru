@@ -9,33 +9,46 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import { useSalonHours } from '@/hooks/use-salon-hours';
 import { BookingProgressBar } from './BookingProgressBar';
-import { getAvailableTimeSlots } from '@/hooks/useTimeSlots';
+import { TimeSlot } from '@/types';
 
 export function DateTimeSelection({ onBack, onNext }: { onBack?: () => void; onNext?: () => void }) {
   const { selectedService, selectedDate, selectedTime, selectDate, selectTime } = useBookingContext();
-  const { appointments } = useAppointmentContext();
+  const { appointments, getAvailableTimeSlots } = useAppointmentContext();
   const { isDateAvailable } = useSalonHours();
-  const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeSlot[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Generate time slots based on selected date and existing appointments
   useEffect(() => {
-    if (selectedService && selectedDate) {
-      // Get available time slots considering existing appointments
-      const slots = getAvailableTimeSlots(selectedDate, selectedService.duration, appointments);
-      setAvailableTimeSlots(slots);
-      
-      // If the currently selected time is no longer available, deselect it
-      if (selectedTime) {
-        const isTimeStillAvailable = slots.some(
-          slot => slot.time === selectedTime && slot.available
-        );
-        
-        if (!isTimeStillAvailable) {
-          selectTime(null);
+    async function fetchTimeSlots() {
+      if (selectedService && selectedDate) {
+        setIsLoading(true);
+        try {
+          // Get available time slots considering existing appointments
+          const slots = await getAvailableTimeSlots(selectedDate, selectedService.duration);
+          setAvailableTimeSlots(slots);
+          
+          // If the currently selected time is no longer available, deselect it
+          if (selectedTime) {
+            const isTimeStillAvailable = slots.some(
+              slot => slot.time === selectedTime && slot.available
+            );
+            
+            if (!isTimeStillAvailable) {
+              selectTime(null);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching time slots:', error);
+          setAvailableTimeSlots([]);
+        } finally {
+          setIsLoading(false);
         }
       }
     }
-  }, [selectedDate, selectedService, appointments, selectedTime, selectTime]);
+    
+    fetchTimeSlots();
+  }, [selectedDate, selectedService, appointments, selectedTime, selectTime, getAvailableTimeSlots]);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -145,6 +158,10 @@ export function DateTimeSelection({ onBack, onNext }: { onBack?: () => void; onN
             {!selectedDate ? (
               <div className="text-center py-10">
                 <p className="text-muted-foreground">Please select a date first.</p>
+              </div>
+            ) : isLoading ? (
+              <div className="text-center py-10">
+                <p className="text-muted-foreground">Loading available time slots...</p>
               </div>
             ) : availableTimeSlots.length === 0 ? (
               <div className="text-center py-10">
