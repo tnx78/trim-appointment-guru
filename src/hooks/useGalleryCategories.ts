@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { GalleryCategory } from '@/context/GalleryContext';
@@ -7,47 +7,52 @@ import { useAuth } from '@/context/AuthContext';
 
 export function useGalleryCategories() {
   const [categories, setCategories] = useState<GalleryCategory[]>([]);
-  const { isAuthenticated, isAdmin, user } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
+  const [sessionVerified, setSessionVerified] = useState(false);
+  
+  // Verify session when the hook is initialized
+  useEffect(() => {
+    const verifySession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setSessionVerified(!!data.session);
+      console.log('Session verified in useGalleryCategories:', !!data.session);
+    };
+    
+    verifySession();
+  }, []);
 
   // Function to add a new category
   const addCategory = async (category: Omit<GalleryCategory, 'id'>): Promise<GalleryCategory | null> => {
     try {
-      if (!isAuthenticated) {
-        toast.error('You must be logged in to add categories');
+      // Verify session again before mutation
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        console.error('No active session found in addCategory');
+        toast.error('No active session found. Please log in again.');
         return null;
       }
       
       console.log('Adding category:', category);
-      console.log('Current user:', user);
+      console.log('Session verified before adding:', !!sessionData.session);
 
-      // Make sure we're sending the request with the user's session
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        toast.error('Authentication error: ' + sessionError.message);
-        return null;
-      }
-
-      if (!sessionData.session) {
-        console.error('No active session found');
-        toast.error('No active session found. Please log in again.');
-        return null;
-      }
-
-      console.log('Session verified:', !!sessionData.session);
-
-      // Try with explicit RLS bypass for admins
-      let query = supabase
+      // Proceed with the database operation
+      const { data, error } = await supabase
         .from('gallery_categories')
         .insert(category)
         .select()
         .single();
-
-      const { data, error } = await query;
         
       if (error) {
         console.error('Error adding category to database:', error);
-        toast.error('Error adding category: ' + error.message);
+        
+        if (error.message.includes('policy')) {
+          toast.error('Permission denied: You might not have the right permissions');
+        } else if (error.message.includes('JWT')) {
+          toast.error('Authentication error: Your session may have expired');
+        } else {
+          toast.error('Error adding category: ' + error.message);
+        }
         return null;
       }
       
@@ -68,29 +73,17 @@ export function useGalleryCategories() {
   // Function to update an existing category
   const updateCategory = async (category: GalleryCategory): Promise<GalleryCategory | null> => {
     try {
-      if (!isAuthenticated) {
-        toast.error('You must be logged in to update categories');
-        return null;
-      }
-
-      console.log('Updating category:', category);
-      console.log('Current user:', user);
-
-      // Make sure we're sending the request with the user's session
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        toast.error('Authentication error: ' + sessionError.message);
-        return null;
-      }
-
+      // Verify session again before mutation
+      const { data: sessionData } = await supabase.auth.getSession();
+      
       if (!sessionData.session) {
-        console.error('No active session found');
+        console.error('No active session found in updateCategory');
         toast.error('No active session found. Please log in again.');
         return null;
       }
 
-      console.log('Session verified:', !!sessionData.session);
+      console.log('Updating category:', category);
+      console.log('Session verified before updating:', !!sessionData.session);
 
       const { data, error } = await supabase
         .from('gallery_categories')
@@ -101,7 +94,14 @@ export function useGalleryCategories() {
 
       if (error) {
         console.error('Error updating category:', error);
-        toast.error('Error updating category: ' + error.message);
+        
+        if (error.message.includes('policy')) {
+          toast.error('Permission denied: You might not have the right permissions');
+        } else if (error.message.includes('JWT')) {
+          toast.error('Authentication error: Your session may have expired');
+        } else {
+          toast.error('Error updating category: ' + error.message);
+        }
         return null;
       }
 
@@ -121,29 +121,17 @@ export function useGalleryCategories() {
   // Function to delete a category
   const deleteCategory = async (id: string): Promise<void> => {
     try {
-      if (!isAuthenticated) {
-        toast.error('You must be logged in to delete categories');
-        return;
-      }
-
-      console.log('Deleting category:', id);
-      console.log('Current user:', user);
-
-      // Make sure we're sending the request with the user's session
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        toast.error('Authentication error: ' + sessionError.message);
-        return;
-      }
-
+      // Verify session again before mutation
+      const { data: sessionData } = await supabase.auth.getSession();
+      
       if (!sessionData.session) {
-        console.error('No active session found');
+        console.error('No active session found in deleteCategory');
         toast.error('No active session found. Please log in again.');
         return;
       }
 
-      console.log('Session verified:', !!sessionData.session);
+      console.log('Deleting category:', id);
+      console.log('Session verified before deleting:', !!sessionData.session);
 
       const { error } = await supabase
         .from('gallery_categories')
@@ -152,7 +140,14 @@ export function useGalleryCategories() {
 
       if (error) {
         console.error('Error deleting category:', error);
-        toast.error('Error deleting category: ' + error.message);
+        
+        if (error.message.includes('policy')) {
+          toast.error('Permission denied: You might not have the right permissions');
+        } else if (error.message.includes('JWT')) {
+          toast.error('Authentication error: Your session may have expired');
+        } else {
+          toast.error('Error deleting category: ' + error.message);
+        }
         return;
       }
       
@@ -170,6 +165,7 @@ export function useGalleryCategories() {
     setCategories,
     addCategory,
     updateCategory,
-    deleteCategory
+    deleteCategory,
+    sessionVerified
   };
 }

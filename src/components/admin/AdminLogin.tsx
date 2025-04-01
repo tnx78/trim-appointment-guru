@@ -1,19 +1,52 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Scissors } from 'lucide-react';
+import { Scissors, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export function AdminLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const { login, isAuthenticated } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Check existing session on mount
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      console.log('Current session status:', data.session ? 'Active' : 'None');
+    };
+    
+    checkSession();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(username, password);
+    setErrorMessage('');
+    setIsLoading(true);
+    
+    try {
+      console.log('Starting login attempt with:', username);
+      const success = await login(username, password);
+      
+      if (success) {
+        console.log('Login successful');
+        toast.success('Successfully logged in');
+      } else {
+        console.log('Login failed');
+        setErrorMessage('Login failed. Please check your credentials.');
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      setErrorMessage(error.message || 'An error occurred during login');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -27,6 +60,12 @@ export function AdminLogin() {
           <CardDescription>Login to access the salon administration panel</CardDescription>
         </CardHeader>
         <CardContent>
+          {errorMessage && (
+            <div className="mb-4 p-3 text-sm bg-destructive/15 text-destructive rounded-md">
+              {errorMessage}
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="username" className="text-sm font-medium">Username</label>
@@ -37,6 +76,7 @@ export function AdminLogin() {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter your username"
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -48,9 +88,19 @@ export function AdminLogin() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 required
+                disabled={isLoading}
               />
             </div>
-            <Button type="submit" className="w-full">Login</Button>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Logging in...
+                </>
+              ) : (
+                'Login'
+              )}
+            </Button>
           </form>
           
           <div className="mt-4 text-sm text-muted-foreground text-center">

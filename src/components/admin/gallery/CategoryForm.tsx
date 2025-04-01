@@ -1,11 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { GalleryCategory } from '@/context/GalleryContext';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 interface CategoryFormProps {
   category?: GalleryCategory;
@@ -18,10 +20,26 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
   const [description, setDescription] = useState(category?.description || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const { isAuthenticated } = useAuth();
+  
+  useEffect(() => {
+    // Check authentication on mount
+    if (!isAuthenticated) {
+      setErrorMsg('You must be logged in to manage categories');
+    } else {
+      setErrorMsg('');
+    }
+  }, [isAuthenticated]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+    
+    if (!isAuthenticated) {
+      setErrorMsg('You must be logged in to manage categories');
+      toast.error('Authentication required');
+      return;
+    }
     
     if (!name.trim()) {
       setErrorMsg('Category name is required');
@@ -38,6 +56,10 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
     } catch (error: any) {
       console.error('Error in category form submission:', error);
       setErrorMsg(error.message || 'Failed to save category');
+      
+      if (error.message?.includes('session') || error.message?.includes('authentication')) {
+        toast.error('Session expired. Please log in again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -84,7 +106,7 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
         </Button>
         <Button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !isAuthenticated}
         >
           {isSubmitting ? (
             <>
