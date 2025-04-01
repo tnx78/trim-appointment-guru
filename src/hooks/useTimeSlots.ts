@@ -45,9 +45,9 @@ export function getAvailableTimeSlots(date: Date, duration: number, appointments
   
   // Mark slots as unavailable if they overlap with existing appointments
   dayAppointments.forEach(appointment => {
-    // Handle different time formats
-    const startTime = appointment.startTime || appointment.start_time;
-    const endTime = appointment.endTime || appointment.end_time;
+    // Use the correct property names from the Appointment type
+    const startTime = appointment.startTime;
+    const endTime = appointment.endTime;
     
     if (!startTime || !endTime) {
       console.error('Appointment missing time information:', appointment);
