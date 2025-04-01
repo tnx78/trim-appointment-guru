@@ -15,8 +15,7 @@ export function useGalleryCategories() {
       console.log('Adding category with auth status:', { 
         isAuthenticated, 
         isAdmin,
-        userId: user?.id,
-        authRole: auth?.role?.()
+        userId: user?.id
       });
 
       // Check if user is authenticated (we're not using isAdmin check anymore)
