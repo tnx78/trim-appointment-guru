@@ -1,6 +1,8 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
 // Define types for gallery data
 export interface GalleryCategory {
@@ -44,6 +46,7 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<GalleryCategory[]>([]);
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated, isAdmin } = useAuth();
 
   const loadGalleryData = async () => {
     try {
@@ -87,6 +90,13 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
   const addCategory = async (category: Omit<GalleryCategory, 'id'>): Promise<GalleryCategory | null> => {
     try {
+      if (!isAuthenticated || !isAdmin) {
+        const errorMessage = 'Authentication required: Only admins can add categories';
+        console.error(errorMessage);
+        toast.error(errorMessage);
+        return null;
+      }
+
       console.log('Adding category:', category);
       
       const { data, error } = await supabase
@@ -115,6 +125,13 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
   const updateCategory = async (category: GalleryCategory): Promise<GalleryCategory | null> => {
     try {
+      if (!isAuthenticated || !isAdmin) {
+        const errorMessage = 'Authentication required: Only admins can update categories';
+        console.error(errorMessage);
+        toast.error(errorMessage);
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('gallery_categories')
         .update(category)
@@ -137,6 +154,13 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
   const deleteCategory = async (id: string): Promise<void> => {
     try {
+      if (!isAuthenticated || !isAdmin) {
+        const errorMessage = 'Authentication required: Only admins can delete categories';
+        console.error(errorMessage);
+        toast.error(errorMessage);
+        return;
+      }
+
       const { error } = await supabase
         .from('gallery_categories')
         .delete()
@@ -154,6 +178,13 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
   const addImage = async (image: Omit<GalleryImage, 'id'>): Promise<GalleryImage | null> => {
     try {
+      if (!isAuthenticated || !isAdmin) {
+        const errorMessage = 'Authentication required: Only admins can add images';
+        console.error(errorMessage);
+        toast.error(errorMessage);
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('gallery_images')
         .insert(image)
@@ -175,6 +206,13 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
   const updateImage = async (image: GalleryImage): Promise<GalleryImage | null> => {
     try {
+      if (!isAuthenticated || !isAdmin) {
+        const errorMessage = 'Authentication required: Only admins can update images';
+        console.error(errorMessage);
+        toast.error(errorMessage);
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('gallery_images')
         .update(image)
@@ -197,6 +235,13 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
   const deleteImage = async (id: string): Promise<void> => {
     try {
+      if (!isAuthenticated || !isAdmin) {
+        const errorMessage = 'Authentication required: Only admins can delete images';
+        console.error(errorMessage);
+        toast.error(errorMessage);
+        return;
+      }
+
       const { error } = await supabase
         .from('gallery_images')
         .delete()
