@@ -6,10 +6,7 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- Set up simple, permissive RLS policies to allow public access to the storage bucket
-INSERT INTO storage.policies (name, definition, bucket_id)
-VALUES 
-  ('Public read access', 'true', 'gallery'),
-  ('Public insert access', 'true', 'gallery'),
-  ('Public update access', 'true', 'gallery'),
-  ('Public delete access', 'true', 'gallery')
-ON CONFLICT (name, definition, bucket_id) DO NOTHING;
+CREATE POLICY IF NOT EXISTS "Public read access" ON storage.objects FOR SELECT USING (bucket_id = 'gallery');
+CREATE POLICY IF NOT EXISTS "Public insert access" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'gallery');
+CREATE POLICY IF NOT EXISTS "Public update access" ON storage.objects FOR UPDATE USING (bucket_id = 'gallery');
+CREATE POLICY IF NOT EXISTS "Public delete access" ON storage.objects FOR DELETE USING (bucket_id = 'gallery');

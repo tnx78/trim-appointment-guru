@@ -12,7 +12,7 @@ export function useGalleryStorage() {
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
       setIsUploading(true);
-      console.log('Uploading image with auth status:', { isAuthenticated, isAdmin });
+      console.log('Uploading image...');
 
       // Validate file type
       if (!file.type.startsWith('image/')) {
@@ -31,47 +31,28 @@ export function useGalleryStorage() {
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // Try to upload to Supabase storage first, with demo mode as fallback
-      try {
-        // Upload to Supabase storage
-        const { data, error } = await supabase.storage
-          .from('gallery')
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
+      // Upload to Supabase storage
+      const { data, error } = await supabase.storage
+        .from('gallery')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-        if (error) {
-          console.error('Error uploading image to Supabase storage:', error);
-          throw error;
-        }
-
-        // Get public URL for the uploaded image
-        const { data: { publicUrl } } = supabase.storage
-          .from('gallery')
-          .getPublicUrl(data.path);
-
-        console.log('Image uploaded successfully to Supabase storage:', publicUrl);
-        toast.success('Image uploaded successfully');
-        return publicUrl;
-      } catch (storageError) {
-        console.warn('Supabase storage upload failed, falling back to demo mode:', storageError);
-        
-        // If storage fails or we're in demo mode, create a data URL as fallback
-        if (localStorage.getItem('isAdmin') === 'true') {
-          return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const imageUrl = reader.result as string;
-              toast.success('Image uploaded as data URL (demo mode)');
-              resolve(imageUrl);
-            };
-            reader.readAsDataURL(file);
-          });
-        } else {
-          throw storageError;
-        }
+      if (error) {
+        console.error('Error uploading image to Supabase storage:', error);
+        toast.error('Error uploading image: ' + error.message);
+        return null;
       }
+
+      // Get public URL for the uploaded image
+      const { data: { publicUrl } } = supabase.storage
+        .from('gallery')
+        .getPublicUrl(data.path);
+
+      console.log('Image uploaded successfully:', publicUrl);
+      toast.success('Image uploaded successfully');
+      return publicUrl;
     } catch (error: any) {
       console.error('Error in upload process:', error.message);
       toast.error('Error uploading image: ' + error.message);
@@ -84,12 +65,6 @@ export function useGalleryStorage() {
   // Delete image from Supabase storage
   const deleteStorageImage = async (url: string): Promise<boolean> => {
     try {
-      // For demo mode with data URLs, we can just return success
-      if (url.startsWith('data:')) {
-        console.log('Deleting demo mode image (no action needed)');
-        return true;
-      }
-      
       // Extract file path from the URL
       const bucketName = 'gallery';
       const urlObj = new URL(url);
