@@ -65,65 +65,62 @@ export function UserInfoForm({ onBack, onSubmit, loading }: UserInfoFormProps) {
   };
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">Your Information</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium mb-1">
-            Full Name
-          </label>
-          <Input
-            id="name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-1">
-            Email
-          </label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium mb-1">
-            Phone Number (optional)
-          </label>
-          <Input
-            id="phone"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            placeholder="+1 (555) 123-4567"
-          />
-        </div>
-        
-        <div className="pt-4 flex justify-between">
-          <Button type="button" variant="outline" onClick={onBack}>
-            Back
-          </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Booking...
-              </>
-            ) : (
-              'Book Appointment'
-            )}
-          </Button>
-        </div>
-      </form>
-    </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="name" className="block text-sm font-medium mb-1">
+          Full Name
+        </label>
+        <Input
+          id="name"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          required
+        />
+      </div>
+      
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium mb-1">
+          Email
+        </label>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+        />
+      </div>
+      
+      <div>
+        <label htmlFor="phone" className="block text-sm font-medium mb-1">
+          Phone Number (optional)
+        </label>
+        <Input
+          id="phone"
+          name="phone"
+          value={formData.phone}
+          onChange={handleChange}
+          placeholder="+1 (555) 123-4567"
+        />
+      </div>
+      
+      <div className="pt-4 flex justify-between">
+        <Button type="button" variant="outline" onClick={onBack}>
+          Back
+        </Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Booking...
+            </>
+          ) : (
+            'Book Appointment'
+          )}
+        </Button>
+      </div>
+    </form>
   );
 }

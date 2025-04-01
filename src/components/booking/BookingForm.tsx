@@ -71,11 +71,10 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
           // Calculate end time based on service duration
           end_time: calculateEndTime(selectedTime, selectedService.duration),
           status: 'pending',
-          // Only link appointment to user if authenticated
+          // User ID is optional - only set if user is authenticated
           user_id: user?.id || null
         })
-        .select()
-        .single();
+        .select();
         
       if (error) throw error;
       
@@ -85,7 +84,7 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
       // Navigate to confirmation page
       navigate('/confirmation', { 
         state: { 
-          appointment: data,
+          appointment: data[0],
           serviceName: selectedService.name
         } 
       });
