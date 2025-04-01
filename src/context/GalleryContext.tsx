@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -130,10 +131,11 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
       const updatedCategory = data as unknown as GalleryCategory;
       setCategories(prev => prev.map(c => c.id === category.id ? updatedCategory : c));
+      toast.success('Category updated successfully');
       return updatedCategory;
     } catch (error: any) {
       console.error('Error updating category:', error.message);
-      toast({ title: 'Error updating category', description: error.message, variant: 'destructive' });
+      toast.error('Error updating category: ' + error.message);
       return null;
     }
   };
@@ -148,9 +150,10 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       
       setCategories(prev => prev.filter(c => c.id !== id));
+      toast.success('Category deleted successfully');
     } catch (error: any) {
       console.error('Error deleting category:', error.message);
-      toast({ title: 'Error deleting category', description: error.message, variant: 'destructive' });
+      toast.error('Error deleting category: ' + error.message);
     }
   };
 
@@ -166,10 +169,11 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
       
       const newImage = data as unknown as GalleryImage;
       setImages(prev => [...prev, newImage]);
+      toast.success('Image added successfully');
       return newImage;
     } catch (error: any) {
       console.error('Error adding image:', error.message);
-      toast({ title: 'Error adding image', description: error.message, variant: 'destructive' });
+      toast.error('Error adding image: ' + error.message);
       return null;
     }
   };
@@ -187,10 +191,11 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
 
       const updatedImage = data as unknown as GalleryImage;
       setImages(prev => prev.map(img => img.id === image.id ? updatedImage : img));
+      toast.success('Image updated successfully');
       return updatedImage;
     } catch (error: any) {
       console.error('Error updating image:', error.message);
-      toast({ title: 'Error updating image', description: error.message, variant: 'destructive' });
+      toast.error('Error updating image: ' + error.message);
       return null;
     }
   };
@@ -205,9 +210,10 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       
       setImages(prev => prev.filter(img => img.id !== id));
+      toast.success('Image deleted successfully');
     } catch (error: any) {
       console.error('Error deleting image:', error.message);
-      toast({ title: 'Error deleting image', description: error.message, variant: 'destructive' });
+      toast.error('Error deleting image: ' + error.message);
     }
   };
 
