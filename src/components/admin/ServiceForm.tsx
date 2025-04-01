@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Image, X, Loader2 } from 'lucide-react';
+import { useServiceStorage } from '@/hooks/useServiceStorage';
 
 interface ServiceFormProps {
   service?: Service;
@@ -19,6 +20,7 @@ interface ServiceFormProps {
 export function ServiceForm({ service, onComplete }: ServiceFormProps) {
   const { categories } = useCategoryContext();
   const { addService, updateService } = useServiceContext();
+  const { uploadImage, deleteStorageImage, isUploading: isImageUploading } = useServiceStorage();
   
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -43,7 +45,7 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
     }
   }, [service]);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
@@ -51,21 +53,32 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
         return;
       }
       
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result as string);
-        console.log('Image loaded successfully');
-      };
-      reader.onerror = () => {
-        toast.error('Error reading image file');
-      };
-      reader.readAsDataURL(file);
+      try {
+        const imageUrl = await uploadImage(file);
+        if (imageUrl) {
+          setImage(imageUrl);
+          console.log('Image uploaded successfully:', imageUrl);
+        }
+      } catch (error) {
+        console.error('Failed to upload image:', error);
+        toast.error('Failed to upload image');
+      }
     }
   };
 
-  const handleRemoveImage = () => {
-    setImage(undefined);
-    setFileInputKey(Date.now());
+  const handleRemoveImage = async () => {
+    if (image) {
+      // If this is a URL (not a data URL from demo mode), delete it from storage
+      if (image.startsWith('http')) {
+        try {
+          await deleteStorageImage(image);
+        } catch (error) {
+          console.error('Failed to delete image from storage:', error);
+        }
+      }
+      setImage(undefined);
+      setFileInputKey(Date.now());
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,6 +102,16 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
       };
       
       if (service) {
+        // If image has changed and old image exists, delete it from storage
+        if (service.image && service.image !== image && service.image.startsWith('http')) {
+          try {
+            await deleteStorageImage(service.image);
+          } catch (error) {
+            console.error('Failed to delete old image:', error);
+            // Continue with update even if delete fails
+          }
+        }
+        
         await updateService(service.id, formData);
         toast.success(`Service "${name}" updated successfully`);
       } else {
@@ -181,6 +204,7 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
                 size="icon"
                 className="absolute top-1 right-1 h-6 w-6 rounded-full"
                 onClick={handleRemoveImage}
+                disabled={isImageUploading}
               >
                 <X className="h-3 w-3" />
               </Button>
@@ -188,7 +212,11 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
           ) : (
             <label htmlFor="service-image-input" className="cursor-pointer">
               <div className="h-24 w-24 border border-dashed border-gray-300 rounded-md flex items-center justify-center bg-gray-50">
-                <Image className="h-8 w-8 text-gray-400" />
+                {isImageUploading ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                ) : (
+                  <Image className="h-8 w-8 text-gray-400" />
+                )}
               </div>
               <Input
                 id="service-image-input"
@@ -197,11 +225,13 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
                 accept="image/*"
                 onChange={handleImageChange}
                 className="hidden"
+                disabled={isImageUploading}
               />
             </label>
           )}
           <div className="text-sm text-muted-foreground">
-            {image ? "Click the X to remove the image" : "Click to upload an image (max 5MB)"}
+            {isImageUploading ? "Uploading image..." : 
+             (image ? "Click the X to remove the image" : "Click to upload an image (max 5MB)")}
           </div>
         </div>
       </div>
@@ -241,7 +271,7 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
         <Button type="button" variant="outline" onClick={onComplete}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting || isImageUploading}>
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

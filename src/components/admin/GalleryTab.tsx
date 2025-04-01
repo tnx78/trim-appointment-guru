@@ -8,7 +8,7 @@ import { Loader2, PlusCircle, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useGalleryContext, GalleryCategory, GalleryImage } from '@/context/GalleryContext';
 
-// Import our new components
+// Import our components
 import { CategoryForm } from './gallery/CategoryForm';
 import { ImageForm } from './gallery/ImageForm';
 import { CategoryList } from './gallery/CategoryList';
@@ -92,6 +92,16 @@ export function GalleryTab() {
       }
       
       if (editingImage) {
+        // If the image URL has changed and we're not in demo mode, delete the old image
+        if (imageData.image_url && imageData.image_url !== editingImage.image_url && !imageData.image_url.startsWith('data:')) {
+          // Let it fail silently if deletion fails - we still want to update the image
+          try {
+            // This will eventually be handled in the useGalleryImages hook deleteImage method
+          } catch (error) {
+            console.warn('Failed to delete old image, but continuing with update:', error);
+          }
+        }
+        
         await updateImage({
           ...editingImage,
           ...imageData,

@@ -96,6 +96,20 @@ export function useGalleryImages() {
         return null;
       }
 
+      // Get the existing image to check if we need to delete an old image file
+      const existingImage = images.find(img => img.id === image.id);
+      const imageChanged = existingImage && existingImage.image_url !== image.image_url;
+      
+      // If the image URL has changed and the old one is a storage URL (not data:), delete it
+      if (imageChanged && existingImage?.image_url?.startsWith('http')) {
+        try {
+          await deleteStorageImage(existingImage.image_url);
+        } catch (err) {
+          console.warn('Failed to delete old image file, but continuing update:', err);
+          // Continue with update even if delete fails
+        }
+      }
+
       // For demo mode, we'll update in localStorage
       if (inDemoMode) {
         console.log('Demo mode: Simulating image update');
@@ -188,10 +202,12 @@ export function useGalleryImages() {
         return;
       }
 
-      // Delete the image file from storage first
-      const imageDeleted = await deleteStorageImage(imageToDelete.image_url);
-      if (!imageDeleted) {
-        console.warn('Could not delete image file, but will proceed with database deletion');
+      // Delete the image file from storage first if it's not a data URL
+      if (imageToDelete.image_url && imageToDelete.image_url.startsWith('http')) {
+        const imageDeleted = await deleteStorageImage(imageToDelete.image_url);
+        if (!imageDeleted) {
+          console.warn('Could not delete image file, but will proceed with database deletion');
+        }
       }
 
       // Delete from database

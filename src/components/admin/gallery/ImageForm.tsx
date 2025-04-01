@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GalleryCategory, GalleryImage } from '@/context/GalleryContext';
-import { Image, X, Upload } from 'lucide-react';
+import { Image, X, Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useGalleryStorage } from '@/hooks/useGalleryStorage';
 
 interface ImageFormProps {
   image?: GalleryImage;
@@ -23,6 +24,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(image?.image_url || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isUploading, uploadImage } = useGalleryStorage();
 
   // Reset the form if the image prop changes
   useEffect(() => {
@@ -100,6 +102,8 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
       });
       console.log('File:', imageFile ? imageFile.name : 'No file');
       
+      // For backwards compatibility, allow the parent component to handle file upload
+      // if they want to, though we recommend using the storage directly
       await onSubmit({
         category_id: categoryId,
         title: title || undefined,
@@ -153,22 +157,28 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
                 size="icon"
                 className="absolute top-2 right-2"
                 onClick={removeImage}
+                disabled={isUploading}
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
           ) : (
             <div className="flex items-center justify-center w-full aspect-video bg-muted rounded-md border-2 border-dashed border-muted-foreground/20">
-              <div className="flex flex-col items-center gap-2">
-                <Upload className="h-8 w-8 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Click to upload an image</p>
-              </div>
+              {isUploading ? (
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <Upload className="h-8 w-8 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">Click to upload an image</p>
+                </div>
+              )}
               <Input
                 id="image-upload"
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
                 className="hidden"
+                disabled={isUploading}
               />
               <label
                 htmlFor="image-upload"
@@ -205,14 +215,22 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
           type="button"
           variant="outline"
           onClick={onCancel}
+          disabled={isSubmitting || isUploading}
         >
           Cancel
         </Button>
         <Button
           type="submit"
-          disabled={isSubmitting || (!image && !imageFile) || !categoryId}
+          disabled={isSubmitting || isUploading || (!image && !imageFile) || !categoryId}
         >
-          {isSubmitting ? 'Saving...' : (image ? 'Update' : 'Add')} Image
+          {isSubmitting || isUploading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {isUploading ? 'Uploading...' : (image ? 'Updating...' : 'Adding...')}
+            </>
+          ) : (
+            <>{image ? 'Update' : 'Add'} Image</>
+          )}
         </Button>
       </div>
     </form>
