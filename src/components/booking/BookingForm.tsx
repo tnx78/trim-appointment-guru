@@ -82,12 +82,24 @@ export function BookingForm({ onBack }: { onBack: () => void }) {
       });
       
       if (appointmentId) {
+        // Show success message
+        toast.success('Appointment booked successfully!');
+        
+        // Create appointment data to pass to confirmation page
+        const appointmentData = {
+          id: appointmentId,
+          serviceId: service.id,
+          clientName: name,
+          date: selectedDate,
+          startTime,
+          endTime,
+        };
+        
         // Reset the booking flow state
         reset();
         
-        // Show success message and redirect
-        toast.success('Appointment booked successfully!');
-        navigate('/confirmation');
+        // Navigate to confirmation page with appointment data
+        navigate('/confirmation', { state: { appointment: appointmentData } });
       } else {
         throw new Error("Failed to book appointment");
       }
