@@ -1,9 +1,9 @@
 
 import React, { useContext } from 'react';
-import { CategoryProvider } from '@/context/CategoryContext';
-import { ServiceProvider } from '@/context/ServiceContext';
-import { AppointmentProvider } from '@/context/AppointmentContext';
-import { BookingProvider } from '@/context/BookingContext';
+import { CategoryProvider, useCategoryContext } from '@/context/CategoryContext';
+import { ServiceProvider, useServiceContext } from '@/context/ServiceContext';
+import { AppointmentProvider, useAppointmentContext } from '@/context/AppointmentContext';
+import { BookingProvider, useBookingContext } from '@/context/BookingContext';
 
 // Create a combined context for AppContext
 const AppContext = React.createContext<any | undefined>(undefined);
@@ -21,9 +21,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       <ServiceProvider>
         <AppointmentProvider>
           <BookingProvider>
-            <AppContextProvider>
-              {children}
-            </AppContextProvider>
+            {children}
           </BookingProvider>
         </AppointmentProvider>
       </ServiceProvider>
@@ -31,30 +29,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// A new provider that will make the combined context available
-function AppContextProvider({ children }: { children: React.ReactNode }) {
-  // Import the separate contexts
-  const categoryContext = useContext(React.createContext({}));
-  const serviceContext = useContext(React.createContext({}));
-  const appointmentContext = useContext(React.createContext({}));
-  const bookingContext = useContext(React.createContext({}));
-  
-  // Create the combined value
-  const combinedContextValue = {
-    // We don't actually populate this as we'll use the individual hooks directly
-  };
-  
-  return (
-    <AppContext.Provider value={combinedContextValue}>
-      {children}
-    </AppContext.Provider>
-  );
-}
-
 // For backward compatibility, create a useAppContext hook
 export function useAppContext() {
-  // Import hooks directly to avoid circular dependencies
-  // Use explicit imports instead of require
+  // Import hooks directly from the source context files
   const categoryContext = useCategoryContext();
   const serviceContext = useServiceContext();
   const appointmentContext = useAppointmentContext();
