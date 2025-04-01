@@ -5,7 +5,6 @@ import { useBookingContext } from '@/context/BookingContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { DateTimeSelection } from './DateTimeSelection';
 import { BookingProgressBar } from './BookingProgressBar';
 import { UserInfoForm } from './UserInfoForm';
 
@@ -20,25 +19,12 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
   } = useBookingContext();
   
   const [loading, setLoading] = useState(false);
-  const [activeStep, setActiveStep] = useState(1);
-
-  // Handle next step
-  const handleNext = () => {
-    setActiveStep(prev => prev + 1);
-  };
 
   // Handle previous step
   const handleBack = () => {
-    if (activeStep > 1) {
-      setActiveStep(prev => prev - 1);
-    } else if (onBack) {
+    if (onBack) {
       onBack();
     }
-  };
-
-  // Handle date/time selection
-  const handleDateTimeNext = () => {
-    setActiveStep(2);
   };
 
   // Helper function to calculate end time based on start time and duration
@@ -115,22 +101,16 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardContent className="p-6">
-        <BookingProgressBar activeStep={activeStep} />
+        <BookingProgressBar activeStep={3} />
 
-        {activeStep === 1 && (
-          <div>
-            <h2 className="text-xl font-bold mb-4">Select Date & Time</h2>
-            <DateTimeSelection onBack={onBack} onNext={handleDateTimeNext} />
-          </div>
-        )}
-
-        {activeStep === 2 && (
+        <div>
+          <h2 className="text-xl font-bold mb-4">Your Information</h2>
           <UserInfoForm 
             onBack={handleBack}
             onSubmit={handleSubmit}
             loading={loading}
           />
-        )}
+        </div>
       </CardContent>
     </Card>
   );

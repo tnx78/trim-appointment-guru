@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useAppContext } from '@/context/AppContext';
+import { useBookingContext } from '@/context/BookingContext';
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,19 +8,35 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSalonHours } from '@/hooks/use-salon-hours';
+import { BookingProgressBar } from './BookingProgressBar';
 
 export function DateTimeSelection({ onBack, onNext }: { onBack?: () => void; onNext?: () => void }) {
-  const { selectedService, selectedDate, selectedTime, selectDate, selectTime, timeSlots, getAvailableTimeSlots } = useAppContext();
+  const { selectedService, selectedDate, selectedTime, selectDate, selectTime } = useBookingContext();
   const { isDateAvailable } = useSalonHours();
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
-  const [currentView, setCurrentView] = useState<'calendar' | 'time'>('calendar');
+  const [currentView, setCurrentView] = useState<'calendar' | 'time'>(selectedDate ? 'time' : 'calendar');
 
+  // Generate time slots (simplified for this example)
   useEffect(() => {
     if (selectedService && selectedDate) {
-      const slots = getAvailableTimeSlots(selectedDate, selectedService.duration);
+      // For demonstration purposes, we'll just create some dummy time slots
+      const slots = [];
+      const startHour = 9; // 9 AM
+      const endHour = 17; // 5 PM
+      
+      for (let hour = startHour; hour < endHour; hour++) {
+        for (let minute of ['00', '30']) {
+          slots.push({
+            id: `slot-${hour}-${minute}`,
+            time: `${hour}:${minute}`,
+            available: true
+          });
+        }
+      }
+      
       setAvailableTimeSlots(slots);
     }
-  }, [selectedDate, selectedService, getAvailableTimeSlots]);
+  }, [selectedDate, selectedService]);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -94,13 +110,14 @@ export function DateTimeSelection({ onBack, onNext }: { onBack?: () => void; onN
           variant="ghost" 
           className="flex items-center mb-4"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Services
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
-        <h1 className="text-3xl font-bold">Choose Date & Time</h1>
+        <BookingProgressBar activeStep={2} />
+        <h1 className="text-3xl font-bold mt-4">Choose Date & Time</h1>
         <p className="text-muted-foreground">Select when you would like your {selectedService.name} appointment</p>
       </div>
 
-      <Tabs defaultValue="calendar" className="w-full" value={currentView} onValueChange={(v) => setCurrentView(v as 'calendar' | 'time')}>
+      <Tabs defaultValue={currentView} className="w-full" value={currentView} onValueChange={(v) => setCurrentView(v as 'calendar' | 'time')}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="calendar">
             <CalendarIcon className="mr-2 h-4 w-4" />

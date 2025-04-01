@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Clock, DollarSign } from 'lucide-react';
+import { BookingProgressBar } from './BookingProgressBar';
 
 export function ServiceList({ onServiceSelect }: { onServiceSelect?: () => void }) {
   const { categories } = useCategoryContext();
@@ -23,7 +24,8 @@ export function ServiceList({ onServiceSelect }: { onServiceSelect?: () => void 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Book Your Appointment</h1>
+        <BookingProgressBar activeStep={1} />
+        <h1 className="text-3xl font-bold mt-4">Book Your Appointment</h1>
         <p className="text-muted-foreground">Select a service to begin booking your appointment</p>
       </div>
 
