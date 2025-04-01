@@ -31,8 +31,15 @@ export function useGalleryCategories() {
       console.log('Current session status before adding category:', sessionData.session ? 'Active' : 'None');
       
       if (!sessionData.session) {
-        toast.error('Your session has expired. Please log in again.');
-        return null;
+        // Try to refresh the session
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError || !refreshData.session) {
+          toast.error('Your session has expired. Please log in again.');
+          return null;
+        }
+        
+        console.log('Session refreshed successfully');
       }
       
       // Insert category into Supabase

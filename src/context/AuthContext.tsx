@@ -23,7 +23,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   useEffect(() => {
-    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         console.log('Auth state changed:', _event, session ? 'Session exists' : 'No session');
@@ -31,21 +30,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setIsAuthenticated(!!session);
         
-        // Check if admin (simple implementation)
         const isAdminUser = session?.user?.email === 'admin@example.com' || localStorage.getItem('isAdmin') === 'true';
         setIsAdmin(isAdminUser);
         setLoading(false);
       }
     );
 
-    // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session ? 'Session exists' : 'No session');
       setSession(session);
       setUser(session?.user ?? null);
       setIsAuthenticated(!!session);
       
-      // Check if admin (simple implementation)
       const isAdminUser = session?.user?.email === 'admin@example.com' || localStorage.getItem('isAdmin') === 'true';
       setIsAdmin(isAdminUser);
       setLoading(false);
@@ -56,12 +52,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // User registration function
   const register = async (email: string, password: string, fullName: string, phone?: string): Promise<boolean> => {
     try {
       setLoading(true);
       
-      // Add user metadata that will be used by the database trigger to create the profile
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -88,28 +82,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // User login function
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
       
-      // Maintain backward compatibility with admin login
       if (email === 'admin' && password === 'admin123') {
         console.log('Admin login via local auth');
         
-        // For admin login, we'll create a session with a fixed email
-        // This ensures Supabase has a valid session for database operations
+        const adminEmail = 'admin@example.org';
+        const adminPassword = 'Admin123!';
+        
         const { data, error } = await supabase.auth.signInWithPassword({
-          email: 'admin@example.com',
-          password: 'Admin123!', // Use a strong fixed password for this admin account
+          email: adminEmail,
+          password: adminPassword,
         });
         
         if (error) {
-          // Try to sign up the admin user if it doesn't exist
           console.log('Attempting to create admin account');
           const { error: signUpError } = await supabase.auth.signUp({
-            email: 'admin@example.com',
-            password: 'Admin123!',
+            email: adminEmail,
+            password: adminPassword,
             options: {
               data: {
                 full_name: 'Admin User',
@@ -124,10 +116,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return false;
           }
           
-          // Try logging in again
           const { error: loginError } = await supabase.auth.signInWithPassword({
-            email: 'admin@example.com',
-            password: 'Admin123!',
+            email: adminEmail,
+            password: adminPassword,
           });
           
           if (loginError) {
@@ -137,7 +128,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
         
-        // Set the admin flag in local storage
         localStorage.setItem('isAdmin', 'true');
         setIsAuthenticated(true);
         setIsAdmin(true);
@@ -157,7 +147,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
       
-      // Success is handled by onAuthStateChange
       toast.success('Successfully logged in');
       return true;
     } catch (error: any) {
@@ -168,7 +157,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // User logout function
   const logout = async (): Promise<void> => {
     try {
       setLoading(true);
@@ -181,12 +169,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      // Clear admin flag
       localStorage.removeItem('isAdmin');
       setIsAuthenticated(false);
       setIsAdmin(false);
       
-      // Success is handled by onAuthStateChange
       toast.success('Successfully logged out');
     } catch (error: any) {
       toast.error(error.message || 'Failed to logout.');
