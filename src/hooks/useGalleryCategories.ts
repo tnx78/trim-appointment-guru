@@ -18,12 +18,24 @@ export function useGalleryCategories() {
         userId: user?.id
       });
 
-      // Check if user is authenticated (we're not using isAdmin check anymore)
+      // Check if user is authenticated
       if (!isAuthenticated) {
         const errorMessage = 'Authentication required to add categories';
         console.error(errorMessage);
         toast.error(errorMessage);
         return null;
+      }
+      
+      // Get Supabase session to ensure RLS policies work correctly
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        // If we're authenticated in our React app but not in Supabase, try to refresh the session
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          console.error('Session refresh error:', refreshError);
+          toast.error('Your session has expired. Please log in again.');
+          return null;
+        }
       }
       
       // Insert category into Supabase

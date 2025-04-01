@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -7,7 +6,6 @@ import { useGalleryCategories } from '@/hooks/useGalleryCategories';
 import { useGalleryImages } from '@/hooks/useGalleryImages';
 import { useGalleryStorage } from '@/hooks/useGalleryStorage';
 
-// Define types for gallery data
 export interface GalleryCategory {
   id: string;
   name: string;
@@ -26,7 +24,6 @@ export interface GalleryImage {
   created_at?: string;
 }
 
-// Define context type
 interface GalleryContextType {
   categories: GalleryCategory[];
   images: GalleryImage[];
@@ -44,16 +41,13 @@ interface GalleryContextType {
   isUploading: boolean;
 }
 
-// Create context
 const GalleryContext = createContext<GalleryContextType | undefined>(undefined);
 
-// Provider component
 export function GalleryProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated, isAdmin, user } = useAuth();
   
-  // Use our custom hooks
   const { 
     categories, 
     setCategories,
@@ -75,20 +69,20 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     uploadImage 
   } = useGalleryStorage();
 
-  // Function to load gallery data
   const loadGalleryData = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Log authentication status for debugging
       console.log('Loading gallery data...', { 
         isAuthenticated, 
         isAdmin, 
         userId: user?.id 
       });
       
-      // Get categories from Supabase
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('Current Supabase session:', sessionData.session ? 'Active' : 'None');
+      
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('gallery_categories')
         .select('*')
@@ -104,7 +98,6 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
       console.log('Fetched categories:', categoriesData);
       setCategories(categoriesData || []);
 
-      // Get images from Supabase
       const { data: imagesData, error: imagesError } = await supabase
         .from('gallery_images')
         .select('*')
@@ -129,18 +122,15 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Helper function to get images by category
   const getImagesByCategory = (categoryId: string): GalleryImage[] => {
     return images.filter(image => image.category_id === categoryId);
   };
 
-  // Load gallery data when component mounts
   useEffect(() => {
     console.log('GalleryProvider mounted with auth state:', { isAuthenticated, isAdmin });
     loadGalleryData();
   }, [isAuthenticated, isAdmin]);
 
-  // Context value
   const value = {
     categories,
     images,
@@ -161,7 +151,6 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
   return <GalleryContext.Provider value={value}>{children}</GalleryContext.Provider>;
 }
 
-// Custom hook to use the GalleryContext
 export function useGalleryContext() {
   const context = useContext(GalleryContext);
   if (context === undefined) {
