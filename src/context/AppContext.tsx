@@ -71,7 +71,8 @@ const mapServiceToDB = (service: Omit<Service, 'id'>): any => {
     description: service.description,
     duration: service.duration,
     price: service.price,
-    image: service.image
+    image: service.image,
+    order: service.order
   };
 };
 
@@ -258,7 +259,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       for (const category of updatedCategories) {
         const { error } = await supabase
           .from('categories')
-          .update({ order: category.order })
+          .update({ 
+            order: category.order 
+          })
           .eq('id', category.id);
         
         if (error) throw error;
@@ -360,7 +363,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       for (const service of updatedServices) {
         const { error } = await supabase
           .from('services')
-          .update({ order: service.order })
+          .update({ 
+            order: service.order 
+          })
           .eq('id', service.id);
         
         if (error) throw error;
