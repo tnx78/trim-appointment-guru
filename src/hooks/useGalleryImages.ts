@@ -4,14 +4,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { GalleryImage } from '@/context/GalleryContext';
 import { useGalleryStorage } from '@/hooks/useGalleryStorage';
+import { useAuth } from '@/context/AuthContext';
 
 export function useGalleryImages() {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const { deleteStorageImage } = useGalleryStorage();
+  const { isAuthenticated, isAdmin } = useAuth();
 
   // Function to add a new image
   const addImage = async (image: Omit<GalleryImage, 'id'>): Promise<GalleryImage | null> => {
     try {
+      if (!isAuthenticated) {
+        toast.error('You must be logged in to add images');
+        return null;
+      }
+
       console.log('Adding image:', image);
 
       const { data, error } = await supabase
@@ -43,6 +50,11 @@ export function useGalleryImages() {
   // Function to update an existing image
   const updateImage = async (image: GalleryImage): Promise<GalleryImage | null> => {
     try {
+      if (!isAuthenticated) {
+        toast.error('You must be logged in to update images');
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('gallery_images')
         .update(image)
@@ -72,6 +84,11 @@ export function useGalleryImages() {
   // Function to delete an image
   const deleteImage = async (id: string): Promise<void> => {
     try {
+      if (!isAuthenticated) {
+        toast.error('You must be logged in to delete images');
+        return;
+      }
+
       // Find the image to get its URL for storage deletion
       const imageToDelete = images.find(img => img.id === id);
       if (!imageToDelete) {

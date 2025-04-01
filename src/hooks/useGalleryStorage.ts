@@ -11,6 +11,11 @@ export function useGalleryStorage() {
   // Upload image to Supabase storage
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
+      if (!isAuthenticated) {
+        toast.error('You must be logged in to upload images');
+        return null;
+      }
+
       setIsUploading(true);
       console.log('Uploading image...', file.name, file.type, file.size);
 
@@ -67,6 +72,11 @@ export function useGalleryStorage() {
   // Delete image from Supabase storage
   const deleteStorageImage = async (url: string): Promise<boolean> => {
     try {
+      if (!isAuthenticated) {
+        toast.error('You must be logged in to delete images');
+        return false;
+      }
+
       // Extract file path from the URL
       const bucketName = 'gallery';
       const urlObj = new URL(url);

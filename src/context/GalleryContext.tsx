@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useGalleryCategories } from '@/hooks/useGalleryCategories';
 import { useGalleryImages } from '@/hooks/useGalleryImages';
 import { useGalleryStorage } from '@/hooks/useGalleryStorage';
+import { useAuth } from '@/context/AuthContext';
 
 export interface GalleryCategory {
   id: string;
@@ -46,6 +47,7 @@ const GalleryContext = createContext<GalleryContextType | undefined>(undefined);
 export function GalleryProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated, isAdmin } = useAuth();
   
   const { 
     categories, 
@@ -134,6 +136,16 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     console.log('GalleryProvider mounted');
     loadGalleryData();
+    
+    // Listen for auth changes and reload gallery data
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session ? 'User logged in' : 'No session');
+      loadGalleryData();
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   const value = {

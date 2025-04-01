@@ -3,13 +3,20 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { GalleryCategory } from '@/context/GalleryContext';
+import { useAuth } from '@/context/AuthContext';
 
 export function useGalleryCategories() {
   const [categories, setCategories] = useState<GalleryCategory[]>([]);
+  const { isAuthenticated, isAdmin } = useAuth();
 
   // Function to add a new category
   const addCategory = async (category: Omit<GalleryCategory, 'id'>): Promise<GalleryCategory | null> => {
     try {
+      if (!isAuthenticated) {
+        toast.error('You must be logged in to add categories');
+        return null;
+      }
+      
       console.log('Adding category:', category);
 
       const { data, error } = await supabase
@@ -41,6 +48,11 @@ export function useGalleryCategories() {
   // Function to update an existing category
   const updateCategory = async (category: GalleryCategory): Promise<GalleryCategory | null> => {
     try {
+      if (!isAuthenticated) {
+        toast.error('You must be logged in to update categories');
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('gallery_categories')
         .update(category)
@@ -70,6 +82,11 @@ export function useGalleryCategories() {
   // Function to delete a category
   const deleteCategory = async (id: string): Promise<void> => {
     try {
+      if (!isAuthenticated) {
+        toast.error('You must be logged in to delete categories');
+        return;
+      }
+
       const { error } = await supabase
         .from('gallery_categories')
         .delete()

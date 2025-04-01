@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GalleryCategory, GalleryImage } from '@/context/GalleryContext';
 import { Image, X, Upload } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ImageFormProps {
   image?: GalleryImage;
@@ -44,13 +45,13 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+        toast.error('Please select an image file');
         return;
       }
       
       // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB');
+        toast.error('Image size should be less than 5MB');
         return;
       }
       
@@ -78,19 +79,27 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
     e.preventDefault();
     
     if (!categoryId) {
-      alert('Please select a category');
+      toast.error('Please select a category');
       return;
     }
     
     // For a new image, we need an image file
     if (!image && !imageFile) {
-      alert('Please upload an image');
+      toast.error('Please upload an image');
       return;
     }
 
     setIsSubmitting(true);
     
     try {
+      console.log('Submitting image data:', {
+        category_id: categoryId,
+        title: title || undefined,
+        description: description || undefined,
+        image_url: image?.image_url || '',
+      });
+      console.log('File:', imageFile ? imageFile.name : 'No file');
+      
       await onSubmit({
         category_id: categoryId,
         title: title || undefined,
@@ -98,8 +107,9 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
         image_url: image?.image_url || '',
         sort_order: image?.sort_order
       }, imageFile || undefined);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting image:', error);
+      toast.error('Error submitting image: ' + (error.message || 'Unknown error'));
     } finally {
       setIsSubmitting(false);
     }
