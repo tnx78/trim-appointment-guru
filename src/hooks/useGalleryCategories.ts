@@ -1,13 +1,40 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { GalleryCategory } from '@/context/GalleryContext';
 import { useAuth } from '@/context/AuthContext';
 
+// Key for storing categories in local storage (demo mode)
+const DEMO_CATEGORIES_KEY = 'demo_gallery_categories';
+
 export function useGalleryCategories() {
   const [categories, setCategories] = useState<GalleryCategory[]>([]);
   const { isAuthenticated, isAdmin, user } = useAuth();
+
+  // Load demo categories from localStorage if needed
+  useEffect(() => {
+    if (localStorage.getItem('isAdmin') === 'true') {
+      const storedCategories = localStorage.getItem(DEMO_CATEGORIES_KEY);
+      if (storedCategories) {
+        try {
+          const parsedCategories = JSON.parse(storedCategories);
+          console.log('Loaded demo categories from localStorage:', parsedCategories);
+          setCategories(parsedCategories);
+        } catch (e) {
+          console.error('Error parsing demo categories from localStorage:', e);
+        }
+      }
+    }
+  }, []);
+
+  // Save demo categories to localStorage whenever they change
+  useEffect(() => {
+    if (localStorage.getItem('isAdmin') === 'true' && categories.length > 0) {
+      localStorage.setItem(DEMO_CATEGORIES_KEY, JSON.stringify(categories));
+      console.log('Saved demo categories to localStorage:', categories);
+    }
+  }, [categories]);
 
   // Function to add a new category
   const addCategory = async (category: Omit<GalleryCategory, 'id'>): Promise<GalleryCategory | null> => {
@@ -19,7 +46,7 @@ export function useGalleryCategories() {
         category
       });
 
-      // Always try to insert into Supabase first, even in demo mode
+      // Always try to insert into Supabase first
       const { data, error } = await supabase
         .from('gallery_categories')
         .insert(category)
@@ -29,7 +56,7 @@ export function useGalleryCategories() {
       if (error) {
         console.error('Error adding category to database:', error);
         
-        // Only fall back to local storage if we're in demo mode
+        // Fall back to local storage in demo mode
         if (localStorage.getItem('isAdmin') === 'true') {
           console.log('Falling back to demo mode after database error');
           const newCategory = { 
@@ -38,7 +65,9 @@ export function useGalleryCategories() {
             ...category 
           } as GalleryCategory;
           
+          // Update local state
           setCategories(prev => [...prev, newCategory]);
+          localStorage.setItem(DEMO_CATEGORIES_KEY, JSON.stringify([...categories, newCategory]));
           toast.success('Category added successfully (demo mode, local only)');
           return newCategory;
         }
@@ -67,7 +96,9 @@ export function useGalleryCategories() {
       // Handle demo mode
       if (!isAuthenticated && localStorage.getItem('isAdmin') === 'true') {
         console.log('Updating category in demo mode');
-        setCategories(prev => prev.map(c => c.id === category.id ? category : c));
+        const updatedCategories = categories.map(c => c.id === category.id ? category : c);
+        setCategories(updatedCategories);
+        localStorage.setItem(DEMO_CATEGORIES_KEY, JSON.stringify(updatedCategories));
         toast.success('Category updated successfully (demo mode)');
         return category;
       }
@@ -113,7 +144,9 @@ export function useGalleryCategories() {
       // Handle demo mode
       if (!isAuthenticated && localStorage.getItem('isAdmin') === 'true') {
         console.log('Deleting category in demo mode');
-        setCategories(prev => prev.filter(c => c.id !== id));
+        const updatedCategories = categories.filter(c => c.id !== id);
+        setCategories(updatedCategories);
+        localStorage.setItem(DEMO_CATEGORIES_KEY, JSON.stringify(updatedCategories));
         toast.success('Category deleted successfully (demo mode)');
         return;
       }
