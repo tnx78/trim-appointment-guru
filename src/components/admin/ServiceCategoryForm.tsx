@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useAppContext } from '@/context/AppContext';
+import { useCategoryContext } from '@/context/CategoryContext';
 import { ServiceCategory } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ interface ServiceCategoryFormProps {
 }
 
 export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFormProps) {
-  const { addCategory, updateCategory } = useAppContext();
+  const { addCategory, updateCategory } = useCategoryContext();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,8 +40,7 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
       const formData = { name, description };
       
       if (category) {
-        // Fix here: updateCategory expects only the id and the data,
-        // not wrapped in an object
+        // Fix: Pass id and formData as separate arguments to match function signature
         updateCategory(category.id, formData);
       } else {
         addCategory(formData);
