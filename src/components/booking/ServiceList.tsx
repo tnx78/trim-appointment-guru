@@ -1,12 +1,15 @@
 
-import { useAppContext } from '@/context/AppContext';
+import { useServiceContext, useBookingContext } from '@/context/AppContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Clock, DollarSign } from 'lucide-react';
+import { useCategoryContext } from '@/context/AppContext';
 
 export function ServiceList({ onServiceSelect }: { onServiceSelect: () => void }) {
-  const { categories, services, selectService } = useAppContext();
+  const { categories } = useCategoryContext();
+  const { services } = useServiceContext();
+  const { selectService } = useBookingContext();
 
   const handleSelectService = (serviceId: string) => {
     const service = services.find(s => s.id === serviceId);
