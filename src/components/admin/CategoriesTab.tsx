@@ -1,15 +1,17 @@
 
-import { useState, useEffect } from 'react';
-import { useAppContext } from '@/context/AppContext';
+import { useState } from 'react';
+import { useCategoryContext } from '@/context/CategoryContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ServiceCategoryForm } from '@/components/admin/ServiceCategoryForm';
 import { PlusCircle, Edit, Trash2, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
+import { useServiceContext } from '@/context/ServiceContext';
 
 export function CategoriesTab() {
-  const { categories, services, deleteCategory, updateCategoryOrder } = useAppContext();
+  const { categories, updateCategoryOrder, deleteCategory } = useCategoryContext();
+  const { services } = useServiceContext();
   
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<typeof categories[0] | undefined>(undefined);
@@ -66,7 +68,7 @@ export function CategoriesTab() {
         // Update order for each category
         const updatedCategories = newCategoryOrder.map((category, index) => ({
           ...category,
-          sort_order: index
+          order: index
         }));
         
         // Update context with new order
@@ -79,10 +81,10 @@ export function CategoriesTab() {
     setDraggedCategory(null);
   };
 
-  // Sort categories by sort_order
+  // Sort categories by order
   const sortedCategories = [...categories].sort((a, b) => {
-    const orderA = a.sort_order !== undefined ? a.sort_order : 0;
-    const orderB = b.sort_order !== undefined ? b.sort_order : 0;
+    const orderA = a.order !== undefined ? a.order : 0;
+    const orderB = b.order !== undefined ? b.order : 0;
     return orderA - orderB;
   });
 

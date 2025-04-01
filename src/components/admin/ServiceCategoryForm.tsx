@@ -1,13 +1,12 @@
 
 import { useState, useEffect } from 'react';
-import { useAppContext } from '@/context/AppContext';
+import { useCategoryContext } from '@/context/CategoryContext';
 import { ServiceCategory } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ServiceCategoryFormProps {
   category?: ServiceCategory;
@@ -15,11 +14,10 @@ interface ServiceCategoryFormProps {
 }
 
 export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFormProps) {
-  const { addCategory, updateCategory } = useAppContext();
+  const { addCategory, updateCategory } = useCategoryContext();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     if (category) {
@@ -31,7 +29,6 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setErrorMsg('');
 
     if (!name.trim()) {
       toast.error('Category name is required');
@@ -40,21 +37,15 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
     }
 
     try {
-      // Verify session
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session && !localStorage.getItem('isAdmin')) {
-        throw new Error('No active session found. Please log in again or use Demo Mode.');
-      }
-      
       const formData = { 
         name, 
         description: description || undefined,
-        // Use either sort_order or order property from category
-        sort_order: category?.sort_order ?? category?.order ?? (Date.now() % 1000)
+        // Use either sort_order or order property
+        order: category?.order ?? (Date.now() % 1000)
       };
       
       if (category) {
-        // Fixed: Pass the data as a single object with id included
+        // Pass the data as a single object with id included
         updateCategory({
           id: category.id,
           ...formData
@@ -71,9 +62,8 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
       setDescription('');
       onComplete();
     } catch (error: any) {
-      setErrorMsg(error.message || 'An error occurred saving the category');
+      console.error('Error saving category:', error);
       toast.error('An error occurred saving the category');
-      console.error(error);
     } finally {
       setIsSubmitting(false);
     }
@@ -81,12 +71,6 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {errorMsg && (
-        <div className="bg-destructive/15 text-destructive p-3 rounded-md text-sm">
-          {errorMsg}
-        </div>
-      )}
-      
       <div className="space-y-2">
         <Label htmlFor="name">Category Name</Label>
         <Input

@@ -27,12 +27,17 @@ export function CategoryProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function fetchCategories() {
       try {
+        console.log('Fetching categories from database...');
         const { data, error } = await supabase
           .from('categories')
-          .select('*');
+          .select('*')
+          .order('order', { ascending: true });
         
         if (error) throw error;
-        setCategories(data.map(mapCategoryFromDB));
+        
+        const mappedCategories = data.map(mapCategoryFromDB);
+        console.log('Categories loaded from database:', mappedCategories);
+        setCategories(mappedCategories);
       } catch (error) {
         console.error('Error fetching categories:', error);
         toast.error('Failed to load categories');
@@ -46,6 +51,7 @@ export function CategoryProvider({ children }: { children: React.ReactNode }) {
 
   const addCategory = async (category: Omit<ServiceCategory, 'id'>) => {
     try {
+      console.log('Adding category to database:', category);
       const { data, error } = await supabase
         .from('categories')
         .insert(category)
@@ -56,6 +62,7 @@ export function CategoryProvider({ children }: { children: React.ReactNode }) {
         const newCategory = mapCategoryFromDB(data[0]);
         setCategories([...categories, newCategory]);
         toast.success(`Category "${category.name}" added successfully`);
+        return newCategory;
       }
     } catch (error) {
       console.error('Error adding category:', error);
@@ -67,6 +74,7 @@ export function CategoryProvider({ children }: { children: React.ReactNode }) {
   const updateCategory = async (category: ServiceCategory) => {
     try {
       const { id, ...updatedData } = category;
+      console.log('Updating category in database:', id, updatedData);
       
       const { error } = await supabase
         .from('categories')
@@ -87,6 +95,7 @@ export function CategoryProvider({ children }: { children: React.ReactNode }) {
 
   const deleteCategory = async (id: string) => {
     try {
+      console.log('Deleting category from database:', id);
       const { error } = await supabase
         .from('categories')
         .delete()
@@ -109,6 +118,7 @@ export function CategoryProvider({ children }: { children: React.ReactNode }) {
       
       // For each category, update its order in the database
       for (const category of updatedCategories) {
+        console.log('Updating category order in database:', category.id, category.order);
         const { error } = await supabase
           .from('categories')
           .update({ 
