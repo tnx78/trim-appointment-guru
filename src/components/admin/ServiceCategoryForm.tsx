@@ -1,12 +1,13 @@
 
 import { useState, useEffect } from 'react';
-import { useCategoryContext } from '@/context/CategoryContext';
+import { useAppContext } from '@/context/AppContext';
 import { ServiceCategory } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ServiceCategoryFormProps {
   category?: ServiceCategory;
@@ -14,10 +15,11 @@ interface ServiceCategoryFormProps {
 }
 
 export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFormProps) {
-  const { addCategory, updateCategory } = useCategoryContext();
+  const { addCategory, updateCategory } = useAppContext();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     if (category) {
@@ -26,9 +28,10 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
     }
   }, [category]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrorMsg('');
 
     if (!name.trim()) {
       toast.error('Category name is required');
@@ -37,21 +40,34 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
     }
 
     try {
-      const formData = { name, description };
+      // Verify session
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session && !localStorage.getItem('isAdmin')) {
+        throw new Error('No active session found. Please log in again or use Demo Mode.');
+      }
+      
+      const formData = { 
+        name, 
+        description: description || undefined,
+        sort_order: category?.sort_order ?? (Date.now() % 1000)
+      };
       
       if (category) {
         // Make sure we pass the category ID and form data separately
         updateCategory(category.id, formData);
         console.log('Updating category:', category.id, formData);
+        toast.success(`Category "${name}" updated successfully`);
       } else {
         addCategory(formData);
         console.log('Adding new category:', formData);
+        toast.success(`Category "${name}" added successfully`);
       }
       
       setName('');
       setDescription('');
       onComplete();
-    } catch (error) {
+    } catch (error: any) {
+      setErrorMsg(error.message || 'An error occurred saving the category');
       toast.error('An error occurred saving the category');
       console.error(error);
     } finally {
@@ -61,6 +77,12 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {errorMsg && (
+        <div className="bg-destructive/15 text-destructive p-3 rounded-md text-sm">
+          {errorMsg}
+        </div>
+      )}
+      
       <div className="space-y-2">
         <Label htmlFor="name">Category Name</Label>
         <Input
