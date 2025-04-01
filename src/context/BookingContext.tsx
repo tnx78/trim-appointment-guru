@@ -7,8 +7,12 @@ import { useAppointmentContext } from './AppointmentContext';
 // Context type
 interface BookingContextType {
   selectedService: Service | null;
+  selectedDate: Date | null;
+  selectedTime: string | null;
   selectService: (service: Service) => void;
-  reset: () => void;
+  selectDate: (date: Date) => void;
+  selectTime: (time: string) => void;
+  resetBookingState: () => void;
 }
 
 // Creating the context
@@ -17,21 +21,35 @@ const BookingContext = createContext<BookingContextType | undefined>(undefined);
 // Provider component
 export function BookingProvider({ children }: { children: React.ReactNode }) {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const { selectDate } = useAppointmentContext();
-
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  
   const selectService = (service: Service) => {
     setSelectedService(service);
   };
+  
+  const selectDate = (date: Date) => {
+    setSelectedDate(date);
+  };
+  
+  const selectTime = (time: string) => {
+    setSelectedTime(time);
+  };
 
-  const reset = () => {
+  const resetBookingState = () => {
     setSelectedService(null);
-    selectDate(new Date());
+    setSelectedDate(null);
+    setSelectedTime(null);
   };
 
   const value = {
     selectedService,
+    selectedDate,
+    selectedTime,
     selectService,
-    reset,
+    selectDate,
+    selectTime,
+    resetBookingState,
   };
 
   return <BookingContext.Provider value={value}>{children}</BookingContext.Provider>;

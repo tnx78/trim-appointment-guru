@@ -1,18 +1,18 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useBooking } from '@/context/BookingContext';
+import { useBookingContext } from '@/context/BookingContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import ServiceList from './ServiceList';
-import DateTimeSelection from './DateTimeSelection';
+import { ServiceList } from './ServiceList';
+import { DateTimeSelection } from './DateTimeSelection';
 import { Loader2 } from 'lucide-react';
 
-const BookingForm = () => {
+const BookingForm = ({ onBack }: { onBack?: () => void }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { 
@@ -20,7 +20,7 @@ const BookingForm = () => {
     selectedDate, 
     selectedTime, 
     resetBookingState 
-  } = useBooking();
+  } = useBookingContext();
   const { user, isAuthenticated } = useAuth();
   
   const [loading, setLoading] = useState(false);

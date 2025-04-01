@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { ServiceList } from '@/components/booking/ServiceList';
 import { DateTimeSelection } from '@/components/booking/DateTimeSelection';
-import { BookingForm } from '@/components/booking/BookingForm';
+import BookingForm from '@/components/booking/BookingForm';
 
 export default function ServicesPage() {
   const [step, setStep] = useState(1);
