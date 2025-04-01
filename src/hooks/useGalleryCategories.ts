@@ -19,54 +19,17 @@ export function useGalleryCategories() {
         category
       });
 
-      // Insert category into Supabase regardless of auth state if isAdmin is set in localStorage
-      if (!isAuthenticated && localStorage.getItem('isAdmin') === 'true') {
-        // Always try to insert into Supabase first, even in demo mode
-        const { data, error } = await supabase
-          .from('gallery_categories')
-          .insert(category)
-          .select()
-          .single();
-          
-        if (error) {
-          console.error('Error in demo mode DB insert:', error);
-          // Fall back to client-side only if DB operation fails
-          const newCategory = { 
-            id: crypto.randomUUID(), 
-            created_at: new Date().toISOString(),
-            ...category 
-          } as GalleryCategory;
-          
-          setCategories(prev => [...prev, newCategory]);
-          toast.success('Category added successfully (demo mode, local only)');
-          return newCategory;
-        }
-        
-        const newCategory = data as GalleryCategory;
-        setCategories(prev => [...prev, newCategory]);
-        toast.success('Category added successfully (demo mode)');
-        return newCategory;
-      }
-
-      // Standard authentication check
-      if (!isAuthenticated && !localStorage.getItem('isAdmin')) {
-        const errorMessage = 'Authentication required to add categories';
-        console.error(errorMessage);
-        toast.error(errorMessage);
-        return null;
-      }
-      
-      // Insert category into Supabase
+      // Always try to insert into Supabase first, even in demo mode
       const { data, error } = await supabase
         .from('gallery_categories')
         .insert(category)
         .select()
         .single();
-
-      if (error) {
-        console.error('Error adding category:', error);
         
-        // Fallback to client-side only if admin mode is on
+      if (error) {
+        console.error('Error adding category to database:', error);
+        
+        // Only fall back to local storage if we're in demo mode
         if (localStorage.getItem('isAdmin') === 'true') {
           console.log('Falling back to demo mode after database error');
           const newCategory = { 
@@ -85,7 +48,7 @@ export function useGalleryCategories() {
       }
       
       const newCategory = data as GalleryCategory;
-      console.log('Category added successfully:', newCategory);
+      console.log('Category added successfully to database:', newCategory);
       
       // Update local state
       setCategories(prev => [...prev, newCategory]);
@@ -101,20 +64,19 @@ export function useGalleryCategories() {
   // Function to update an existing category
   const updateCategory = async (category: GalleryCategory): Promise<GalleryCategory | null> => {
     try {
+      // Handle demo mode
+      if (!isAuthenticated && localStorage.getItem('isAdmin') === 'true') {
+        console.log('Updating category in demo mode');
+        setCategories(prev => prev.map(c => c.id === category.id ? category : c));
+        toast.success('Category updated successfully (demo mode)');
+        return category;
+      }
+
       // Check if user is authenticated
-      if (!isAuthenticated || !isAdmin) {
+      if (!isAuthenticated && !isAdmin) {
         const errorMessage = 'Admin authentication required to update categories';
         console.error(errorMessage);
         toast.error(errorMessage);
-        return null;
-      }
-
-      // Get Supabase session to ensure RLS policies work correctly
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log('Current session status before updating category:', sessionData.session ? 'Active' : 'None');
-      
-      if (!sessionData.session) {
-        toast.error('Your session has expired. Please log in again.');
         return null;
       }
 
@@ -148,20 +110,19 @@ export function useGalleryCategories() {
   // Function to delete a category
   const deleteCategory = async (id: string): Promise<void> => {
     try {
+      // Handle demo mode
+      if (!isAuthenticated && localStorage.getItem('isAdmin') === 'true') {
+        console.log('Deleting category in demo mode');
+        setCategories(prev => prev.filter(c => c.id !== id));
+        toast.success('Category deleted successfully (demo mode)');
+        return;
+      }
+      
       // Check if user is authenticated
       if (!isAuthenticated || !isAdmin) {
         const errorMessage = 'Admin authentication required to delete categories';
         console.error(errorMessage);
         toast.error(errorMessage);
-        return;
-      }
-
-      // Get Supabase session to ensure RLS policies work correctly
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log('Current session status before deleting category:', sessionData.session ? 'Active' : 'None');
-      
-      if (!sessionData.session) {
-        toast.error('Your session has expired. Please log in again.');
         return;
       }
 

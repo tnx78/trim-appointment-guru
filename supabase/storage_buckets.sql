@@ -19,4 +19,3 @@ VALUES
   ('Anyone can update gallery content', 'true', 'gallery', 'anon'),
   ('Anyone can delete from gallery', 'true', 'gallery', 'anon')
 ON CONFLICT (name, definition, bucket_id, role_id) DO NOTHING;
-

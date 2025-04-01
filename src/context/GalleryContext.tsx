@@ -125,7 +125,7 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
   const addCategory = async (category: Omit<GalleryCategory, 'id'>): Promise<GalleryCategory | null> => {
     const result = await addCategoryHook(category);
     if (result) {
-      // Reload data to ensure we have the latest from the database
+      // Force reload data to ensure we have the latest from the database
       await loadGalleryData();
     }
     return result;
@@ -134,7 +134,7 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
   const addImage = async (image: Omit<GalleryImage, 'id'>): Promise<GalleryImage | null> => {
     const result = await addImageHook(image);
     if (result) {
-      // Reload data to ensure we have the latest from the database
+      // Force reload data to ensure we have the latest from the database
       await loadGalleryData();
     }
     return result;
