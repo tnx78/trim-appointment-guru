@@ -58,12 +58,17 @@ export function useGalleryStorage() {
 
       console.log('Uploading to path:', filePath);
 
+      // Create a copy of the file with the correct MIME type
+      const fileBlob = file.slice(0, file.size, file.type);
+      const fileWithCorrectType = new File([fileBlob], file.name, { type: file.type });
+
       // Upload to Supabase storage
       const { data, error } = await supabase.storage
         .from('gallery')
-        .upload(filePath, file, {
+        .upload(filePath, fileWithCorrectType, {
           cacheControl: '3600',
-          upsert: false
+          upsert: false,
+          contentType: file.type // Explicitly set the content type
         });
 
       if (error) {

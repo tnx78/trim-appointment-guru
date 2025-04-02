@@ -44,24 +44,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // First set up the listener to react to auth state changes
+    console.log('Setting up auth state listener...');
+    
+    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, currentSession) => {
+      (_event, currentSession) => {
         console.log('Auth state changed:', _event, currentSession ? 'Session exists' : 'No session');
         
+        // Update session and user state synchronously
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setIsAuthenticated(!!currentSession);
         
+        // Use setTimeout to avoid blocking the auth state change
         if (currentSession?.user) {
-          const isAdminUser = await checkUserRole(currentSession.user.id);
-          console.log('User role check:', isAdminUser ? 'Admin' : 'Not admin');
-          setIsAdmin(isAdminUser);
+          setTimeout(async () => {
+            const isAdminUser = await checkUserRole(currentSession.user.id);
+            console.log('User role check:', isAdminUser ? 'Admin' : 'Not admin');
+            setIsAdmin(isAdminUser);
+            setLoading(false);
+          }, 0);
         } else {
           setIsAdmin(false);
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
@@ -156,6 +162,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
+      // Clear state
+      setSession(null);
+      setUser(null);
       setIsAuthenticated(false);
       setIsAdmin(false);
       

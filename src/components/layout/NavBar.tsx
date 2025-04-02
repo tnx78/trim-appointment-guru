@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
@@ -11,6 +11,11 @@ export function NavBar() {
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+
+  // Log current auth state for debugging
+  useEffect(() => {
+    console.log('NavBar auth state:', { isAuthenticated, isAdmin, user: user?.email });
+  }, [isAuthenticated, isAdmin, user]);
 
   // Get first letter of user name for avatar
   const getInitials = () => {

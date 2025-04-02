@@ -15,8 +15,18 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 export default function AdminPage() {
-  const { isAuthenticated, logout, isAdmin, loading } = useAuth();
+  const { isAuthenticated, logout, isAdmin, loading, user } = useAuth();
   const navigate = useNavigate();
+  
+  // Log auth state for debugging
+  useEffect(() => {
+    console.log('AdminPage auth state:', { 
+      isAuthenticated, 
+      isAdmin, 
+      loading, 
+      user: user?.email 
+    });
+  }, [isAuthenticated, isAdmin, loading, user]);
   
   // This will help for showing tabs on mobile
   useEffect(() => {
@@ -27,26 +37,33 @@ export default function AdminPage() {
   if (loading) {
     return (
       <div className="container py-10 flex justify-center">
-        <p>Loading...</p>
+        <p>Loading authentication status...</p>
       </div>
     );
   }
 
   // If not authenticated, redirect to auth page
   if (!isAuthenticated) {
+    console.log('User not authenticated, redirecting to auth page');
     toast.error('Please log in to access the admin panel');
     return <Navigate to="/auth" />;
   }
   
   // If authenticated but not admin, redirect to home with error message
   if (!isAdmin) {
+    console.log('User authenticated but not admin, redirecting to home');
     toast.error('You do not have permission to access the admin panel');
     return <Navigate to="/" />;
   }
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/');
+    try {
+      await logout();
+      console.log('Successfully logged out, navigating to home');
+      navigate('/');
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
   };
 
   return (
