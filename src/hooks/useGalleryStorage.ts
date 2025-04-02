@@ -22,7 +22,7 @@ export function useGalleryStorage() {
       }
 
       setIsUploading(true);
-      console.log('Uploading image...', file.name, file.type, file.size);
+      console.log('Uploading gallery image...', file.name, file.type, file.size);
 
       // Validate file type
       if (!file.type.startsWith('image/')) {
@@ -56,11 +56,12 @@ export function useGalleryStorage() {
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      console.log('Uploading to path:', filePath);
+      console.log('Uploading gallery image to path:', filePath);
 
-      // Create a copy of the file with the correct MIME type
-      const fileBlob = file.slice(0, file.size, file.type);
-      const fileWithCorrectType = new File([fileBlob], file.name, { type: file.type });
+      // Create a proper File object with the correct MIME type
+      const blobData = await file.arrayBuffer();
+      const blob = new Blob([blobData], { type: file.type });
+      const fileWithCorrectType = new File([blob], fileName, { type: file.type });
 
       // Upload to Supabase storage
       const { data, error } = await supabase.storage
@@ -68,11 +69,11 @@ export function useGalleryStorage() {
         .upload(filePath, fileWithCorrectType, {
           cacheControl: '3600',
           upsert: false,
-          contentType: file.type // Explicitly set the content type
+          contentType: file.type
         });
 
       if (error) {
-        console.error('Error uploading image to Supabase storage:', error);
+        console.error('Error uploading image to gallery storage:', error);
         toast.error('Error uploading image: ' + error.message);
         return null;
       }
@@ -82,11 +83,11 @@ export function useGalleryStorage() {
         .from('gallery')
         .getPublicUrl(data.path);
 
-      console.log('Image uploaded successfully:', publicUrl);
+      console.log('Gallery image uploaded successfully:', publicUrl);
       toast.success('Image uploaded successfully');
       return publicUrl;
     } catch (error: any) {
-      console.error('Error in upload process:', error.message);
+      console.error('Error in gallery upload process:', error);
       toast.error('Error uploading image: ' + error.message);
       return null;
     } finally {
@@ -114,6 +115,12 @@ export function useGalleryStorage() {
         return true;
       }
 
+      // Handle data URLs
+      if (url.startsWith('data:')) {
+        console.log('Skipping delete for data URL');
+        return true;
+      }
+
       // Extract file path from the URL
       const bucketName = 'gallery';
       const urlObj = new URL(url);
@@ -126,7 +133,7 @@ export function useGalleryStorage() {
       }
       
       const filePath = pathWithBucket.substring(bucketName.length + 1);
-      console.log('Deleting file from storage:', filePath);
+      console.log('Deleting gallery file from storage:', filePath);
       
       // Delete from storage
       const { error } = await supabase.storage
@@ -134,7 +141,7 @@ export function useGalleryStorage() {
         .remove([filePath]);
 
       if (error) {
-        console.error('Error deleting image from storage:', error);
+        console.error('Error deleting gallery image from storage:', error);
         toast.error('Error deleting image file: ' + error.message);
         return false;
       }
@@ -142,7 +149,7 @@ export function useGalleryStorage() {
       toast.success('Image deleted successfully');
       return true;
     } catch (error: any) {
-      console.error('Error in delete storage process:', error.message);
+      console.error('Error in delete gallery storage process:', error);
       toast.error('Error deleting image file: ' + error.message);
       return false;
     }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -78,44 +77,24 @@ export function GalleryTab() {
   const handleImageSubmit = async (imageData: Omit<GalleryImage, 'id'>, file?: File) => {
     try {
       console.log('Submitting image data:', imageData);
-      console.log('File provided:', file ? file.name : 'No file');
-      
-      let imageUrl = imageData.image_url;
-      
-      // If there's a new file, upload it first
-      if (file) {
-        const uploadedUrl = await uploadImage(file);
-        if (!uploadedUrl) {
-          throw new Error('Failed to upload image');
-        }
-        imageUrl = uploadedUrl;
-      }
       
       if (editingImage) {
-        // If the image URL has changed and we're not in demo mode, delete the old image
-        if (imageData.image_url && imageData.image_url !== editingImage.image_url && !imageData.image_url.startsWith('data:')) {
-          // Let it fail silently if deletion fails - we still want to update the image
-          try {
-            // This will eventually be handled in the useGalleryImages hook deleteImage method
-          } catch (error) {
-            console.warn('Failed to delete old image, but continuing with update:', error);
-          }
-        }
-        
         await updateImage({
           ...editingImage,
-          ...imageData,
-          image_url: imageUrl
+          ...imageData
         });
       } else {
-        await addImage({
-          ...imageData,
-          image_url: imageUrl
-        });
+        // For new images, ensure we have a valid image URL
+        if (!imageData.image_url && !file) {
+          throw new Error('No image provided');
+        }
+        
+        await addImage(imageData);
       }
       
       setShowImageModal(false);
       setEditingImage(undefined);
+      toast.success(editingImage ? 'Image updated successfully' : 'Image added successfully');
     } catch (error: any) {
       console.error('Failed to save image:', error);
       toast.error('Failed to save image: ' + error.message);

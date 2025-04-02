@@ -100,17 +100,28 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
         description: description || undefined,
         image_url: image?.image_url || '',
       });
-      console.log('File:', imageFile ? imageFile.name : 'No file');
       
-      // For backwards compatibility, allow the parent component to handle file upload
-      // if they want to, though we recommend using the storage directly
+      let imageUrl = image?.image_url || '';
+      
+      // If there's a file, upload it first
+      if (imageFile) {
+        console.log('Uploading file:', imageFile.name);
+        imageUrl = await uploadImage(imageFile) || '';
+        
+        if (!imageUrl) {
+          throw new Error('Failed to upload image');
+        }
+      }
+      
+      // Now submit with the image URL
       await onSubmit({
         category_id: categoryId,
         title: title || undefined,
         description: description || undefined,
-        image_url: image?.image_url || '',
+        image_url: imageUrl,
         sort_order: image?.sort_order
-      }, imageFile || undefined);
+      });
+      
     } catch (error: any) {
       console.error('Error submitting image:', error);
       toast.error('Error submitting image: ' + (error.message || 'Unknown error'));
