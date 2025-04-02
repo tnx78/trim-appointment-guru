@@ -8,12 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Scissors } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 export default function AuthPage() {
-  const { isAuthenticated, login, register, loading } = useAuth();
+  const { isAuthenticated, login, register, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('login');
 
   // Login form state
@@ -30,9 +29,14 @@ export default function AuthPage() {
   useEffect(() => {
     // Redirect if already authenticated
     if (isAuthenticated) {
-      navigate('/');
+      // If admin, redirect to admin page
+      if (isAdmin) {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isAdmin, navigate]);
 
   // Return null during initial auth check to avoid rendering issues
   if (isAuthenticated === null) {
@@ -41,6 +45,9 @@ export default function AuthPage() {
   
   // Redirect if already authenticated
   if (isAuthenticated) {
+    if (isAdmin) {
+      return <Navigate to="/admin" />;
+    }
     return <Navigate to="/" />;
   }
 
@@ -49,14 +56,10 @@ export default function AuthPage() {
     try {
       const success = await login(loginEmail, loginPassword);
       if (success) {
-        navigate('/');
+        toast.success('Login successful');
       }
     } catch (error: any) {
-      toast({
-        title: "Login failed",
-        description: error.message || "Please check your credentials and try again",
-        variant: "destructive"
-      });
+      toast.error(error.message || "Please check your credentials and try again");
     }
   };
 
@@ -64,38 +67,23 @@ export default function AuthPage() {
     e.preventDefault();
     
     if (regPassword !== regConfirmPassword) {
-      toast({
-        title: "Passwords do not match",
-        description: "Please ensure your passwords match",
-        variant: "destructive"
-      });
+      toast.error("Passwords do not match");
       return;
     }
     
     if (regPassword.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters long",
-        variant: "destructive"
-      });
+      toast.error("Password must be at least 6 characters long");
       return;
     }
     
     try {
       const success = await register(regEmail, regPassword, regName, regPhone);
       if (success) {
-        toast({
-          title: "Registration successful",
-          description: "Your account has been created. You can now log in.",
-        });
+        toast.success("Registration successful! You can now log in.");
         setActiveTab('login');
       }
     } catch (error: any) {
-      toast({
-        title: "Registration failed",
-        description: error.message || "Please try again with different credentials",
-        variant: "destructive"
-      });
+      toast.error(error.message || "Please try again with different credentials");
     }
   };
 

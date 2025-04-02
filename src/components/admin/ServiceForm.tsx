@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useCategoryContext } from '@/context/CategoryContext';
 import { useServiceContext } from '@/context/ServiceContext';
@@ -68,16 +67,13 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
 
   const handleRemoveImage = async () => {
     if (image) {
-      // If this is a URL (not a data URL from demo mode), delete it from storage
-      if (image.startsWith('http')) {
-        try {
-          await deleteStorageImage(image);
-        } catch (error) {
-          console.error('Failed to delete image from storage:', error);
-        }
+      try {
+        await deleteStorageImage(image);
+        setImage(undefined);
+        setFileInputKey(Date.now());
+      } catch (error) {
+        console.error('Failed to delete image from storage:', error);
       }
-      setImage(undefined);
-      setFileInputKey(Date.now());
     }
   };
 
@@ -102,8 +98,8 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
       };
       
       if (service) {
-        // If image has changed and old image exists, delete it from storage
-        if (service.image && service.image !== image && service.image.startsWith('http')) {
+        // If image has changed and old image exists, delete it
+        if (service.image && service.image !== image) {
           try {
             await deleteStorageImage(service.image);
           } catch (error) {

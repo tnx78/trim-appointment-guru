@@ -25,26 +25,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
         console.log('Auth state changed:', _event, session ? 'Session exists' : 'No session');
         setSession(session);
         setUser(session?.user ?? null);
         setIsAuthenticated(!!session);
         
-        const isAdminUser = session?.user?.email?.includes('admin') || localStorage.getItem('isAdmin') === 'true';
-        setIsAdmin(isAdminUser);
+        if (session?.user) {
+          // Check if user has admin role
+          const { data, error } = await supabase
+            .from('user_profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (!error && data) {
+            const isAdminUser = data.role === 'admin' || localStorage.getItem('isAdmin') === 'true';
+            setIsAdmin(isAdminUser);
+          } else {
+            // Fallback for demo mode
+            const isAdminUser = localStorage.getItem('isAdmin') === 'true';
+            setIsAdmin(isAdminUser);
+          }
+        } else {
+          // Handle demo mode
+          const isAdminUser = localStorage.getItem('isAdmin') === 'true';
+          setIsAdmin(isAdminUser);
+        }
+        
         setLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       console.log('Initial session check:', session ? 'Session exists' : 'No session');
       setSession(session);
       setUser(session?.user ?? null);
       setIsAuthenticated(!!session);
       
-      const isAdminUser = session?.user?.email?.includes('admin') || localStorage.getItem('isAdmin') === 'true';
-      setIsAdmin(isAdminUser);
+      if (session?.user) {
+        // Check if user has admin role
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (!error && data) {
+          const isAdminUser = data.role === 'admin' || localStorage.getItem('isAdmin') === 'true';
+          setIsAdmin(isAdminUser);
+        } else {
+          // Fallback for demo mode
+          const isAdminUser = localStorage.getItem('isAdmin') === 'true';
+          setIsAdmin(isAdminUser);
+        }
+      } else {
+        // Handle demo mode
+        const isAdminUser = localStorage.getItem('isAdmin') === 'true';
+        setIsAdmin(isAdminUser);
+      }
+      
       setLoading(false);
     });
 
@@ -86,84 +126,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
-      
-      // Special case for admin login
-      if (email === 'admin' && password === 'admin123') {
-        console.log('Admin login via local auth');
-        
-        // Use a valid email format
-        const adminEmail = 'admin@salonapp.com'; 
-        const adminPassword = 'Admin123!';
-        
-        // First try to sign in directly with admin credentials
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: adminEmail,
-          password: adminPassword,
-        });
-        
-        if (error) {
-          console.log('Attempting to create admin account');
-          
-          // Create admin account if it doesn't exist
-          const { data: signUpData, error: signUpError } = await supabase.auth.admin.createUser({
-            email: adminEmail,
-            password: adminPassword,
-            email_confirm: true, // Automatically confirm the email
-            user_metadata: {
-              full_name: 'Admin User',
-              is_admin: true
-            }
-          });
-          
-          if (signUpError) {
-            // If admin API fails, try regular signup with auto-confirmation
-            const { error: regularSignUpError } = await supabase.auth.signUp({
-              email: adminEmail,
-              password: adminPassword,
-              options: {
-                data: {
-                  full_name: 'Admin User',
-                  is_admin: true
-                }
-              }
-            });
-            
-            if (regularSignUpError) {
-              console.error('Could not create admin account:', regularSignUpError.message);
-              toast.error('Admin login failed: ' + regularSignUpError.message);
-              return false;
-            }
-          }
-          
-          // Try to sign in again after creating the account
-          const { error: loginError } = await supabase.auth.signInWithPassword({
-            email: adminEmail,
-            password: adminPassword,
-          });
-          
-          if (loginError) {
-            // If login still fails, try to bypass authentication for demo purposes
-            console.error('Admin login failed after account creation:', loginError.message);
-            
-            // For demo purposes only - set admin status even if auth fails
-            localStorage.setItem('isAdmin', 'true');
-            setIsAuthenticated(true);
-            setIsAdmin(true);
-            setUser({ email: adminEmail } as User);
-            
-            toast.success('Successfully logged in as admin (demo mode)');
-            return true;
-          }
-        }
-        
-        // Set admin status in localStorage for persistence
-        localStorage.setItem('isAdmin', 'true');
-        setIsAuthenticated(true);
-        setIsAdmin(true);
-        
-        toast.success('Successfully logged in as admin');
-        return true;
-      }
       
       // Regular user login
       console.log('Attempting Supabase login');

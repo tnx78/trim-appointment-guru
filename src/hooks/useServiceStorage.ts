@@ -36,21 +36,6 @@ export function useServiceStorage() {
         return null;
       }
 
-      // In demo mode, we'll create a data URL for the image instead of uploading to Supabase
-      if (inDemoMode) {
-        console.log('Demo mode: Creating data URL for image');
-        return new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const dataUrl = reader.result as string;
-            console.log('Image data URL created (Demo Mode)');
-            toast.success('Image uploaded successfully (Demo Mode)');
-            resolve(dataUrl);
-          };
-          reader.readAsDataURL(file);
-        });
-      }
-
       // Generate a unique file name
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
@@ -102,10 +87,9 @@ export function useServiceStorage() {
         return false;
       }
 
-      // In demo mode, we just return success since there's no actual storage to delete from
-      if (inDemoMode || url.startsWith('data:')) {
-        console.log('Demo mode or data URL: Simulating image deletion from storage');
-        toast.success('Image deleted successfully (Demo Mode)');
+      // Handle data URLs for backward compatibility
+      if (url.startsWith('data:')) {
+        console.log('Skipping delete for data URL');
         return true;
       }
 

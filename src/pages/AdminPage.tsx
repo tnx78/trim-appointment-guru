@@ -29,10 +29,6 @@ export default function AdminPage() {
         const sessionActive = !!session;
         setHasActiveSession(sessionActive);
         console.log('Session verification result in AdminPage:', sessionActive ? 'Active' : 'None');
-        
-        // If no real session but isAdmin flag is in localStorage, we're in demo mode
-        const demoAdmin = !sessionActive && localStorage.getItem('isAdmin') === 'true';
-        
         setSessionVerified(true);
       } catch (error) {
         console.error('Failed to verify session:', error);
@@ -63,13 +59,9 @@ export default function AdminPage() {
     return <div className="flex justify-center items-center h-screen">Verifying authentication...</div>;
   }
   
-  if (!isAuthenticated && !localStorage.getItem('isAdmin')) {
+  // If not authenticated or not admin, show login
+  if (!isAuthenticated || !isAdmin) {
     return <AdminLogin />;
-  }
-  
-  // Redirect non-admin users away from admin page
-  if (isAuthenticated && !isAdmin && !localStorage.getItem('isAdmin')) {
-    return <Navigate to="/" />;
   }
 
   return (
