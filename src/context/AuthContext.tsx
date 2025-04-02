@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
       
+      console.log('User role check:', data?.role === 'admin' ? 'Admin' : 'Not admin');
       return data?.role === 'admin';
     } catch (error) {
       console.error('Error in checkUserRole:', error);
@@ -60,7 +60,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (currentSession?.user) {
           setTimeout(async () => {
             const isAdminUser = await checkUserRole(currentSession.user.id);
-            console.log('User role check:', isAdminUser ? 'Admin' : 'Not admin');
             setIsAdmin(isAdminUser);
             setLoading(false);
           }, 0);
@@ -81,7 +80,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (currentSession?.user) {
         const isAdminUser = await checkUserRole(currentSession.user.id);
-        console.log('Initial user role check:', isAdminUser ? 'Admin' : 'Not admin');
         setIsAdmin(isAdminUser);
       } else {
         setIsAdmin(false);

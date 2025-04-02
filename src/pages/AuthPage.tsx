@@ -39,8 +39,10 @@ export default function AuthPage() {
   }, [isAuthenticated, isAdmin, navigate]);
 
   // Return null during initial auth check to avoid rendering issues
-  if (isAuthenticated === null) {
-    return null;
+  if (loading) {
+    return <div className="container py-10 flex items-center justify-center min-h-[60vh]">
+      <p>Loading authentication...</p>
+    </div>;
   }
   
   // Redirect if already authenticated
@@ -57,6 +59,7 @@ export default function AuthPage() {
       const success = await login(loginEmail, loginPassword);
       if (success) {
         toast.success('Login successful');
+        // Redirection will happen in the useEffect
       }
     } catch (error: any) {
       toast.error(error.message || "Please check your credentials and try again");

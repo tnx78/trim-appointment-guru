@@ -1,4 +1,3 @@
-
 import { TimeSlot, Appointment } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -115,66 +114,62 @@ export async function getAvailableTimeSlots(date: Date, duration: number, appoin
   console.log('Appointments for selected date:', dayAppointments);
   
   // Mark slots as unavailable if they overlap with existing appointments
-  dayAppointments.forEach(appointment => {
-    // Use the correct property names from the Appointment type
-    const startTime = appointment.startTime;
-    const endTime = appointment.endTime;
+  baseSlots.forEach(slot => {
+    const [slotHour, slotMinute] = slot.time.split(':').map(n => parseInt(n));
     
-    if (!startTime || !endTime) {
-      console.error('Appointment missing time information:', appointment);
+    if (isNaN(slotHour) || isNaN(slotMinute)) {
+      console.error('Invalid time format in slot:', slot);
       return;
     }
     
-    // Parse start and end times
-    const [startHour, startMinute] = startTime.split(':').map(n => parseInt(n));
-    const [endHour, endMinute] = endTime.split(':').map(n => parseInt(n));
+    // Convert slot time to minutes since start of day
+    const slotTimeInMinutes = slotHour * 60 + slotMinute;
+    const slotEndTimeInMinutes = slotTimeInMinutes + duration;
     
-    if (isNaN(startHour) || isNaN(startMinute) || isNaN(endHour) || isNaN(endMinute)) {
-      console.error('Invalid time format in appointment:', appointment);
-      return;
-    }
-    
-    baseSlots.forEach(slot => {
-      const [slotHour, slotMinute] = slot.time.split(':').map(n => parseInt(n));
+    // Check each appointment for overlap with this slot
+    for (const appointment of dayAppointments) {
+      // Use the correct property names from the Appointment type
+      const startTime = appointment.startTime;
+      const endTime = appointment.endTime;
       
-      if (isNaN(slotHour) || isNaN(slotMinute)) {
-        console.error('Invalid time format in slot:', slot);
-        return;
+      if (!startTime || !endTime) {
+        console.error('Appointment missing time information:', appointment);
+        continue;
       }
       
-      // Convert to minutes for easier comparison
-      const appointmentStart = startHour * 60 + startMinute;
-      const appointmentEnd = endHour * 60 + endMinute;
-      const slotTime = slotHour * 60 + slotMinute;
-      const slotEnd = slotTime + duration;
+      // Parse start and end times to minutes
+      const [startHour, startMinute] = startTime.split(':').map(n => parseInt(n));
+      const [endHour, endMinute] = endTime.split(':').map(n => parseInt(n));
       
-      // If the slot overlaps with the appointment, mark it unavailable
-      if ((slotTime >= appointmentStart && slotTime < appointmentEnd) ||
-          (slotEnd > appointmentStart && slotEnd <= appointmentEnd) ||
-          (slotTime <= appointmentStart && slotEnd >= appointmentEnd)) {
+      if (isNaN(startHour) || isNaN(startMinute) || isNaN(endHour) || isNaN(endMinute)) {
+        console.error('Invalid time format in appointment:', appointment);
+        continue;
+      }
+      
+      // Convert appointment times to minutes since start of day
+      const appointmentStartInMinutes = startHour * 60 + startMinute;
+      const appointmentEndInMinutes = endHour * 60 + endMinute;
+      
+      // Check for any overlap between the slot and the appointment
+      const hasOverlap = (
+        // Slot starts during appointment
+        (slotTimeInMinutes >= appointmentStartInMinutes && slotTimeInMinutes < appointmentEndInMinutes) ||
+        // Slot ends during appointment
+        (slotEndTimeInMinutes > appointmentStartInMinutes && slotEndTimeInMinutes <= appointmentEndInMinutes) ||
+        // Slot completely contains appointment
+        (slotTimeInMinutes <= appointmentStartInMinutes && slotEndTimeInMinutes >= appointmentEndInMinutes) ||
+        // Appointment completely contains slot
+        (appointmentStartInMinutes <= slotTimeInMinutes && appointmentEndInMinutes >= slotEndTimeInMinutes)
+      );
+      
+      if (hasOverlap) {
         console.log(`Marking slot ${slot.time} as unavailable due to overlap with appointment ${startTime}-${endTime}`);
         slot.available = false;
+        break; // Once we know it's unavailable, no need to check other appointments
       }
-    });
+    }
   });
   
   // Filter out slots where the service can't be completed before closing
-  return baseSlots.filter(slot => {
-    const [slotHour, slotMinute] = slot.time.split(':').map(n => parseInt(n));
-    if (isNaN(slotHour) || isNaN(slotMinute)) {
-      return false;
-    }
-    
-    const slotTime = slotHour * 60 + slotMinute;
-    const slotEnd = slotTime + duration;
-    
-    // Get the day of week
-    const dayOfWeek = date.getDay();
-    
-    // We'll assume a default closing time of 17:00 (5 PM), which is 17 * 60 = 1020 minutes
-    // In a production app, you'd fetch this from the database
-    const defaultClosingTime = 17 * 60;
-    
-    return slotEnd <= defaultClosingTime && slot.available;
-  });
+  return baseSlots;
 }
