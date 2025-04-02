@@ -52,7 +52,7 @@ export function NavBar() {
               </Link>
             </NavigationMenuItem>
 
-            {/* Only show My Bookings for authenticated non-admin users */}
+            {/* Show My Bookings for authenticated customers */}
             {isAuthenticated && !isAdmin && (
               <NavigationMenuItem>
                 <Link to="/my-appointments">
@@ -63,12 +63,12 @@ export function NavBar() {
               </NavigationMenuItem>
             )}
                 
-            {/* Only show Admin for users with admin role */}
+            {/* Show Admin for users with admin role */}
             {isAuthenticated && isAdmin && (
               <NavigationMenuItem>
                 <Link to="/admin">
                   <NavigationMenuLink className="px-4 py-2">
-                    Admin
+                    Admin Panel
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
