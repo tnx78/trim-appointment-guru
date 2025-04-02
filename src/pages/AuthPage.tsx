@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Scissors } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 
 export default function AuthPage() {
   const { isAuthenticated, login, register, loading, isAdmin } = useAuth();
@@ -26,41 +25,6 @@ export default function AuthPage() {
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
-
-  // Set admin user on first visit
-  useEffect(() => {
-    const setupAdminUser = async () => {
-      try {
-        // Check if admin user exists
-        const { data: existingUser, error: checkError } = await supabase
-          .from('user_profiles')
-          .select('id')
-          .eq('role', 'admin')
-          .single();
-
-        if (checkError && checkError.code === 'PGRST116') {
-          // No admin user exists, update user with specific email to be admin
-          const { data: adminEmail, error: updateError } = await supabase
-            .from('user_profiles')
-            .update({ role: 'admin' })
-            .eq('id', (await supabase.auth.getUser()).data.user?.id || '')
-            .select('id');
-            
-          if (!updateError && adminEmail) {
-            console.log('Admin user set up successfully');
-          }
-        } else if (!checkError && existingUser) {
-          console.log('Admin user already exists');
-        }
-      } catch (error) {
-        console.error('Error setting up admin user:', error);
-      }
-    };
-
-    if (isAuthenticated) {
-      setupAdminUser();
-    }
-  }, [isAuthenticated]);
 
   useEffect(() => {
     // Redirect if already authenticated

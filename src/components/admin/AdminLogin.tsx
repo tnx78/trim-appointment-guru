@@ -1,12 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Scissors, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { Navigate } from 'react-router-dom';
 
 export function AdminLogin() {
@@ -16,19 +15,14 @@ export function AdminLogin() {
   const [errorMessage, setErrorMessage] = useState('');
   const { login, isAuthenticated, isAdmin } = useAuth();
 
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      const hasActiveSession = !!data.session;
-      console.log('Current session status in AdminLogin:', hasActiveSession ? 'Active' : 'None');
-    };
-    
-    checkSession();
-  }, []);
-
   // If already authenticated but not admin, redirect to home
   if (isAuthenticated && !isAdmin) {
     return <Navigate to="/" />;
+  }
+
+  // If already authenticated as admin, redirect to admin panel
+  if (isAuthenticated && isAdmin) {
+    return <Navigate to="/admin" />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,39 +31,14 @@ export function AdminLogin() {
     setIsLoading(true);
     
     try {
-      console.log('Starting login attempt with:', email);
       const success = await login(email, password);
       
-      if (success) {
-        console.log('Login successful');
-        
-        // Verify session establishment after login
-        const { data } = await supabase.auth.getSession();
-        console.log('Session after login:', data.session ? 'Active' : 'None');
-        
-        toast.success('Successfully logged in');
-      } else {
-        console.log('Login failed');
+      if (!success) {
         setErrorMessage('Login failed. Please check your credentials.');
       }
     } catch (error: any) {
       console.error('Login error:', error);
       setErrorMessage(error.message || 'An error occurred during login');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Demo mode login for easier testing
-  const handleDemoLogin = () => {
-    setIsLoading(true);
-    try {
-      localStorage.setItem('isAdmin', 'true');
-      toast.success('Logged in as admin (Demo Mode)');
-      window.location.reload(); // Reload to apply the demo admin state
-    } catch (error) {
-      console.error('Demo login error:', error);
-      setErrorMessage('Failed to enable demo mode');
     } finally {
       setIsLoading(false);
     }
@@ -129,21 +98,8 @@ export function AdminLogin() {
             </Button>
           </form>
           
-          <div className="mt-4 text-center">
-            <Button variant="outline" className="w-full" onClick={handleDemoLogin} disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Setting up demo...
-                </>
-              ) : (
-                'Use Demo Mode (No Login Required)'
-              )}
-            </Button>
-          </div>
-          
           <div className="mt-4 text-sm text-muted-foreground text-center">
-            <p>To access admin features, log in with an admin account or use demo mode.</p>
+            <p>Register a new account on the login page if you don't have one.</p>
           </div>
         </CardContent>
       </Card>
