@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, currentSession) => {
+      async (_event, currentSession) => {
         console.log('Auth state changed:', _event, currentSession ? 'Session exists' : 'No session');
         
         // Update session and user state synchronously
@@ -139,8 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
       
-      // Login successful but we need to wait for the auth state to update
-      // which will trigger the auth state listener above and redirect accordingly
+      // Login successful, auth state listener will handle the redirect
       toast.success('Successfully logged in');
       return true;
     } catch (error: any) {

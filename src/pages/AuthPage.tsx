@@ -60,7 +60,7 @@ export default function AuthPage() {
       const success = await login(loginEmail, loginPassword);
       if (success) {
         toast.success('Login successful');
-        // Redirection will happen in the useEffect
+        // Navigation will happen in the useEffect hook
       }
     } catch (error: any) {
       toast.error(error.message || "Please check your credentials and try again");
