@@ -42,18 +42,16 @@ export function useServiceStorage() {
 
       console.log('Uploading to path:', filePath);
 
-      // Create a proper File object with the correct MIME type
-      const blobData = await file.arrayBuffer();
-      const blob = new Blob([blobData], { type: file.type });
-      const fileWithCorrectType = new File([blob], fileName, { type: file.type });
-
-      // Upload to Supabase storage
+      // Read the file as an ArrayBuffer
+      const fileBuffer = await file.arrayBuffer();
+      
+      // Upload directly using the file buffer
       const { data, error } = await supabase.storage
         .from('services')
-        .upload(filePath, fileWithCorrectType, {
+        .upload(filePath, fileBuffer, {
+          contentType: file.type,
           cacheControl: '3600',
-          upsert: false,
-          contentType: file.type
+          upsert: false
         });
 
       if (error) {

@@ -2,13 +2,19 @@
 -- Create storage buckets if they don't exist
 INSERT INTO storage.buckets (id, name, public, avif_autodetection, file_size_limit, allowed_mime_types)
 VALUES 
-  ('services', 'services', true, false, 5242880, ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']::text[])
-ON CONFLICT (id) DO NOTHING;
+  ('services', 'services', true, false, 5242880, ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg']::text[])
+ON CONFLICT (id) DO UPDATE SET
+  public = true,
+  file_size_limit = 5242880,
+  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg']::text[];
 
 INSERT INTO storage.buckets (id, name, public, avif_autodetection, file_size_limit, allowed_mime_types)
 VALUES 
-  ('gallery', 'gallery', true, false, 5242880, ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']::text[])
-ON CONFLICT (id) DO NOTHING;
+  ('gallery', 'gallery', true, false, 5242880, ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg']::text[])
+ON CONFLICT (id) DO UPDATE SET
+  public = true,
+  file_size_limit = 5242880,
+  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg']::text[];
 
 -- Add RLS policies for both buckets
 DO $$
