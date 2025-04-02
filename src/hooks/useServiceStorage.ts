@@ -14,9 +14,8 @@ export function useServiceStorage() {
       // Check for a real Supabase session
       const { data: sessionData } = await supabase.auth.getSession();
       const hasRealSession = !!sessionData.session;
-      const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
       
-      if (!hasRealSession && !inDemoMode) {
+      if (!hasRealSession && !isAdmin) {
         toast.error('You must be logged in to upload images');
         return null;
       }
@@ -81,9 +80,8 @@ export function useServiceStorage() {
       // Check for a real Supabase session
       const { data: sessionData } = await supabase.auth.getSession();
       const hasRealSession = !!sessionData.session;
-      const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
       
-      if (!hasRealSession && !inDemoMode) {
+      if (!hasRealSession && !isAdmin) {
         toast.error('You must be logged in to delete images');
         return false;
       }

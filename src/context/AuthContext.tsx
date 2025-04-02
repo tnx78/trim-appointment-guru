@@ -23,32 +23,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
+  const checkUserRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching user role:', error);
+        return false;
+      }
+      
+      return data?.role === 'admin';
+    } catch (error) {
+      console.error('Error in checkUserRole:', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
+    // First set up the listener to react to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        console.log('Auth state changed:', _event, session ? 'Session exists' : 'No session');
-        setSession(session);
-        setUser(session?.user ?? null);
-        setIsAuthenticated(!!session);
+      async (_event, currentSession) => {
+        console.log('Auth state changed:', _event, currentSession ? 'Session exists' : 'No session');
         
-        if (session?.user) {
-          // Check if user has admin role
-          const { data, error } = await supabase
-            .from('user_profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (!error && data) {
-            // Check if data has role property
-            const userRole = data.role || 'customer';
-            const isAdminUser = userRole === 'admin';
-            console.log('User role:', userRole, 'Is admin:', isAdminUser);
-            setIsAdmin(isAdminUser);
-          } else {
-            console.error('Error fetching user profile:', error);
-            setIsAdmin(false);
-          }
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        setIsAuthenticated(!!currentSession);
+        
+        if (currentSession?.user) {
+          const isAdminUser = await checkUserRole(currentSession.user.id);
+          console.log('User role check:', isAdminUser ? 'Admin' : 'Not admin');
+          setIsAdmin(isAdminUser);
         } else {
           setIsAdmin(false);
         }
@@ -57,30 +65,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      console.log('Initial session check:', session ? 'Session exists' : 'No session');
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsAuthenticated(!!session);
+    // Then check for existing session
+    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+      console.log('Initial session check:', currentSession ? 'Session exists' : 'No session');
       
-      if (session?.user) {
-        // Check if user has admin role
-        const { data, error } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (!error && data) {
-          // Check if data has role property
-          const userRole = data.role || 'customer';
-          const isAdminUser = userRole === 'admin';
-          console.log('User role:', userRole, 'Is admin:', isAdminUser);
-          setIsAdmin(isAdminUser);
-        } else {
-          console.error('Error fetching user profile:', error);
-          setIsAdmin(false);
-        }
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      setIsAuthenticated(!!currentSession);
+      
+      if (currentSession?.user) {
+        const isAdminUser = await checkUserRole(currentSession.user.id);
+        console.log('Initial user role check:', isAdminUser ? 'Admin' : 'Not admin');
+        setIsAdmin(isAdminUser);
       } else {
         setIsAdmin(false);
       }

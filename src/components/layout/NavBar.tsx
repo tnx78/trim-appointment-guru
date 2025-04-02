@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -10,11 +10,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 export function NavBar() {
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   // Get first letter of user name for avatar
   const getInitials = () => {
     if (!user?.email) return '?';
     return user.email.charAt(0).toUpperCase();
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
   };
 
   return (
@@ -90,7 +96,7 @@ export function NavBar() {
                   <AvatarFallback>{getInitials()}</AvatarFallback>
                 </Avatar>
               </Link>
-              <Button variant="outline" size="sm" onClick={() => logout()}>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
                 Logout
               </Button>
             </div>

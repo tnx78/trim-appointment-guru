@@ -15,7 +15,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 export default function AdminPage() {
-  const { isAuthenticated, logout, isAdmin } = useAuth();
+  const { isAuthenticated, logout, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   
   // This will help for showing tabs on mobile
@@ -23,6 +23,15 @@ export default function AdminPage() {
     window.scrollTo(0, 0);
   }, []);
   
+  // Display loading state
+  if (loading) {
+    return (
+      <div className="container py-10 flex justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
   // If not authenticated, redirect to auth page
   if (!isAuthenticated) {
     toast.error('Please log in to access the admin panel');
