@@ -48,7 +48,8 @@ export function useServiceStorage() {
         .from('services')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: false,
+          contentType: file.type // Explicitly set the content type
         });
 
       if (error) {
