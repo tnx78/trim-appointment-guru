@@ -39,13 +39,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .eq('id', session.user.id)
             .single();
           
-          if (!error && data) {
+          if (!error && data && 'role' in data) {
             const isAdminUser = data.role === 'admin' || localStorage.getItem('isAdmin') === 'true';
             setIsAdmin(isAdminUser);
           } else {
             // Fallback for demo mode
             const isAdminUser = localStorage.getItem('isAdmin') === 'true';
             setIsAdmin(isAdminUser);
+            console.log('Using fallback admin check:', isAdminUser);
           }
         } else {
           // Handle demo mode
@@ -71,13 +72,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .eq('id', session.user.id)
           .single();
         
-        if (!error && data) {
+        if (!error && data && 'role' in data) {
           const isAdminUser = data.role === 'admin' || localStorage.getItem('isAdmin') === 'true';
           setIsAdmin(isAdminUser);
         } else {
           // Fallback for demo mode
           const isAdminUser = localStorage.getItem('isAdmin') === 'true';
           setIsAdmin(isAdminUser);
+          console.log('Using fallback admin check:', isAdminUser);
         }
       } else {
         // Handle demo mode

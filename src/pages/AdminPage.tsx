@@ -12,7 +12,6 @@ import { AdminLogin } from '@/components/admin/AdminLogin';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
-import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function AdminPage() {
