@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { AdminLogin } from '@/components/admin/AdminLogin';
 
 export default function AdminPage() {
   const { isAuthenticated, logout, isAdmin } = useAuth();
@@ -24,9 +23,10 @@ export default function AdminPage() {
     window.scrollTo(0, 0);
   }, []);
   
-  // If not authenticated, show the admin login page
+  // If not authenticated, redirect to auth page
   if (!isAuthenticated) {
-    return <AdminLogin />;
+    toast.error('Please log in to access the admin panel');
+    return <Navigate to="/auth" />;
   }
   
   // If authenticated but not admin, redirect to home with error message
