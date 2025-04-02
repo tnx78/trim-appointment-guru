@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -27,13 +26,13 @@ export default function AuthPage() {
   const [regPhone, setRegPhone] = useState('');
 
   useEffect(() => {
-    // Redirect if already authenticated
+    // Directly check if user is authenticated and admin
     if (isAuthenticated) {
-      // If admin, redirect to admin page immediately
       if (isAdmin) {
         console.log('User is admin, redirecting to admin panel');
         navigate('/admin');
       } else {
+        console.log('User is not admin, redirecting to home');
         navigate('/');
       }
     }

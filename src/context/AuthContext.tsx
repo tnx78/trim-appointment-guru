@@ -22,8 +22,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
-  const checkUserRole = async (userId: string) => {
+  const checkUserRole = async (userId: string): Promise<boolean> => {
     try {
+      console.log('Checking user role for:', userId);
       const { data, error } = await supabase
         .from('user_profiles')
         .select('role')
@@ -35,8 +36,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
       
-      console.log('User role check:', data?.role === 'admin' ? 'Admin' : 'Not admin');
-      return data?.role === 'admin';
+      const isAdminRole = data?.role === 'admin';
+      console.log('User role check result:', isAdminRole ? 'Admin' : 'Not admin');
+      return isAdminRole;
     } catch (error) {
       console.error('Error in checkUserRole:', error);
       return false;
@@ -46,31 +48,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     console.log('Setting up auth state listener...');
     
-    // Set up auth state listener first
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, currentSession) => {
         console.log('Auth state changed:', _event, currentSession ? 'Session exists' : 'No session');
         
-        // Update session and user state synchronously
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setIsAuthenticated(!!currentSession);
         
-        // Use setTimeout to avoid blocking the auth state change
         if (currentSession?.user) {
-          setTimeout(async () => {
-            const isAdminUser = await checkUserRole(currentSession.user.id);
-            setIsAdmin(isAdminUser);
-            setLoading(false);
-          }, 0);
+          // First update state to authenticated
+          setIsAuthenticated(true);
+          
+          // Then check admin role
+          const isAdminUser = await checkUserRole(currentSession.user.id);
+          console.log('Setting isAdmin to:', isAdminUser);
+          setIsAdmin(isAdminUser);
         } else {
           setIsAdmin(false);
-          setLoading(false);
         }
+        
+        setLoading(false);
       }
     );
 
-    // Then check for existing session
+    // Check for existing session
     supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
       console.log('Initial session check:', currentSession ? 'Session exists' : 'No session');
       
@@ -80,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (currentSession?.user) {
         const isAdminUser = await checkUserRole(currentSession.user.id);
+        console.log('Setting initial isAdmin to:', isAdminUser);
         setIsAdmin(isAdminUser);
       } else {
         setIsAdmin(false);
@@ -128,7 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       
       console.log('Attempting login for', email);
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -138,10 +142,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
       
-      // Login successful, auth state listener will handle the redirect
-      toast.success('Successfully logged in');
+      console.log('Login successful, checking user role');
+      
+      // Set authentication state immediately
+      setUser(data.user);
+      setSession(data.session);
+      setIsAuthenticated(true);
+      
+      // Check if user is admin
+      if (data.user) {
+        const isAdminUser = await checkUserRole(data.user.id);
+        console.log('User is admin:', isAdminUser);
+        setIsAdmin(isAdminUser);
+      }
+      
+      toast.success('Login successful');
       return true;
     } catch (error: any) {
+      console.error('Login error:', error);
       toast.error(error.message || 'Failed to login.');
       return false;
     } finally {

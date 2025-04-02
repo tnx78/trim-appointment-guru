@@ -15,24 +15,12 @@ export function useReviewStorage() {
     try {
       setIsUploading(true);
       
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
-        return null;
-      }
-      
-      // Check file size (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size should be less than 5MB');
-        return null;
-      }
-      
       // Check if we're in demo mode
       const { data: sessionData } = await supabase.auth.getSession();
       const hasRealSession = !!sessionData.session;
       const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
       
-      // For demo mode, create a data URL and store it
+      // For demo mode, create a data URL
       if (inDemoMode) {
         console.log('Demo mode: Creating data URL for image');
         return new Promise((resolve) => {
@@ -46,27 +34,13 @@ export function useReviewStorage() {
         });
       }
       
-      // Create a unique filename based on timestamp and random string
-      const timestamp = new Date().getTime();
-      const randomString = Math.random().toString(36).substring(2, 10);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${timestamp}-${randomString}.${fileExt}`;
-      
-      console.log('Uploading review image:', fileName);
-      
-      // Convert file to ArrayBuffer
-      const fileBuffer = await file.arrayBuffer();
-      
-      // Upload to Supabase storage
+      // Upload to Supabase storage with original filename
       const { data, error } = await supabase.storage
         .from('reviews')
-        .upload(fileName, fileBuffer, {
-          contentType: file.type,
-          cacheControl: '3600',
-        });
+        .upload(file.name, file);
       
       if (error) {
-        console.error('Error uploading file:', error);
+        console.error('Upload error:', error);
         toast.error(`Upload failed: ${error.message}`);
         return null;
       }
@@ -117,16 +91,18 @@ export function useReviewStorage() {
       const urlObj = new URL(url);
       const fullPath = urlObj.pathname;
       
-      // The path will be like: /storage/v1/object/public/reviews/filename.jpg
-      // Need to extract just the filename part
-      const pathSegments = fullPath.split('/');
-      const bucketName = pathSegments[pathSegments.length - 2];
-      const fileName = pathSegments[pathSegments.length - 1];
+      // Get the filename from the path
+      const fileName = fullPath.split('/').pop();
       
-      console.log(`Deleting file ${fileName} from bucket ${bucketName}`);
+      if (!fileName) {
+        console.error('Could not extract filename from URL:', url);
+        return false;
+      }
+      
+      console.log(`Deleting file ${fileName} from reviews bucket`);
       
       const { error } = await supabase.storage
-        .from(bucketName)
+        .from('reviews')
         .remove([fileName]);
       
       if (error) {
