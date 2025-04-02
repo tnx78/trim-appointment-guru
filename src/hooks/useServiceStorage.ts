@@ -15,7 +15,26 @@ export function useServiceStorage() {
     try {
       setIsUploading(true);
       
-      // Upload to Supabase storage with original filename
+      // Check if we're in demo mode
+      const { data: sessionData } = await supabase.auth.getSession();
+      const hasRealSession = !!sessionData.session;
+      const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
+      
+      // For demo mode, create a data URL
+      if (inDemoMode) {
+        console.log('Demo mode: Creating data URL for image');
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const dataUrl = reader.result as string;
+            toast.success('Image uploaded successfully (Demo Mode)');
+            resolve(dataUrl);
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+      
+      // Just upload directly to Supabase storage with original filename
       const { data, error } = await supabase.storage
         .from('services')
         .upload(file.name, file);
@@ -57,12 +76,19 @@ export function useServiceStorage() {
         return true;
       }
       
-      // Extract the file path from the URL
-      const urlObj = new URL(url);
-      const fullPath = urlObj.pathname;
+      // Check if we're in demo mode
+      const { data: sessionData } = await supabase.auth.getSession();
+      const hasRealSession = !!sessionData.session;
+      const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
       
-      // Get the filename from the path
-      const fileName = fullPath.split('/').pop();
+      if (inDemoMode) {
+        console.log('Demo mode: Simulating image deletion');
+        toast.success('Image deleted successfully (Demo Mode)');
+        return true;
+      }
+      
+      // Extract the filename from the URL
+      const fileName = url.split('/').pop();
       
       if (!fileName) {
         console.error('Could not extract filename from URL:', url);

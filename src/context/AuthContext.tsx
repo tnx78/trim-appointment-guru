@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,52 +46,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Initialize auth state and set up listener
   useEffect(() => {
     console.log('Setting up auth state listener...');
     
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, currentSession) => {
-        console.log('Auth state changed:', _event, currentSession ? 'Session exists' : 'No session');
+    const fetchInitialSession = async () => {
+      try {
+        // Get the initial session
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        console.log('Initial session check:', initialSession ? 'Session exists' : 'No session');
         
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        setIsAuthenticated(!!currentSession);
-        
-        if (currentSession?.user) {
-          // First update state to authenticated
+        if (initialSession) {
+          setSession(initialSession);
+          setUser(initialSession.user);
           setIsAuthenticated(true);
           
-          // Then check admin role
+          // Check admin role
+          const isAdminUser = await checkUserRole(initialSession.user.id);
+          console.log('Setting initial isAdmin to:', isAdminUser);
+          setIsAdmin(isAdminUser);
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error checking initial session:', error);
+        setLoading(false);
+      }
+    };
+    
+    // Fetch the initial session
+    fetchInitialSession();
+    
+    // Set up the auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, currentSession) => {
+        console.log('Auth state changed:', event, currentSession ? 'Session exists' : 'No session');
+        
+        if (currentSession) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+          setIsAuthenticated(true);
+          
+          // Check admin role
           const isAdminUser = await checkUserRole(currentSession.user.id);
           console.log('Setting isAdmin to:', isAdminUser);
           setIsAdmin(isAdminUser);
         } else {
+          setSession(null);
+          setUser(null);
+          setIsAuthenticated(false);
           setIsAdmin(false);
         }
-        
-        setLoading(false);
       }
     );
-
-    // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
-      console.log('Initial session check:', currentSession ? 'Session exists' : 'No session');
-      
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      setIsAuthenticated(!!currentSession);
-      
-      if (currentSession?.user) {
-        const isAdminUser = await checkUserRole(currentSession.user.id);
-        console.log('Setting initial isAdmin to:', isAdminUser);
-        setIsAdmin(isAdminUser);
-      } else {
-        setIsAdmin(false);
-      }
-      
-      setLoading(false);
-    });
 
     return () => {
       subscription.unsubscribe();
@@ -144,7 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log('Login successful, checking user role');
       
-      // Set authentication state immediately
+      // User is authenticated at this point
       setUser(data.user);
       setSession(data.session);
       setIsAuthenticated(true);

@@ -34,7 +34,7 @@ export function useReviewStorage() {
         });
       }
       
-      // Upload to Supabase storage with original filename
+      // Just upload directly to Supabase storage with original filename
       const { data, error } = await supabase.storage
         .from('reviews')
         .upload(file.name, file);
@@ -87,12 +87,8 @@ export function useReviewStorage() {
         return true;
       }
       
-      // Extract the file path from the URL
-      const urlObj = new URL(url);
-      const fullPath = urlObj.pathname;
-      
-      // Get the filename from the path
-      const fileName = fullPath.split('/').pop();
+      // Extract the filename from the URL
+      const fileName = url.split('/').pop();
       
       if (!fileName) {
         console.error('Could not extract filename from URL:', url);

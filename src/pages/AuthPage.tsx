@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -25,20 +26,21 @@ export default function AuthPage() {
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
 
+  // Handle redirection when auth state changes
   useEffect(() => {
-    // Directly check if user is authenticated and admin
     if (isAuthenticated) {
+      console.log('Auth state in AuthPage:', { isAuthenticated, isAdmin });
       if (isAdmin) {
-        console.log('User is admin, redirecting to admin panel');
+        console.log('Redirecting admin to admin panel');
         navigate('/admin');
       } else {
-        console.log('User is not admin, redirecting to home');
+        console.log('Redirecting regular user to home');
         navigate('/');
       }
     }
   }, [isAuthenticated, isAdmin, navigate]);
 
-  // Return null during initial auth check to avoid rendering issues
+  // Return loading state
   if (loading) {
     return <div className="container py-10 flex items-center justify-center min-h-[60vh]">
       <p>Loading authentication...</p>
@@ -48,6 +50,7 @@ export default function AuthPage() {
   // Redirect if already authenticated
   if (isAuthenticated) {
     if (isAdmin) {
+      console.log('Redirecting to admin page from auth page');
       return <Navigate to="/admin" />;
     }
     return <Navigate to="/" />;
@@ -59,7 +62,7 @@ export default function AuthPage() {
       const success = await login(loginEmail, loginPassword);
       if (success) {
         toast.success('Login successful');
-        // Navigation will happen in the useEffect hook
+        // Navigation will happen in the useEffect hook based on isAdmin state
       }
     } catch (error: any) {
       toast.error(error.message || "Please check your credentials and try again");
