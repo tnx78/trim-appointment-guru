@@ -35,23 +35,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Check if user has admin role
           const { data, error } = await supabase
             .from('user_profiles')
-            .select('role')
+            .select('*')
             .eq('id', session.user.id)
             .single();
           
-          if (!error && data && 'role' in data) {
-            const isAdminUser = data.role === 'admin' || localStorage.getItem('isAdmin') === 'true';
+          if (!error && data) {
+            // Check if data has role property
+            const userRole = data.role || 'customer';
+            const isAdminUser = userRole === 'admin';
+            console.log('User role:', userRole, 'Is admin:', isAdminUser);
             setIsAdmin(isAdminUser);
           } else {
-            // Fallback for demo mode
-            const isAdminUser = localStorage.getItem('isAdmin') === 'true';
-            setIsAdmin(isAdminUser);
-            console.log('Using fallback admin check:', isAdminUser);
+            console.error('Error fetching user profile:', error);
+            setIsAdmin(false);
           }
         } else {
-          // Handle demo mode
-          const isAdminUser = localStorage.getItem('isAdmin') === 'true';
-          setIsAdmin(isAdminUser);
+          setIsAdmin(false);
         }
         
         setLoading(false);
@@ -68,23 +67,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Check if user has admin role
         const { data, error } = await supabase
           .from('user_profiles')
-          .select('role')
+          .select('*')
           .eq('id', session.user.id)
           .single();
         
-        if (!error && data && 'role' in data) {
-          const isAdminUser = data.role === 'admin' || localStorage.getItem('isAdmin') === 'true';
+        if (!error && data) {
+          // Check if data has role property
+          const userRole = data.role || 'customer';
+          const isAdminUser = userRole === 'admin';
+          console.log('User role:', userRole, 'Is admin:', isAdminUser);
           setIsAdmin(isAdminUser);
         } else {
-          // Fallback for demo mode
-          const isAdminUser = localStorage.getItem('isAdmin') === 'true';
-          setIsAdmin(isAdminUser);
-          console.log('Using fallback admin check:', isAdminUser);
+          console.error('Error fetching user profile:', error);
+          setIsAdmin(false);
         }
       } else {
-        // Handle demo mode
-        const isAdminUser = localStorage.getItem('isAdmin') === 'true';
-        setIsAdmin(isAdminUser);
+        setIsAdmin(false);
       }
       
       setLoading(false);
@@ -129,8 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       
-      // Regular user login
-      console.log('Attempting Supabase login');
+      console.log('Attempting login for', email);
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -163,7 +160,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      localStorage.removeItem('isAdmin');
       setIsAuthenticated(false);
       setIsAdmin(false);
       

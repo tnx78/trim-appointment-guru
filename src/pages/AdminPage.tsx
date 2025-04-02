@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CategoriesTab } from '@/components/admin/CategoriesTab';
 import { ServicesTab } from '@/components/admin/ServicesTab';
@@ -8,59 +8,22 @@ import { SalonHoursTab } from '@/components/admin/SalonHoursTab';
 import { DayOffTab } from '@/components/admin/DayOffTab';
 import { EmailTemplatesTab } from '@/components/admin/EmailTemplatesTab';
 import { GalleryTab } from '@/components/admin/GalleryTab';
-import { AdminLogin } from '@/components/admin/AdminLogin';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Navigate } from 'react-router-dom';
 
 export default function AdminPage() {
   const { isAuthenticated, logout, isAdmin } = useAuth();
-  const [sessionVerified, setSessionVerified] = useState(false);
-  const [hasActiveSession, setHasActiveSession] = useState(false);
-  
-  // Verify session immediately on mount
-  useEffect(() => {
-    const verifySession = async () => {
-      try {
-        console.log('Verifying session in AdminPage...');
-        const { data: { session } } = await supabase.auth.getSession();
-        const sessionActive = !!session;
-        setHasActiveSession(sessionActive);
-        console.log('Session verification result in AdminPage:', sessionActive ? 'Active' : 'None');
-        setSessionVerified(true);
-      } catch (error) {
-        console.error('Failed to verify session:', error);
-        setSessionVerified(true); // Still mark as verified even on error
-      }
-    };
-    
-    verifySession();
-    
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed in AdminPage:', event, session ? 'Session exists' : 'No session');
-      setHasActiveSession(!!session);
-    });
-    
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
   
   // This will help for showing tabs on mobile
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
   
-  // Wait for session verification before rendering
-  if (!sessionVerified) {
-    return <div className="flex justify-center items-center h-screen">Verifying authentication...</div>;
-  }
-  
-  // If not authenticated or not admin, show login
+  // If not authenticated or not admin, redirect to auth page
   if (!isAuthenticated || !isAdmin) {
-    return <AdminLogin />;
+    return <Navigate to="/auth" />;
   }
 
   return (
@@ -72,13 +35,6 @@ export default function AdminPage() {
           Logout
         </Button>
       </div>
-      
-      {(!hasActiveSession && !localStorage.getItem('isAdmin')) ? (
-        <div className="bg-amber-100 border border-amber-300 text-amber-800 p-4 rounded-md mb-6">
-          Warning: You appear to be using admin features without a proper authentication session.
-          You may encounter issues when saving data. Please try logging out and logging in again.
-        </div>
-      ) : null}
 
       <Tabs defaultValue="appointments" className="w-full">
         <TabsList className="grid w-full grid-cols-7 md:grid-cols-7 overflow-auto">

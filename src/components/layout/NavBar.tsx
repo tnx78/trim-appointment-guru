@@ -63,8 +63,8 @@ export function NavBar() {
               </NavigationMenuItem>
             )}
                 
-            {/* Check for admin role in user metadata or use localStorage fallback */}
-            {(user?.app_metadata?.isAdmin || localStorage.getItem('isAdmin') === 'true') && (
+            {/* Only show Admin for users with admin role */}
+            {isAuthenticated && isAdmin && (
               <NavigationMenuItem>
                 <Link to="/admin">
                   <NavigationMenuLink className="px-4 py-2">
@@ -83,16 +83,13 @@ export function NavBar() {
 
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
-              {/* Only show Account avatar for non-admin users */}
-              {!isAdmin && (
-                <Link to="/account">
-                  <Avatar>
-                    {/* Use optional chaining and check for user_metadata for avatar */}
-                    <AvatarImage src={user?.user_metadata?.avatar || undefined} />
-                    <AvatarFallback>{getInitials()}</AvatarFallback>
-                  </Avatar>
-                </Link>
-              )}
+              {/* Show Account avatar for all logged in users */}
+              <Link to="/account">
+                <Avatar>
+                  <AvatarImage src={user?.user_metadata?.avatar || undefined} />
+                  <AvatarFallback>{getInitials()}</AvatarFallback>
+                </Avatar>
+              </Link>
               <Button variant="outline" size="sm" onClick={() => logout()}>
                 Logout
               </Button>
