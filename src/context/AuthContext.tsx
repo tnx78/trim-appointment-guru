@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -138,6 +139,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
       
+      // Login successful but we need to wait for the auth state to update
+      // which will trigger the auth state listener above and redirect accordingly
       toast.success('Successfully logged in');
       return true;
     } catch (error: any) {

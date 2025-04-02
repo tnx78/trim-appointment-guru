@@ -29,8 +29,9 @@ export default function AuthPage() {
   useEffect(() => {
     // Redirect if already authenticated
     if (isAuthenticated) {
-      // If admin, redirect to admin page
+      // If admin, redirect to admin page immediately
       if (isAdmin) {
+        console.log('User is admin, redirecting to admin panel');
         navigate('/admin');
       } else {
         navigate('/');
