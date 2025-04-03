@@ -32,6 +32,7 @@ export function WeeklyCalendarView({
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   
   // Generate array of days for the week
   const weekDays = eachDayOfInterval({
@@ -95,10 +96,14 @@ export function WeeklyCalendarView({
     setShowDetails(true);
   };
 
-  const handleCompleteAppointment = () => {
+  const handleCompleteAppointment = async () => {
     if (selectedAppointment) {
-      onComplete(selectedAppointment.id);
-      setShowDetails(false);
+      await onComplete(selectedAppointment.id);
+      // Update the selected appointment state to match the updated status
+      setSelectedAppointment({
+        ...selectedAppointment,
+        status: 'completed'
+      });
     }
   };
 
@@ -106,11 +111,23 @@ export function WeeklyCalendarView({
     setShowCancelDialog(true);
   };
 
-  const handleCancelAppointment = () => {
-    if (selectedAppointment) {
-      onCancel(selectedAppointment.id);
-      setShowCancelDialog(false);
-      setShowDetails(false);
+  const handleCancelAppointment = async () => {
+    if (selectedAppointment && !isCancelling) {
+      try {
+        setIsCancelling(true);
+        await onCancel(selectedAppointment.id);
+        // Update the selected appointment state to match the updated status
+        setSelectedAppointment({
+          ...selectedAppointment,
+          status: 'cancelled'
+        });
+        setShowCancelDialog(false);
+        setShowDetails(false);
+      } catch (error) {
+        console.error('Error during cancellation:', error);
+      } finally {
+        setIsCancelling(false);
+      }
     }
   };
 
@@ -234,6 +251,7 @@ export function WeeklyCalendarView({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Appointment Details</DialogTitle>
+            <DialogDescription>View and manage appointment details</DialogDescription>
           </DialogHeader>
           {selectedAppointment && (
             <div className="space-y-4">
@@ -307,9 +325,13 @@ export function WeeklyCalendarView({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>No, Keep It</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancelAppointment} className="bg-red-600 hover:bg-red-700">
-              Yes, Cancel It
+            <AlertDialogCancel disabled={isCancelling}>No, Keep It</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleCancelAppointment} 
+              className="bg-red-600 hover:bg-red-700"
+              disabled={isCancelling}
+            >
+              {isCancelling ? 'Cancelling...' : 'Yes, Cancel It'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

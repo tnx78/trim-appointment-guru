@@ -78,17 +78,37 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
           : updatedData.date;
       }
       
+      console.log('Sending to database:', dbUpdatedData);
+      
+      // First, check if the record exists
+      const { data: existingData, error: checkError } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (checkError) {
+        console.error('Error checking appointment:', checkError);
+        toast.error(`Failed to find appointment: ${checkError.message}`);
+        return;
+      }
+      
+      console.log('Existing appointment data:', existingData);
+      
       // Make sure to wait for the database update to complete
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('appointments')
         .update(dbUpdatedData)
-        .eq('id', id);
+        .eq('id', id)
+        .select();
       
       if (error) {
         console.error('Error updating appointment:', error);
         toast.error(`Failed to update appointment: ${error.message}`);
         return;
       }
+      
+      console.log('Update response from database:', data);
       
       // Update the local state only after confirming the database update was successful
       setAppointments(prevAppointments => 
@@ -111,17 +131,35 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
     try {
       console.log('Cancelling appointment:', id);
       
+      // First, check if the record exists
+      const { data: existingData, error: checkError } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (checkError) {
+        console.error('Error checking appointment:', checkError);
+        toast.error(`Failed to find appointment: ${checkError.message}`);
+        return;
+      }
+      
+      console.log('Existing appointment data before cancel:', existingData);
+      
       // Make sure to wait for the database update to complete
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('appointments')
         .update({ status: 'cancelled' })
-        .eq('id', id);
+        .eq('id', id)
+        .select();
       
       if (error) {
         console.error('Error cancelling appointment:', error);
         toast.error(`Failed to cancel appointment: ${error.message}`);
         return;
       }
+      
+      console.log('Cancel response from database:', data);
       
       // Update the local state only after confirming the database update was successful
       setAppointments(prevAppointments => 

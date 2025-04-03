@@ -33,6 +33,14 @@ export function AppointmentItem({
     }
   };
 
+  const handleComplete = async () => {
+    await onComplete(appointment.id);
+  };
+
+  const handleCancel = async () => {
+    await onCancel(appointment.id);
+  };
+
   return (
     <div className="flex items-center justify-between p-4 border rounded-lg">
       <div className="space-y-1">
@@ -56,7 +64,7 @@ export function AppointmentItem({
               size="sm"
               variant="outline"
               className="flex items-center"
-              onClick={() => onComplete(appointment.id)}
+              onClick={handleComplete}
             >
               <CheckCircle className="mr-1 h-4 w-4" />
               Complete
@@ -65,7 +73,7 @@ export function AppointmentItem({
               size="sm"
               variant="outline"
               className="flex items-center text-destructive"
-              onClick={() => onCancel(appointment.id)}
+              onClick={handleCancel}
             >
               <XCircle className="mr-1 h-4 w-4" />
               Cancel

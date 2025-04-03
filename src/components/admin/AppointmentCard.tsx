@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Appointment, Service } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -22,6 +22,8 @@ export function AppointmentCard({
   onComplete,
   onCancel
 }: AppointmentCardProps) {
+  const [isProcessing, setIsProcessing] = useState(false);
+  
   // Get status badge
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -36,6 +38,24 @@ export function AppointmentCard({
     }
   };
 
+  const handleComplete = async () => {
+    try {
+      setIsProcessing(true);
+      await onComplete(appointment.id);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    try {
+      setIsProcessing(true);
+      await onCancel(appointment.id);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <Card className="border shadow-md">
       <CardHeader className="pb-2">
@@ -45,7 +65,7 @@ export function AppointmentCard({
             {appointment.clientName} 
             {getStatusBadge(appointment.status)}
           </CardTitle>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={isProcessing}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -92,19 +112,21 @@ export function AppointmentCard({
               size="sm"
               variant="outline"
               className="flex items-center gap-1 flex-1"
-              onClick={() => onComplete(appointment.id)}
+              onClick={handleComplete}
+              disabled={isProcessing}
             >
               <CheckCircle className="h-4 w-4" />
-              Complete
+              {isProcessing ? 'Processing...' : 'Complete'}
             </Button>
             <Button
               size="sm"
               variant="outline"
               className="flex items-center gap-1 flex-1 text-destructive"
-              onClick={() => onCancel(appointment.id)}
+              onClick={handleCancel}
+              disabled={isProcessing}
             >
               <XCircle className="h-4 w-4" />
-              Cancel
+              {isProcessing ? 'Processing...' : 'Cancel'}
             </Button>
           </div>
         )}
