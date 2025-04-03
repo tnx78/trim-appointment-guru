@@ -8,6 +8,7 @@ import { WeeklyCalendarView } from './WeeklyCalendarView';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CalendarDays, Calendar } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function AppointmentList() {
   const { getServiceById } = useServiceContext();
@@ -19,7 +20,7 @@ export function AppointmentList() {
   } = useAppointmentContext();
   
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [view, setView] = useState<'all' | 'upcoming' | 'past'>('upcoming');
+  const [view, setView] = useState<'all' | 'upcoming' | 'past'>('all'); // Changed default to 'all'
   const [displayMode, setDisplayMode] = useState<'weekly' | 'specific'>('weekly');
 
   // Get dates with appointments for calendar indicators - filter out cancelled appointments
@@ -89,6 +90,15 @@ export function AppointmentList() {
         <h2 className="text-2xl font-semibold">Appointment Management</h2>
         
         <div className="flex items-center gap-2">
+          {/* Moved tabs from AppointmentListCard to here */}
+          <Tabs defaultValue={view} onValueChange={(value) => setView(value as any)} className="mr-2">
+            <TabsList>
+              <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+              <TabsTrigger value="past">Past</TabsTrigger>
+              <TabsTrigger value="all">All</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
           {/* Toggle between weekly and specific date view */}
           <Button 
             variant={displayMode === 'specific' ? "default" : "outline"} 
@@ -147,6 +157,7 @@ export function AppointmentList() {
                 onCancel={handleCancel}
                 viewType={view}
                 onViewChange={setView}
+                hideViewSwitch={true} // Add this prop to hide the tabs in AppointmentListCard
               />
             </div>
           </div>

@@ -15,6 +15,7 @@ interface AppointmentListCardProps {
   onCancel: (id: string) => void;
   viewType: 'all' | 'upcoming' | 'past';
   onViewChange: (view: 'all' | 'upcoming' | 'past') => void;
+  hideViewSwitch?: boolean; // Add this prop
 }
 
 export function AppointmentListCard({
@@ -25,7 +26,8 @@ export function AppointmentListCard({
   onComplete,
   onCancel,
   viewType,
-  onViewChange
+  onViewChange,
+  hideViewSwitch = false // Default to false for backward compatibility
 }: AppointmentListCardProps) {
   return (
     <Card>
@@ -41,13 +43,15 @@ export function AppointmentListCard({
                   : selectedDate ? `Schedule for ${format(selectedDate, 'PPP')}` : "No date selected"}
             </CardDescription>
           </div>
-          <Tabs defaultValue={viewType} onValueChange={(value) => onViewChange(value as any)}>
-            <TabsList>
-              <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-              <TabsTrigger value="past">Past</TabsTrigger>
-              <TabsTrigger value="all">All</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          {!hideViewSwitch && (
+            <Tabs defaultValue={viewType} onValueChange={(value) => onViewChange(value as any)}>
+              <TabsList>
+                <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                <TabsTrigger value="past">Past</TabsTrigger>
+                <TabsTrigger value="all">All</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
         </div>
       </CardHeader>
       <CardContent>
