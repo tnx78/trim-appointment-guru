@@ -47,7 +47,7 @@ export const mapCategoryFromDB = (dbCategory: any): ServiceCategory => {
   };
 };
 
-// Improved date handling to prevent timezone issues
+// Fixed date handling to prevent timezone issues
 export const mapAppointmentFromDB = (dbAppointment: any): Appointment => {
   // Get the date string from the database
   const dateStr = dbAppointment.date;
@@ -55,21 +55,22 @@ export const mapAppointmentFromDB = (dbAppointment: any): Appointment => {
   
   // Create date object directly from components to avoid timezone issues
   if (dateStr && typeof dateStr === 'string') {
+    // Split the date string and create a Date that preserves the day
     const [year, month, day] = dateStr.split('-').map(Number);
-    // Create date with UTC to prevent any timezone shifts
-    date = new Date(Date.UTC(year, month - 1, day));
-    // Then convert to local date representation without changing day
-    date = new Date(date.toDateString());
+    
+    // Create a date directly with year, month, day components in local timezone
+    date = new Date(year, month - 1, day);
+    
+    console.log('DB Date mapping:', {
+      original: dateStr,
+      parsed: date,
+      year, month, day,
+      formatted: `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`
+    });
   } else {
     date = new Date();
     console.error('Invalid date format in appointment:', dbAppointment);
   }
-  
-  console.log('Mapping appointment from DB:', {
-    original: dateStr,
-    parsed: date,
-    formatted: date.toISOString().split('T')[0]
-  });
 
   return {
     id: dbAppointment.id,
@@ -84,19 +85,21 @@ export const mapAppointmentFromDB = (dbAppointment: any): Appointment => {
   };
 };
 
-// Improved date handling when saving to database
+// Fixed date handling when saving to database
 export const mapAppointmentToDB = (appointment: Omit<Appointment, 'id' | 'status'> & { status?: string }): any => {
   let formattedDate;
   
   if (appointment.date instanceof Date) {
-    // Format date in YYYY-MM-DD format, ensuring we use the date's local representation
+    // Format date in YYYY-MM-DD format directly from date components
+    // to avoid timezone issues
     const year = appointment.date.getFullYear();
     const month = String(appointment.date.getMonth() + 1).padStart(2, '0');
     const day = String(appointment.date.getDate()).padStart(2, '0');
     formattedDate = `${year}-${month}-${day}`;
     
-    console.log('Mapping appointment to DB:', {
-      date: appointment.date,
+    console.log('Date being sent to DB:', {
+      jsDate: appointment.date,
+      year, month, day,
       formatted: formattedDate
     });
   } else {

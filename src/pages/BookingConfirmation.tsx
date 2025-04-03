@@ -60,11 +60,20 @@ export default function BookingConfirmation() {
         if (appointmentData.date && startTime && endTime) {
           // Create date objects for start and end times
           let appointmentDate;
+          
           if (typeof appointmentData.date === 'string') {
-            appointmentDate = new Date(appointmentData.date);
+            // Parse the date string to ensure correct date
+            const [year, month, day] = appointmentData.date.split('-').map(Number);
+            appointmentDate = new Date(year, month - 1, day);
           } else {
             appointmentDate = appointmentData.date;
           }
+
+          console.log('Creating calendar event with date:', {
+            originalDate: appointmentData.date,
+            parsedDate: appointmentDate,
+            dateString: appointmentDate.toDateString()
+          });
 
           const [startHour, startMinute] = startTime.split(':').map(Number);
           const startDate = new Date(appointmentDate);
@@ -114,6 +123,25 @@ export default function BookingConfirmation() {
     }
   };
 
+  const formatDateDisplay = (dateValue: string | Date) => {
+    try {
+      let dateObj;
+      
+      if (typeof dateValue === 'string') {
+        // Parse the date string to ensure correct date
+        const [year, month, day] = dateValue.split('-').map(Number);
+        dateObj = new Date(year, month - 1, day);
+      } else {
+        dateObj = dateValue;
+      }
+      
+      return format(dateObj, 'PPPP');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return String(dateValue);
+    }
+  };
+
   return (
     <div className="container py-10 max-w-md mx-auto">
       <Card className="shadow-lg">
@@ -133,11 +161,7 @@ export default function BookingConfirmation() {
               <h3 className="font-medium">Appointment Details</h3>
               <div className="text-sm space-y-1">
                 <p><span className="font-medium">Service:</span> {service?.name || serviceName}</p>
-                <p><span className="font-medium">Date:</span> {
-                  typeof appointmentData.date === 'string' 
-                    ? format(new Date(appointmentData.date), 'PPPP') 
-                    : format(appointmentData.date, 'PPPP')
-                }</p>
+                <p><span className="font-medium">Date:</span> {formatDateDisplay(appointmentData.date)}</p>
                 <p><span className="font-medium">Time:</span> {
                   formatTimeDisplay(appointmentData.start_time || appointmentData.startTime)
                 } - {

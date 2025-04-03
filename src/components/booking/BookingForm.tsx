@@ -51,8 +51,17 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
     setLoading(true);
     
     try {
-      // Format date object to YYYY-MM-DD string
-      const formattedDate = selectedDate.toISOString().split('T')[0];
+      // Format date to YYYY-MM-DD string using date components to avoid timezone issues
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`;
+      
+      console.log('Booking date:', {
+        originalDate: selectedDate,
+        formattedDate: formattedDate,
+        year, month, day
+      });
       
       // Create appointment data object
       const appointmentData = {
