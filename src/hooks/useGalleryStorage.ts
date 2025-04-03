@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
 
 export function useGalleryStorage() {
   const [isUploading, setIsUploading] = useState(false);
@@ -34,10 +35,13 @@ export function useGalleryStorage() {
         });
       }
       
-      // Upload to Supabase storage with original filename
+      // Generate a unique filename to avoid conflicts
+      const uniqueFileName = `${uuidv4()}-${file.name}`;
+      
+      // Upload file to Supabase storage
       const { data, error } = await supabase.storage
         .from('gallery')
-        .upload(file.name, file);
+        .upload(uniqueFileName, file);
       
       if (error) {
         console.error('Upload error:', error);
@@ -87,12 +91,9 @@ export function useGalleryStorage() {
         return true;
       }
       
-      // Extract the file path from the URL
-      const urlObj = new URL(url);
-      const fullPath = urlObj.pathname;
-      
-      // Get the filename from the path
-      const fileName = fullPath.split('/').pop();
+      // Extract the filename from the URL
+      const pathParts = url.split('/');
+      const fileName = pathParts[pathParts.length - 1];
       
       if (!fileName) {
         console.error('Could not extract filename from URL:', url);

@@ -46,13 +46,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Initialize auth state and set up listener
   useEffect(() => {
     console.log('Setting up auth state listener...');
     
-    const fetchInitialSession = async () => {
+    async function initialize() {
       try {
-        // Get the initial session
+        // First, set up the auth state change listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, currentSession) => {
+            console.log('Auth state changed:', event, currentSession ? 'Session exists' : 'No session');
+            
+            // Always update the session state
+            setSession(currentSession);
+            
+            if (currentSession) {
+              setUser(currentSession.user);
+              setIsAuthenticated(true);
+              
+              // Check admin role
+              const isAdminUser = await checkUserRole(currentSession.user.id);
+              console.log('Setting isAdmin to:', isAdminUser);
+              setIsAdmin(isAdminUser);
+            } else {
+              setUser(null);
+              setIsAuthenticated(false);
+              setIsAdmin(false);
+            }
+            
+            // Only set loading to false after we've updated everything
+            setLoading(false);
+          }
+        );
+        
+        // Then, get the initial session
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         console.log('Initial session check:', initialSession ? 'Session exists' : 'No session');
         
@@ -67,42 +93,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsAdmin(isAdminUser);
         }
         
+        // Set loading to false when initialization is complete
         setLoading(false);
-      } catch (error) {
-        console.error('Error checking initial session:', error);
-        setLoading(false);
-      }
-    };
-    
-    // Fetch the initial session
-    fetchInitialSession();
-    
-    // Set up the auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        console.log('Auth state changed:', event, currentSession ? 'Session exists' : 'No session');
         
-        if (currentSession) {
-          setSession(currentSession);
-          setUser(currentSession.user);
-          setIsAuthenticated(true);
-          
-          // Check admin role
-          const isAdminUser = await checkUserRole(currentSession.user.id);
-          console.log('Setting isAdmin to:', isAdminUser);
-          setIsAdmin(isAdminUser);
-        } else {
-          setSession(null);
-          setUser(null);
-          setIsAuthenticated(false);
-          setIsAdmin(false);
-        }
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error('Error during auth initialization:', error);
+        setLoading(false);
       }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    }
+    
+    initialize();
   }, []);
 
   const register = async (email: string, password: string, fullName: string, phone?: string): Promise<boolean> => {
@@ -152,17 +155,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log('Login successful, checking user role');
       
-      // User is authenticated at this point
-      setUser(data.user);
-      setSession(data.session);
-      setIsAuthenticated(true);
-      
-      // Check if user is admin
-      if (data.user) {
-        const isAdminUser = await checkUserRole(data.user.id);
-        console.log('User is admin:', isAdminUser);
-        setIsAdmin(isAdminUser);
-      }
+      // User is authenticated at this point, but we don't need to update state here
+      // as the onAuthStateChange listener will handle that
       
       toast.success('Login successful');
       return true;
@@ -187,11 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      // Clear state
-      setSession(null);
-      setUser(null);
-      setIsAuthenticated(false);
-      setIsAdmin(false);
+      // Don't clear state here, the onAuthStateChange listener will handle that
       
       toast.success('Successfully logged out');
     } catch (error: any) {
@@ -201,6 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Provide the auth state and functions
   return (
     <AuthContext.Provider value={{ 
       isAuthenticated, 
