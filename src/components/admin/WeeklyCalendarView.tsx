@@ -269,17 +269,10 @@ export function WeeklyCalendarView({
                 </div>
                 
                 <div className="text-sm font-medium">Phone:</div>
-                <div className="text-sm">{selectedAppointment.phone}</div>
+                <div className="text-sm">{selectedAppointment.clientPhone}</div>
                 
                 <div className="text-sm font-medium">Email:</div>
-                <div className="text-sm">{selectedAppointment.email}</div>
-                
-                {selectedAppointment.notes && (
-                  <>
-                    <div className="text-sm font-medium">Notes:</div>
-                    <div className="text-sm">{selectedAppointment.notes}</div>
-                  </>
-                )}
+                <div className="text-sm">{selectedAppointment.clientEmail}</div>
               </div>
               
               <div className="flex justify-end space-x-2 pt-4">
