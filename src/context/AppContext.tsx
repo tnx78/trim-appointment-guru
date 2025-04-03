@@ -14,6 +14,7 @@ interface AppContextType {
 // Create empty context with proper type
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// The provider component that wraps the entire app
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <CategoryProvider>
@@ -21,7 +22,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         <AppointmentProvider>
           <GalleryProvider>
             <BookingProvider>
-              {children}
+              <AppContext.Provider value={{}}>
+                {children}
+              </AppContext.Provider>
             </BookingProvider>
           </GalleryProvider>
         </AppointmentProvider>
@@ -32,13 +35,14 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
 // Custom hook to use the combined context
 export const useAppContext = () => {
-  // Get contexts directly
+  // Get individual contexts
   const categories = useCategoryContext();
   const services = useServiceContext();
   const appointments = useAppointmentContext();
   const gallery = useGalleryContext();
   const booking = useBookingContext();
 
+  // Combine all contexts into one
   return {
     ...categories,
     ...services,
