@@ -7,7 +7,7 @@ import { AppointmentListCard } from './AppointmentListCard';
 import { WeeklyCalendarView } from './WeeklyCalendarView';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, Calendar } from 'lucide-react';
 
 export function AppointmentList() {
   const { getServiceById } = useServiceContext();
@@ -33,6 +33,8 @@ export function AppointmentList() {
 
   // Filter appointments based on the selected view and date filter
   const getFilteredAppointments = () => {
+    // Show all appointments when in weekly view, regardless of status
+    // For specific date view, filter by the selected date
     return appointments.filter(appointment => {
       // Make a new date object to compare only the date portion
       const appointmentDate = appointment.date instanceof Date 
@@ -40,13 +42,14 @@ export function AppointmentList() {
         : new Date(appointment.date);
       appointmentDate.setHours(0, 0, 0, 0);
       
-      // If in weekly view, no date filtering
-      // If in specific date view, filter by selected date
-      const dateMatches = displayMode === 'weekly' || 
-        (selectedDate && appointmentDate.getTime() === selectedDate.getTime());
+      // For specific date view, filter by selected date
+      if (displayMode === 'specific' && selectedDate) {
+        if (appointmentDate.getTime() !== selectedDate.getTime()) {
+          return false;
+        }
+      }
       
-      if (!dateMatches) return false;
-      
+      // Apply view filter (upcoming, past, all)
       switch (view) {
         case 'upcoming':
           return (appointmentDate.getTime() >= today.getTime() && appointment.status !== 'cancelled');
@@ -93,8 +96,17 @@ export function AppointmentList() {
             onClick={toggleDisplayMode}
             className="flex items-center gap-2"
           >
-            <CalendarDays className="h-4 w-4" />
-            Specific Date
+            {displayMode === 'weekly' ? (
+              <>
+                <CalendarDays className="h-4 w-4" />
+                Specific Date
+              </>
+            ) : (
+              <>
+                <Calendar className="h-4 w-4" />
+                Weekly Calendar
+              </>
+            )}
           </Button>
           
           {/* Appointment count badge */}

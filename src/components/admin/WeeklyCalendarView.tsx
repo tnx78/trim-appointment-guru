@@ -54,7 +54,7 @@ export function WeeklyCalendarView({
     setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
   };
 
-  // Get appointments for a specific day
+  // Get appointments for a specific day (including past appointments)
   const getAppointmentsForDay = (day: Date) => {
     return appointments.filter(appointment => {
       const appointmentDate = appointment.date instanceof Date 
@@ -84,7 +84,7 @@ export function WeeklyCalendarView({
       case 'cancelled': 
         return 'bg-red-400 hover:bg-red-500';
       case 'completed':
-        return 'bg-blue-400 hover:bg-blue-500';
+        return 'bg-purple-500 hover:bg-purple-600';
       default:
         return 'bg-orange-400 hover:bg-orange-500';
     }
@@ -114,31 +114,25 @@ export function WeeklyCalendarView({
     }
   };
 
-  // Create a map to track rendered appointments
-  // This will help us prevent duplicate renders of the same appointment
+  // Create a map to track appointments by day and time
+  // This helps prevent duplicate renders of appointments that span multiple slots
   const createDayAppointmentMap = () => {
-    const appointmentMap = new Map<string, Appointment[]>();
+    const dayMap = new Map<string, Map<string, Appointment>>();
     
     weekDays.forEach(day => {
       const dayKey = format(day, 'yyyy-MM-dd');
+      const timeMap = new Map<string, Appointment>();
       const dayAppointments = getAppointmentsForDay(day);
-      
-      // Group appointments by client+service to merge duplicates
-      const groupedAppointments = new Map<string, Appointment>();
       
       dayAppointments.forEach(appointment => {
         const key = `${appointment.clientName}-${appointment.serviceId}-${appointment.startTime}`;
-        
-        // If this is the first occurrence of this appointment, store it
-        if (!groupedAppointments.has(key)) {
-          groupedAppointments.set(key, appointment);
-        }
+        timeMap.set(key, appointment);
       });
       
-      appointmentMap.set(dayKey, Array.from(groupedAppointments.values()));
+      dayMap.set(dayKey, timeMap);
     });
     
-    return appointmentMap;
+    return dayMap;
   };
 
   const dayAppointmentMap = createDayAppointmentMap();
@@ -184,34 +178,35 @@ export function WeeklyCalendarView({
                 </div>
                 {weekDays.map((day) => {
                   const dayKey = format(day, 'yyyy-MM-dd');
-                  const dayAppointments = dayAppointmentMap.get(dayKey) || [];
+                  const appointmentsForDay = dayAppointmentMap.get(dayKey);
                   
                   return (
                     <div key={day.toString()} className="border-r relative">
-                      {dayAppointments.map((appointment) => {
+                      {appointmentsForDay && Array.from(appointmentsForDay.values()).map((appointment) => {
                         const service = getServiceById(appointment.serviceId);
                         const startMinutes = timeToMinutes(appointment.startTime);
                         const endMinutes = timeToMinutes(appointment.endTime);
                         const slotStartMinutes = slot.hour * 60;
                         const slotEndMinutes = (slot.hour + 1) * 60;
                         
-                        // Check if this appointment falls within this time slot
+                        // Only render if this appointment overlaps with this time slot
                         if (startMinutes < slotEndMinutes && endMinutes > slotStartMinutes) {
-                          // Calculate position within the hour cell
-                          const topOffset = Math.max(0, startMinutes - slotStartMinutes);
-                          const height = Math.min(60, Math.min(endMinutes, slotEndMinutes) - Math.max(startMinutes, slotStartMinutes));
-                          const color = getAppointmentColor(appointment.status);
+                          // Calculate position and height 
+                          const top = Math.max(0, startMinutes - slotStartMinutes);
                           
-                          // Only render if the appointment starts in this slot
-                          // This prevents duplicate renders across hour boundaries
+                          // Only render appointment at its starting slot
                           if (startMinutes >= slotStartMinutes && startMinutes < slotEndMinutes) {
+                            const duration = endMinutes - startMinutes;
+                            const height = duration; // 1 minute = 1px
+                            const color = getAppointmentColor(appointment.status);
+                            
                             return (
                               <div
                                 key={appointment.id}
                                 onClick={() => handleAppointmentClick(appointment)}
                                 className={`absolute left-0 right-0 mx-1 rounded px-2 py-1 text-white cursor-pointer transition-colors ${color}`}
                                 style={{
-                                  top: `${topOffset}px`,
+                                  top: `${top}px`,
                                   height: `${height}px`,
                                   overflow: 'hidden',
                                   zIndex: 10
