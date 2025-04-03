@@ -4,7 +4,6 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, parseISO, i
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { AppointmentItem } from './AppointmentItem';
 import { Appointment, Service } from '@/types';
 import { AppointmentCard } from './AppointmentCard';
 
