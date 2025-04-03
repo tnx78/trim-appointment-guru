@@ -59,8 +59,9 @@ export function AppointmentList() {
 
   const handleComplete = async (id: string): Promise<boolean> => {
     try {
-      const result = await updateAppointment(id, { status: 'completed' });
-      return result === true;
+      await updateAppointment(id, { status: 'completed' });
+      // Since updateAppointment doesn't return a value, we'll return true if no exception occurs
+      return true;
     } catch (error) {
       console.error('Error completing appointment:', error);
       return false;
@@ -69,8 +70,9 @@ export function AppointmentList() {
 
   const handleCancel = async (id: string): Promise<boolean> => {
     try {
-      const result = await cancelAppointment(id);
-      return result === true;
+      await cancelAppointment(id);
+      // Since cancelAppointment doesn't return a value, we'll return true if no exception occurs
+      return true;
     } catch (error) {
       console.error('Error cancelling appointment:', error);
       return false;
