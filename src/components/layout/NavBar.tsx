@@ -1,21 +1,17 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from '@/components/ui/navigation-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Loader2 } from 'lucide-react';
 
 export function NavBar() {
-  const { isAuthenticated, user, logout, isAdmin } = useAuth();
+  const { isAuthenticated, user, logout, isAdmin, loading } = useAuth();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-
-  // Log current auth state for debugging
-  useEffect(() => {
-    console.log('NavBar auth state:', { isAuthenticated, isAdmin, user: user?.email });
-  }, [isAuthenticated, isAdmin, user]);
 
   // Get first letter of user name for avatar
   const getInitials = () => {
@@ -24,8 +20,12 @@ export function NavBar() {
   };
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/');
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
   };
 
   return (
@@ -63,26 +63,31 @@ export function NavBar() {
               </Link>
             </NavigationMenuItem>
 
-            {/* Show My Bookings for authenticated customers */}
-            {isAuthenticated && !isAdmin && (
-              <NavigationMenuItem>
-                <Link to="/my-appointments">
-                  <NavigationMenuLink className="px-4 py-2">
-                    My Bookings
-                  </NavigationMenuLink>
-                </Link>
-              </NavigationMenuItem>
-            )}
-                
-            {/* Show Admin for users with admin role */}
-            {isAuthenticated && isAdmin && (
-              <NavigationMenuItem>
-                <Link to="/admin">
-                  <NavigationMenuLink className="px-4 py-2">
-                    Admin Panel
-                  </NavigationMenuLink>
-                </Link>
-              </NavigationMenuItem>
+            {/* Only show menu items if auth state is determined */}
+            {!loading && (
+              <>
+                {/* Show My Bookings for authenticated customers */}
+                {isAuthenticated && !isAdmin && (
+                  <NavigationMenuItem>
+                    <Link to="/my-appointments">
+                      <NavigationMenuLink className="px-4 py-2">
+                        My Bookings
+                      </NavigationMenuLink>
+                    </Link>
+                  </NavigationMenuItem>
+                )}
+                    
+                {/* Show Admin for users with admin role */}
+                {isAuthenticated && isAdmin && (
+                  <NavigationMenuItem>
+                    <Link to="/admin">
+                      <NavigationMenuLink className="px-4 py-2">
+                        Admin Panel
+                      </NavigationMenuLink>
+                    </Link>
+                  </NavigationMenuItem>
+                )}
+              </>
             )}
           </NavigationMenuList>
         </NavigationMenu>
@@ -92,7 +97,11 @@ export function NavBar() {
             <Button variant="default">Book Now</Button>
           </Link>
 
-          {isAuthenticated ? (
+          {loading ? (
+            <Button variant="ghost" size="icon" disabled>
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </Button>
+          ) : isAuthenticated ? (
             <div className="flex items-center gap-3">
               {/* Show Account avatar for all logged in users */}
               <Link to="/account">
