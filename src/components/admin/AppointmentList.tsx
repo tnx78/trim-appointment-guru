@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useServiceContext } from '@/context/ServiceContext';
 import { useAppointmentContext } from '@/context/AppointmentContext';
@@ -57,11 +58,13 @@ export function AppointmentList() {
   const filteredAppointments = getFilteredAppointments();
 
   const handleComplete = async (id: string): Promise<boolean> => {
-    return await updateAppointment(id, { status: 'completed' });
+    const result = await updateAppointment(id, { status: 'completed' });
+    return result;
   };
 
   const handleCancel = async (id: string): Promise<boolean> => {
-    return await cancelAppointment(id);
+    const result = await cancelAppointment(id);
+    return result;
   };
 
   const handleDateSelect = (date: Date | undefined) => {
