@@ -60,27 +60,10 @@ export function WeeklyCalendarView({
     display: `${i + 9}:00`
   }));
 
-  // Helper function to parse time string to minutes
+  // Helper function to parse time string to minutes since midnight
   const timeToMinutes = (timeString: string) => {
     const [hours, minutes] = timeString.split(':').map(Number);
     return hours * 60 + minutes;
-  };
-
-  // Determine the position and height of an appointment card
-  const getAppointmentPosition = (appointment: Appointment) => {
-    const startMinutes = timeToMinutes(appointment.startTime);
-    const endMinutes = timeToMinutes(appointment.endTime);
-    
-    // Calculate top position (relative to 9:00 AM)
-    const startPositionMinutes = startMinutes - (9 * 60);
-    
-    // Calculate height based on duration
-    const durationMinutes = endMinutes - startMinutes;
-    
-    return {
-      top: `${startPositionMinutes}px`,
-      height: `${durationMinutes}px`
-    };
   };
 
   // Get color based on appointment status
@@ -101,25 +84,16 @@ export function WeeklyCalendarView({
     setSelectedAppointment(appointment);
   };
 
-  // Process appointments to combine duplicate client-service entries into single blocks
+  // Process appointments to avoid duplicates
   const processAppointmentsForDay = (day: Date) => {
     const dayAppointments = getAppointmentsForDay(day);
     const processedAppointments = new Map();
     
     dayAppointments.forEach(appointment => {
-      const clientServiceKey = `${appointment.clientName}-${appointment.serviceId}`;
+      const key = `${appointment.clientName}-${appointment.serviceId}-${appointment.startTime}`;
       
-      if (!processedAppointments.has(clientServiceKey)) {
-        processedAppointments.set(clientServiceKey, appointment);
-      } else {
-        // If there's a duplicate, use the one with the earlier start time
-        const existing = processedAppointments.get(clientServiceKey);
-        const existingStart = timeToMinutes(existing.startTime);
-        const currentStart = timeToMinutes(appointment.startTime);
-        
-        if (currentStart < existingStart) {
-          processedAppointments.set(clientServiceKey, appointment);
-        }
+      if (!processedAppointments.has(key)) {
+        processedAppointments.set(key, appointment);
       }
     });
     
@@ -170,31 +144,31 @@ export function WeeklyCalendarView({
                     {/* Render appointments for this day and time */}
                     {processAppointmentsForDay(day).map((appointment) => {
                       const service = getServiceById(appointment.serviceId);
-                      const { top, height } = getAppointmentPosition(appointment);
+                      const startMinutes = timeToMinutes(appointment.startTime);
+                      const endMinutes = timeToMinutes(appointment.endTime);
+                      const appointmentStartHour = Math.floor(startMinutes / 60);
+                      const appointmentEndHour = Math.ceil(endMinutes / 60);
                       const color = getAppointmentColor(appointment.status);
                       
-                      // Only render if this appointment falls within this hour's slot
-                      const slotStart = slot.hour * 60; // Minutes since midnight
-                      const slotEnd = slotStart + 60;
-                      const appointmentStart = timeToMinutes(appointment.startTime);
-                      const appointmentEnd = timeToMinutes(appointment.endTime);
-                      
-                      // Check if appointment is visible in this cell
-                      const isVisible = (
-                        (appointmentStart >= slotStart && appointmentStart < slotEnd) || // Starts in this slot
-                        (appointmentEnd > slotStart && appointmentEnd <= slotEnd) || // Ends in this slot
-                        (appointmentStart <= slotStart && appointmentEnd >= slotEnd) // Spans this slot
-                      );
-                      
-                      if (isVisible) {
+                      // Only render if this appointment falls within this time slot's hour
+                      if (appointmentStartHour <= slot.hour && appointmentEndHour > slot.hour) {
+                        // Calculate position within the hour cell
+                        const topOffset = startMinutes >= slot.hour * 60 
+                          ? (startMinutes - slot.hour * 60) 
+                          : 0;
+                        
+                        // Calculate height within this cell
+                        const bottomTime = Math.min(endMinutes, (slot.hour + 1) * 60);
+                        const height = bottomTime - Math.max(startMinutes, slot.hour * 60);
+                        
                         return (
                           <div
                             key={appointment.id}
                             onClick={() => handleAppointmentClick(appointment)}
                             className={`absolute left-0 right-0 mx-1 rounded px-2 py-1 text-white cursor-pointer transition-colors ${color}`}
                             style={{
-                              top: `${Math.max(0, appointmentStart - slotStart)}px`,
-                              height: `${Math.min(60, (appointmentEnd - Math.max(appointmentStart, slotStart)))}px`,
+                              top: `${topOffset}px`,
+                              height: `${height}px`,
                               overflow: 'hidden',
                               zIndex: 10
                             }}

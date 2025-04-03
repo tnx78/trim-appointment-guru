@@ -95,18 +95,28 @@ export function AppointmentList() {
         <h2 className="text-2xl font-semibold">Appointment Management</h2>
         
         <div className="flex items-center gap-2">
-          {/* Date filter mode toggle */}
-          <div className="flex items-center space-x-2">
-            <Button 
-              variant={showAllDates ? "default" : "outline"} 
-              size="sm"
-              onClick={() => handleToggleAllDates(true)}
-              className="flex items-center gap-2"
-            >
-              <CalendarDays className="h-4 w-4" />
-              All Dates
-            </Button>
-            
+          {/* View mode toggle */}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={toggleDisplayMode}
+            className="flex items-center gap-2"
+          >
+            {displayMode === 'calendar' ? (
+              <>
+                <List className="h-4 w-4" />
+                List View
+              </>
+            ) : (
+              <>
+                <CalendarDays className="h-4 w-4" />
+                Calendar View
+              </>
+            )}
+          </Button>
+          
+          {/* Show specific date button (only visible in calendar mode) */}
+          {displayMode === 'calendar' && (
             <Button 
               variant={!showAllDates ? "default" : "outline"} 
               size="sm"
@@ -115,28 +125,6 @@ export function AppointmentList() {
             >
               <CalendarDays className="h-4 w-4" />
               Specific Date
-            </Button>
-          </div>
-          
-          {/* View mode toggle */}
-          {showAllDates && (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={toggleDisplayMode}
-              className="flex items-center gap-2 ml-2"
-            >
-              {displayMode === 'calendar' ? (
-                <>
-                  <List className="h-4 w-4" />
-                  List View
-                </>
-              ) : (
-                <>
-                  <CalendarDays className="h-4 w-4" />
-                  Calendar View
-                </>
-              )}
             </Button>
           )}
           
@@ -148,7 +136,7 @@ export function AppointmentList() {
       </div>
       
       <div className="flex flex-col gap-6">
-        {!showAllDates && (
+        {!showAllDates && displayMode === 'calendar' && (
           <DateFilterCard 
             selectedDate={selectedDate} 
             showAllDates={showAllDates}
@@ -159,7 +147,7 @@ export function AppointmentList() {
         )}
         
         <div className="w-full">
-          {displayMode === 'calendar' && showAllDates ? (
+          {displayMode === 'calendar' ? (
             <WeeklyCalendarView 
               appointments={filteredAppointments}
               getServiceById={getServiceById}
@@ -168,7 +156,7 @@ export function AppointmentList() {
             />
           ) : (
             <div className="flex gap-6">
-              {!showAllDates && displayMode === 'list' && (
+              {!showAllDates && (
                 <div className="w-1/3">
                   <DateFilterCard 
                     selectedDate={selectedDate} 
