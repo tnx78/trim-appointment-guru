@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useServiceContext } from '@/context/ServiceContext';
 import { useAppointmentContext } from '@/context/AppointmentContext';
@@ -20,37 +19,29 @@ export function AppointmentList() {
   } = useAppointmentContext();
   
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [view, setView] = useState<'all' | 'upcoming' | 'past'>('all'); // Changed default to 'all'
+  const [view, setView] = useState<'all' | 'upcoming' | 'past'>('all');
   const [displayMode, setDisplayMode] = useState<'weekly' | 'specific'>('weekly');
 
-  // Get dates with appointments for calendar indicators - filter out cancelled appointments
   const appointmentDates = appointments
     .filter(app => app.status !== 'cancelled')
     .map(app => new Date(app.date));
 
-  // Get today's date with time set to start of day
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Filter appointments based on the selected view and date filter
   const getFilteredAppointments = () => {
-    // Show all appointments when in weekly view, regardless of status
-    // For specific date view, filter by the selected date
     return appointments.filter(appointment => {
-      // Make a new date object to compare only the date portion
       const appointmentDate = appointment.date instanceof Date 
         ? appointment.date 
         : new Date(appointment.date);
       appointmentDate.setHours(0, 0, 0, 0);
       
-      // For specific date view, filter by selected date
       if (displayMode === 'specific' && selectedDate) {
         if (appointmentDate.getTime() !== selectedDate.getTime()) {
           return false;
         }
       }
       
-      // Apply view filter (upcoming, past, all)
       switch (view) {
         case 'upcoming':
           return (appointmentDate.getTime() >= today.getTime() && appointment.status !== 'cancelled');
@@ -65,21 +56,18 @@ export function AppointmentList() {
 
   const filteredAppointments = getFilteredAppointments();
 
-  // Mark appointment as completed
-  const handleComplete = (id: string): Promise<boolean> => {
-    return updateAppointment(id, { status: 'completed' });
+  const handleComplete = async (id: string): Promise<boolean> => {
+    return await updateAppointment(id, { status: 'completed' });
   };
 
-  // Cancel appointment
-  const handleCancel = (id: string): Promise<boolean> => {
-    return cancelAppointment(id);
+  const handleCancel = async (id: string): Promise<boolean> => {
+    return await cancelAppointment(id);
   };
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
   };
 
-  // Toggle between weekly calendar and specific date view
   const toggleDisplayMode = () => {
     setDisplayMode(prev => prev === 'weekly' ? 'specific' : 'weekly');
   };
@@ -90,7 +78,6 @@ export function AppointmentList() {
         <h2 className="text-2xl font-semibold">Appointment Management</h2>
         
         <div className="flex items-center gap-2">
-          {/* Moved tabs from AppointmentListCard to here */}
           <Tabs defaultValue={view} onValueChange={(value) => setView(value as any)} className="mr-2">
             <TabsList>
               <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
@@ -99,7 +86,6 @@ export function AppointmentList() {
             </TabsList>
           </Tabs>
           
-          {/* Toggle between weekly and specific date view */}
           <Button 
             variant={displayMode === 'specific' ? "default" : "outline"} 
             size="sm"
@@ -119,7 +105,6 @@ export function AppointmentList() {
             )}
           </Button>
           
-          {/* Appointment count badge */}
           <Badge variant="secondary" className="ml-2">
             {filteredAppointments.length} appointment{filteredAppointments.length !== 1 ? 's' : ''}
           </Badge>
@@ -157,7 +142,7 @@ export function AppointmentList() {
                 onCancel={handleCancel}
                 viewType={view}
                 onViewChange={setView}
-                hideViewSwitch={true} // Add this prop to hide the tabs in AppointmentListCard
+                hideViewSwitch={true}
               />
             </div>
           </div>
