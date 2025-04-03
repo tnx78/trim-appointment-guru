@@ -80,49 +80,41 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
       
       console.log('Sending to database:', dbUpdatedData);
       
-      // First, check if the record exists
-      const { data: existingData, error: checkError } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('id', id)
-        .single();
-        
-      if (checkError) {
-        console.error('Error checking appointment:', checkError);
-        toast.error(`Failed to find appointment: ${checkError.message}`);
-        return;
-      }
-      
-      console.log('Existing appointment data:', existingData);
-      
-      // Make sure to wait for the database update to complete
+      // Try direct update and get the response
       const { data, error } = await supabase
         .from('appointments')
         .update(dbUpdatedData)
         .eq('id', id)
-        .select();
+        .select('*');
       
       if (error) {
-        console.error('Error updating appointment:', error);
-        toast.error(`Failed to update appointment: ${error.message}`);
-        return;
+        console.error('Error updating appointment in database:', error);
+        throw new Error(`Failed to update appointment: ${error.message}`);
       }
       
       console.log('Update response from database:', data);
       
       // Update the local state only after confirming the database update was successful
-      setAppointments(prevAppointments => 
-        prevAppointments.map(appointment => 
-          appointment.id === id 
-            ? { ...appointment, ...updatedData } 
-            : appointment
-        )
-      );
-      
-      toast.success("Appointment updated successfully");
+      if (data && data.length > 0) {
+        const updatedAppointment = mapAppointmentFromDB(data[0]);
+        setAppointments(prevAppointments => 
+          prevAppointments.map(appointment => 
+            appointment.id === id ? updatedAppointment : appointment
+          )
+        );
+        
+        toast.success("Appointment updated successfully");
+        return true;
+      } else {
+        // If no data returned but no error, the update might have succeeded
+        // but we didn't get the updated record back
+        console.warn('No data returned from update, but no error occurred');
+        return false;
+      }
     } catch (error: any) {
       console.error('Error updating appointment:', error);
       toast.error(`Failed to update appointment: ${error.message || 'Unknown error'}`);
+      throw error; // Rethrow to allow caller to handle
     }
   };
 
@@ -131,49 +123,41 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
     try {
       console.log('Cancelling appointment:', id);
       
-      // First, check if the record exists
-      const { data: existingData, error: checkError } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('id', id)
-        .single();
-        
-      if (checkError) {
-        console.error('Error checking appointment:', checkError);
-        toast.error(`Failed to find appointment: ${checkError.message}`);
-        return;
-      }
-      
-      console.log('Existing appointment data before cancel:', existingData);
-      
-      // Make sure to wait for the database update to complete
+      // Direct update with status = cancelled
       const { data, error } = await supabase
         .from('appointments')
         .update({ status: 'cancelled' })
         .eq('id', id)
-        .select();
+        .select('*');
       
       if (error) {
-        console.error('Error cancelling appointment:', error);
-        toast.error(`Failed to cancel appointment: ${error.message}`);
-        return;
+        console.error('Error cancelling appointment in database:', error);
+        throw new Error(`Failed to cancel appointment: ${error.message}`);
       }
       
       console.log('Cancel response from database:', data);
       
       // Update the local state only after confirming the database update was successful
-      setAppointments(prevAppointments => 
-        prevAppointments.map(appointment => 
-          appointment.id === id 
-            ? { ...appointment, status: 'cancelled' as const } 
-            : appointment
-        )
-      );
-      
-      toast.success("Appointment cancelled successfully");
+      if (data && data.length > 0) {
+        const cancelledAppointment = mapAppointmentFromDB(data[0]);
+        setAppointments(prevAppointments => 
+          prevAppointments.map(appointment => 
+            appointment.id === id ? cancelledAppointment : appointment
+          )
+        );
+        
+        toast.success("Appointment cancelled successfully");
+        return true;
+      } else {
+        // If no data returned but no error, the update might have succeeded
+        // but we didn't get the updated record back
+        console.warn('No data returned from cancel, but no error occurred');
+        return false;
+      }
     } catch (error: any) {
       console.error('Error cancelling appointment:', error);
       toast.error(`Failed to cancel appointment: ${error.message || 'Unknown error'}`);
+      throw error; // Rethrow to allow caller to handle
     }
   };
 

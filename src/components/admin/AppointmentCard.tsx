@@ -11,8 +11,8 @@ interface AppointmentCardProps {
   appointment: Appointment;
   service: Service | undefined;
   onClose: () => void;
-  onComplete: (id: string) => void;
-  onCancel: (id: string) => void;
+  onComplete: (id: string) => Promise<boolean>;
+  onCancel: (id: string) => Promise<boolean>;
 }
 
 export function AppointmentCard({
@@ -24,7 +24,7 @@ export function AppointmentCard({
 }: AppointmentCardProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   
-  // Get status badge
+  // Get status badge with consistent colors
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -41,7 +41,12 @@ export function AppointmentCard({
   const handleComplete = async () => {
     try {
       setIsProcessing(true);
-      await onComplete(appointment.id);
+      const success = await onComplete(appointment.id);
+      if (!success) {
+        throw new Error("Update operation failed");
+      }
+    } catch (error) {
+      console.error('Error completing appointment:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -50,7 +55,12 @@ export function AppointmentCard({
   const handleCancel = async () => {
     try {
       setIsProcessing(true);
-      await onCancel(appointment.id);
+      const success = await onCancel(appointment.id);
+      if (!success) {
+        throw new Error("Cancel operation failed");
+      }
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
     } finally {
       setIsProcessing(false);
     }

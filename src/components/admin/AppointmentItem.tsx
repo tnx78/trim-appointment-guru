@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,8 +9,8 @@ import { Appointment, Service } from '@/types';
 interface AppointmentItemProps {
   appointment: Appointment;
   service: Service | undefined;
-  onComplete: (id: string) => void;
-  onCancel: (id: string) => void;
+  onComplete: (id: string) => Promise<boolean>;
+  onCancel: (id: string) => Promise<boolean>;
 }
 
 export function AppointmentItem({ 
@@ -19,7 +19,9 @@ export function AppointmentItem({
   onComplete, 
   onCancel 
 }: AppointmentItemProps) {
-  // Get status badge
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Get status badge with consistent colors
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -34,11 +36,25 @@ export function AppointmentItem({
   };
 
   const handleComplete = async () => {
-    await onComplete(appointment.id);
+    try {
+      setIsProcessing(true);
+      await onComplete(appointment.id);
+    } catch (error) {
+      console.error('Error completing appointment:', error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleCancel = async () => {
-    await onCancel(appointment.id);
+    try {
+      setIsProcessing(true);
+      await onCancel(appointment.id);
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -65,18 +81,20 @@ export function AppointmentItem({
               variant="outline"
               className="flex items-center"
               onClick={handleComplete}
+              disabled={isProcessing}
             >
               <CheckCircle className="mr-1 h-4 w-4" />
-              Complete
+              {isProcessing ? 'Processing...' : 'Complete'}
             </Button>
             <Button
               size="sm"
               variant="outline"
               className="flex items-center text-destructive"
               onClick={handleCancel}
+              disabled={isProcessing}
             >
               <XCircle className="mr-1 h-4 w-4" />
-              Cancel
+              {isProcessing ? 'Processing...' : 'Cancel'}
             </Button>
           </>
         )}

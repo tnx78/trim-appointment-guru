@@ -52,24 +52,41 @@ export function useAppointmentManager() {
     fetchAppointments();
   }, [fetchAppointments]);
 
-  // Custom hook for appointment operations with refreshing
-  const appointmentOperations = useAppointmentOperations(appointments, setAppointments);
+  // Custom hook for appointment operations
+  const { bookAppointment, updateAppointment: performUpdate, cancelAppointment: performCancel } = 
+    useAppointmentOperations(appointments, setAppointments);
   
-  // Wrap the original operations to add refresh functionality
+  // Wrap operations to ensure database updates are completed and UI is refreshed
   const updateAppointment = async (id: string, data: Partial<Appointment>) => {
-    await appointmentOperations.updateAppointment(id, data);
-    // Refresh the appointments list after a short delay to ensure DB update is complete
-    setTimeout(() => {
-      fetchAppointments();
-    }, 300);
+    try {
+      // Update in database first
+      await performUpdate(id, data);
+      
+      // Force refresh appointments from database to ensure we have latest state
+      await fetchAppointments();
+      
+      return true;
+    } catch (error) {
+      console.error('Error in updateAppointment:', error);
+      toast.error('Failed to update appointment');
+      return false;
+    }
   };
   
   const cancelAppointment = async (id: string) => {
-    await appointmentOperations.cancelAppointment(id);
-    // Refresh the appointments list after a short delay to ensure DB update is complete
-    setTimeout(() => {
-      fetchAppointments();
-    }, 300);
+    try {
+      // Cancel in database first
+      await performCancel(id);
+      
+      // Force refresh appointments from database to ensure we have latest state
+      await fetchAppointments();
+      
+      return true;
+    } catch (error) {
+      console.error('Error in cancelAppointment:', error);
+      toast.error('Failed to cancel appointment');
+      return false;
+    }
   };
 
   // Use the extracted appointment queries
@@ -81,7 +98,7 @@ export function useAppointmentManager() {
   return {
     appointments,
     isLoading,
-    bookAppointment: appointmentOperations.bookAppointment,
+    bookAppointment,
     updateAppointment,
     cancelAppointment,
     getAppointmentsForDate,

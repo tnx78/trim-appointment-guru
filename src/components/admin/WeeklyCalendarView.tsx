@@ -18,8 +18,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface WeeklyCalendarViewProps {
   appointments: Appointment[];
   getServiceById: (id: string) => Service | undefined;
-  onComplete: (id: string) => void;
-  onCancel: (id: string) => void;
+  onComplete: (id: string) => Promise<boolean>;
+  onCancel: (id: string) => Promise<boolean>;
 }
 
 export function WeeklyCalendarView({
@@ -33,6 +33,7 @@ export function WeeklyCalendarView({
   const [showDetails, setShowDetails] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
   
   // Generate array of days for the week
   const weekDays = eachDayOfInterval({
@@ -97,13 +98,23 @@ export function WeeklyCalendarView({
   };
 
   const handleCompleteAppointment = async () => {
-    if (selectedAppointment) {
-      await onComplete(selectedAppointment.id);
-      // Update the selected appointment state to match the updated status
-      setSelectedAppointment({
-        ...selectedAppointment,
-        status: 'completed'
-      });
+    if (selectedAppointment && !isCompleting && !isCancelling) {
+      try {
+        setIsCompleting(true);
+        const success = await onComplete(selectedAppointment.id);
+        
+        if (success) {
+          // Update the selected appointment state to match the updated status
+          setSelectedAppointment({
+            ...selectedAppointment,
+            status: 'completed'
+          });
+        }
+      } catch (error) {
+        console.error('Error during completion:', error);
+      } finally {
+        setIsCompleting(false);
+      }
     }
   };
 
@@ -112,17 +123,22 @@ export function WeeklyCalendarView({
   };
 
   const handleCancelAppointment = async () => {
-    if (selectedAppointment && !isCancelling) {
+    if (selectedAppointment && !isCancelling && !isCompleting) {
       try {
         setIsCancelling(true);
-        await onCancel(selectedAppointment.id);
-        // Update the selected appointment state to match the updated status
-        setSelectedAppointment({
-          ...selectedAppointment,
-          status: 'cancelled'
-        });
-        setShowCancelDialog(false);
-        setShowDetails(false);
+        const success = await onCancel(selectedAppointment.id);
+        
+        if (success) {
+          // Update the selected appointment state to match the updated status
+          setSelectedAppointment({
+            ...selectedAppointment,
+            status: 'cancelled'
+          });
+          setShowCancelDialog(false);
+          setTimeout(() => {
+            setShowDetails(false);
+          }, 500);
+        }
       } catch (error) {
         console.error('Error during cancellation:', error);
       } finally {
@@ -247,7 +263,11 @@ export function WeeklyCalendarView({
       </CardContent>
 
       {/* Dialog for appointment details */}
-      <Dialog open={showDetails} onOpenChange={setShowDetails}>
+      <Dialog open={showDetails} onOpenChange={(open) => {
+        if (!isCancelling && !isCompleting) {
+          setShowDetails(open);
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Appointment Details</DialogTitle>
@@ -298,14 +318,16 @@ export function WeeklyCalendarView({
                     <Button 
                       onClick={handleCompleteAppointment}
                       variant="default"
+                      disabled={isCompleting || isCancelling}
                     >
-                      Mark Completed
+                      {isCompleting ? 'Processing...' : 'Mark Completed'}
                     </Button>
                     <Button 
                       onClick={handleOpenCancelDialog} 
                       variant="destructive"
+                      disabled={isCompleting || isCancelling}
                     >
-                      Cancel Appointment
+                      {isCancelling ? 'Processing...' : 'Cancel Appointment'}
                     </Button>
                   </>
                 )}
@@ -316,7 +338,14 @@ export function WeeklyCalendarView({
       </Dialog>
 
       {/* Confirmation dialog for cancellation */}
-      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+      <AlertDialog 
+        open={showCancelDialog} 
+        onOpenChange={(open) => {
+          if (!isCancelling) {
+            setShowCancelDialog(open);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel Appointment</AlertDialogTitle>
