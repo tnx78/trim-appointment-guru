@@ -11,8 +11,8 @@ interface AppointmentListCardProps {
   selectedDate: Date | undefined;
   showAllDates: boolean;
   getServiceById: (id: string) => Service | undefined;
-  onComplete: (id: string) => void;
-  onCancel: (id: string) => void;
+  onComplete: (id: string) => Promise<boolean>;
+  onCancel: (id: string) => Promise<boolean>;
   viewType: 'all' | 'upcoming' | 'past';
   onViewChange: (view: 'all' | 'upcoming' | 'past') => void;
   hideViewSwitch?: boolean; // Add this prop

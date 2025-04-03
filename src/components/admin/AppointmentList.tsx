@@ -66,13 +66,13 @@ export function AppointmentList() {
   const filteredAppointments = getFilteredAppointments();
 
   // Mark appointment as completed
-  const handleComplete = (id: string) => {
-    updateAppointment(id, { status: 'completed' });
+  const handleComplete = (id: string): Promise<boolean> => {
+    return updateAppointment(id, { status: 'completed' });
   };
 
   // Cancel appointment
-  const handleCancel = (id: string) => {
-    cancelAppointment(id);
+  const handleCancel = (id: string): Promise<boolean> => {
+    return cancelAppointment(id);
   };
 
   const handleDateSelect = (date: Date | undefined) => {
