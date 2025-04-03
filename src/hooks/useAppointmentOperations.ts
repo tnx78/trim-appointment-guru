@@ -4,8 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { mapAppointmentFromDB, mapAppointmentToDB } from '@/utils/dataMappers';
 import { toast } from 'sonner';
 import { scheduleEmailsForAppointment } from './useEmailScheduler';
+import { useAuth } from '@/context/AuthContext';
 
 export function useAppointmentOperations(appointments: Appointment[], setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>) {
+  const { isAdmin } = useAuth();
+  
   // Book a new appointment
   const bookAppointment = async (appointment: Omit<Appointment, 'id' | 'status'>) => {
     try {
@@ -59,6 +62,7 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
   const updateAppointment = async (id: string, updatedData: Partial<Appointment>): Promise<boolean> => {
     try {
       console.log('Updating appointment:', id, updatedData);
+      console.log('User is admin:', isAdmin);
       
       // Convert to snake_case for database
       const dbUpdatedData: any = {};
@@ -134,6 +138,7 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
   const cancelAppointment = async (id: string): Promise<boolean> => {
     try {
       console.log('Cancelling appointment:', id);
+      console.log('User is admin:', isAdmin);
       
       // Direct update with status = cancelled
       const { data, error } = await supabase

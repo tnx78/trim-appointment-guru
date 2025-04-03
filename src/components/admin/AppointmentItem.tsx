@@ -39,7 +39,10 @@ export function AppointmentItem({
   const handleComplete = async () => {
     try {
       setIsProcessing(true);
+      console.log('Starting completion for appointment:', appointment.id);
       const success = await onComplete(appointment.id);
+      console.log('Completion result:', success);
+      
       if (success) {
         setCurrentStatus('completed');
       }
@@ -53,7 +56,10 @@ export function AppointmentItem({
   const handleCancel = async () => {
     try {
       setIsProcessing(true);
+      console.log('Starting cancellation for appointment:', appointment.id);
       const success = await onCancel(appointment.id);
+      console.log('Cancellation result:', success);
+      
       if (success) {
         setCurrentStatus('cancelled');
       }
