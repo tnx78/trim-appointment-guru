@@ -20,6 +20,7 @@ export function AppointmentItem({
   onCancel 
 }: AppointmentItemProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState(appointment.status);
   
   // Get status badge with consistent colors
   const getStatusBadge = (status: string) => {
@@ -38,7 +39,10 @@ export function AppointmentItem({
   const handleComplete = async () => {
     try {
       setIsProcessing(true);
-      await onComplete(appointment.id);
+      const success = await onComplete(appointment.id);
+      if (success) {
+        setCurrentStatus('completed');
+      }
     } catch (error) {
       console.error('Error completing appointment:', error);
     } finally {
@@ -49,7 +53,10 @@ export function AppointmentItem({
   const handleCancel = async () => {
     try {
       setIsProcessing(true);
-      await onCancel(appointment.id);
+      const success = await onCancel(appointment.id);
+      if (success) {
+        setCurrentStatus('cancelled');
+      }
     } catch (error) {
       console.error('Error cancelling appointment:', error);
     } finally {
@@ -57,12 +64,15 @@ export function AppointmentItem({
     }
   };
 
+  // Use the local status state to ensure UI updates immediately
+  const status = currentStatus || appointment.status;
+
   return (
     <div className="flex items-center justify-between p-4 border rounded-lg">
       <div className="space-y-1">
         <div className="flex items-center space-x-2">
           <span className="font-medium">{appointment.clientName}</span>
-          {getStatusBadge(appointment.status)}
+          {getStatusBadge(status)}
         </div>
         <div className="text-sm text-muted-foreground">{service?.name}</div>
         <div className="flex items-center text-sm text-muted-foreground">
@@ -74,7 +84,7 @@ export function AppointmentItem({
         </div>
       </div>
       <div className="flex space-x-2">
-        {appointment.status === 'confirmed' && (
+        {status === 'confirmed' && (
           <>
             <Button
               size="sm"

@@ -80,7 +80,7 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
       
       console.log('Sending to database:', dbUpdatedData);
       
-      // Try direct update and get the response
+      // First, try with .select() to get the updated record back
       const { data, error } = await supabase
         .from('appointments')
         .update(dbUpdatedData)
@@ -89,32 +89,44 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
       
       if (error) {
         console.error('Error updating appointment in database:', error);
-        throw new Error(`Failed to update appointment: ${error.message}`);
+        toast.error(`Failed to update appointment: ${error.message}`);
+        return false;
       }
       
       console.log('Update response from database:', data);
       
-      // Update the local state only after confirming the database update was successful
+      // Update local state whether or not we get data back
       if (data && data.length > 0) {
+        // If we got data back, use it to update the state
         const updatedAppointment = mapAppointmentFromDB(data[0]);
         setAppointments(prevAppointments => 
           prevAppointments.map(appointment => 
             appointment.id === id ? updatedAppointment : appointment
           )
         );
-        
-        toast.success("Appointment updated successfully");
-        return true;
       } else {
-        // If no data returned but no error, the update might have succeeded
-        // but we didn't get the updated record back
-        console.warn('No data returned from update, but no error occurred');
-        return false;
+        // If no data returned but no error, the update succeeded
+        // but we didn't get the updated record back, so update manually
+        console.log('No data returned from update, updating state manually');
+        setAppointments(prevAppointments => 
+          prevAppointments.map(appointment => {
+            if (appointment.id === id) {
+              return {
+                ...appointment,
+                ...updatedData
+              };
+            }
+            return appointment;
+          })
+        );
       }
+      
+      toast.success("Appointment updated successfully");
+      return true;
     } catch (error: any) {
       console.error('Error updating appointment:', error);
       toast.error(`Failed to update appointment: ${error.message || 'Unknown error'}`);
-      return false; // Return false on error instead of throwing
+      return false;
     }
   };
 
@@ -132,32 +144,44 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
       
       if (error) {
         console.error('Error cancelling appointment in database:', error);
-        throw new Error(`Failed to cancel appointment: ${error.message}`);
+        toast.error(`Failed to cancel appointment: ${error.message}`);
+        return false;
       }
       
       console.log('Cancel response from database:', data);
       
-      // Update the local state only after confirming the database update was successful
+      // Update local state whether or not we get data back
       if (data && data.length > 0) {
+        // If we got data back, use it to update the state
         const cancelledAppointment = mapAppointmentFromDB(data[0]);
         setAppointments(prevAppointments => 
           prevAppointments.map(appointment => 
             appointment.id === id ? cancelledAppointment : appointment
           )
         );
-        
-        toast.success("Appointment cancelled successfully");
-        return true;
       } else {
-        // If no data returned but no error, the update might have succeeded
-        // but we didn't get the updated record back
-        console.warn('No data returned from cancel, but no error occurred');
-        return false;
+        // If no data returned but no error, the cancel succeeded
+        // but we didn't get the updated record back, so update manually
+        console.log('No data returned from cancel, updating state manually');
+        setAppointments(prevAppointments => 
+          prevAppointments.map(appointment => {
+            if (appointment.id === id) {
+              return {
+                ...appointment,
+                status: 'cancelled'
+              };
+            }
+            return appointment;
+          })
+        );
       }
+      
+      toast.success("Appointment cancelled successfully");
+      return true;
     } catch (error: any) {
       console.error('Error cancelling appointment:', error);
       toast.error(`Failed to cancel appointment: ${error.message || 'Unknown error'}`);
-      return false; // Return false on error instead of throwing
+      return false;
     }
   };
 

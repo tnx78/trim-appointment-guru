@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, isSameDay, addWeeks, subWeeks } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -98,7 +97,7 @@ export function WeeklyCalendarView({
   };
 
   const handleCompleteAppointment = async () => {
-    if (selectedAppointment && !isCompleting && !isCancelling) {
+    if (selectedAppointment && !isCompleting) {
       try {
         setIsCompleting(true);
         const success = await onComplete(selectedAppointment.id);
@@ -123,7 +122,7 @@ export function WeeklyCalendarView({
   };
 
   const handleCancelAppointment = async () => {
-    if (selectedAppointment && !isCancelling && !isCompleting) {
+    if (selectedAppointment && !isCancelling) {
       try {
         setIsCancelling(true);
         const success = await onCancel(selectedAppointment.id);
@@ -134,13 +133,21 @@ export function WeeklyCalendarView({
             ...selectedAppointment,
             status: 'cancelled'
           });
+          
+          // Close the cancel dialog first
           setShowCancelDialog(false);
+          
+          // Then close the details dialog after a short delay
           setTimeout(() => {
             setShowDetails(false);
           }, 500);
+        } else {
+          // If unsuccessful, just close the cancel dialog
+          setShowCancelDialog(false);
         }
       } catch (error) {
         console.error('Error during cancellation:', error);
+        setShowCancelDialog(false);
       } finally {
         setIsCancelling(false);
       }
