@@ -7,7 +7,7 @@ import { scheduleEmailsForAppointment } from './useEmailScheduler';
 import { useAuth } from '@/context/AuthContext';
 
 export function useAppointmentOperations(appointments: Appointment[], setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>) {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   
   // Book a new appointment
   const bookAppointment = async (appointment: Omit<Appointment, 'id' | 'status'>) => {
@@ -18,6 +18,11 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
         ...appointment,
         status: 'confirmed' as const
       });
+      
+      // Add user_id if the current user is not an admin
+      if (user?.id && !isAdmin) {
+        dbAppointment.user_id = user.id;
+      }
       
       console.log('Transformed for DB:', dbAppointment);
       
@@ -35,6 +40,9 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
       if (data && data.length > 0) {
         console.log('Appointment booked successfully:', data[0]);
         const newAppointment = mapAppointmentFromDB(data[0]);
+        
+        // The real-time subscription should handle this now
+        // but we'll still update state for immediate UI feedback
         setAppointments(prev => [...prev, newAppointment]);
         
         // Schedule emails for the appointment
@@ -77,9 +85,14 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
       
       // Handle date conversion for the database
       if (updatedData.date !== undefined) {
-        dbUpdatedData.date = updatedData.date instanceof Date 
-          ? updatedData.date.toISOString().split('T')[0] 
-          : updatedData.date;
+        if (updatedData.date instanceof Date) {
+          const year = updatedData.date.getFullYear();
+          const month = String(updatedData.date.getMonth() + 1).padStart(2, '0');
+          const day = String(updatedData.date.getDate()).padStart(2, '0');
+          dbUpdatedData.date = `${year}-${month}-${day}`;
+        } else {
+          dbUpdatedData.date = updatedData.date;
+        }
       }
       
       console.log('Sending to database:', dbUpdatedData);
@@ -99,7 +112,8 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
       
       console.log('Update response from database:', data);
       
-      // Update local state whether or not we get data back
+      // The real-time subscription should handle updating the state
+      // but we'll still update local state for immediate UI feedback
       if (data && data.length > 0) {
         // If we got data back, use it to update the state
         const updatedAppointment = mapAppointmentFromDB(data[0]);
@@ -155,7 +169,8 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
       
       console.log('Cancel response from database:', data);
       
-      // Update local state whether or not we get data back
+      // The real-time subscription should handle updating the state
+      // but we'll still update local state for immediate UI feedback
       if (data && data.length > 0) {
         // If we got data back, use it to update the state
         const cancelledAppointment = mapAppointmentFromDB(data[0]);

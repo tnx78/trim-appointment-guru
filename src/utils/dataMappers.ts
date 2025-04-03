@@ -1,3 +1,4 @@
+
 import { Service, ServiceCategory, Appointment } from '@/types';
 
 // Helper functions to convert between snake_case and camelCase
@@ -46,20 +47,29 @@ export const mapCategoryFromDB = (dbCategory: any): ServiceCategory => {
   };
 };
 
-// Preserve the original date when mapping from DB without timezone conversion
+// Improved date handling to prevent timezone issues
 export const mapAppointmentFromDB = (dbAppointment: any): Appointment => {
-  // Create a date from the date string but keep it as the date that was selected
-  // This preserves the chosen date regardless of timezone
+  // Get the date string from the database
   const dateStr = dbAppointment.date;
-  let date = new Date(dateStr);
+  let date;
   
-  // Ensure we're using the date as it appears in the database without timezone adjustment
+  // Create date object directly from components to avoid timezone issues
   if (dateStr && typeof dateStr === 'string') {
     const [year, month, day] = dateStr.split('-').map(Number);
-    // Create date object with the exact year, month, day from the database
-    // Month is 0-based in JavaScript Date
-    date = new Date(year, month - 1, day);
+    // Create date with UTC to prevent any timezone shifts
+    date = new Date(Date.UTC(year, month - 1, day));
+    // Then convert to local date representation without changing day
+    date = new Date(date.toDateString());
+  } else {
+    date = new Date();
+    console.error('Invalid date format in appointment:', dbAppointment);
   }
+  
+  console.log('Mapping appointment from DB:', {
+    original: dateStr,
+    parsed: date,
+    formatted: date.toISOString().split('T')[0]
+  });
 
   return {
     id: dbAppointment.id,
@@ -74,19 +84,24 @@ export const mapAppointmentFromDB = (dbAppointment: any): Appointment => {
   };
 };
 
-// Convert camelCase object to snake_case for database and handle date properly
+// Improved date handling when saving to database
 export const mapAppointmentToDB = (appointment: Omit<Appointment, 'id' | 'status'> & { status?: string }): any => {
-  // Format the date consistently for the database to prevent timezone issues
   let formattedDate;
   
   if (appointment.date instanceof Date) {
-    // Format as YYYY-MM-DD to preserve the selected date
+    // Format date in YYYY-MM-DD format, ensuring we use the date's local representation
     const year = appointment.date.getFullYear();
     const month = String(appointment.date.getMonth() + 1).padStart(2, '0');
     const day = String(appointment.date.getDate()).padStart(2, '0');
     formattedDate = `${year}-${month}-${day}`;
+    
+    console.log('Mapping appointment to DB:', {
+      date: appointment.date,
+      formatted: formattedDate
+    });
   } else {
     formattedDate = appointment.date;
+    console.log('Using non-Date object for appointment date:', formattedDate);
   }
 
   return {

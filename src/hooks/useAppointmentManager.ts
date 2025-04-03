@@ -52,27 +52,57 @@ export function useAppointmentManager() {
     fetchAppointments();
   }, [fetchAppointments]);
 
-  // Set up realtime subscription for appointments
+  // Enhanced realtime subscription for appointments
   useEffect(() => {
-    // Subscribe to changes in the appointments table
+    console.log('Setting up realtime subscription for appointments...');
+    
+    // Create a channel for listening to all appointment changes
     const channel = supabase
-      .channel('appointments-changes')
+      .channel('appointments-realtime')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'appointments' },
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'appointments' 
+        },
         (payload) => {
           console.log('Realtime appointment change detected:', payload);
-          // Refresh the appointments list when any changes happen
-          fetchAppointments();
+          
+          // Handle different types of changes
+          if (payload.eventType === 'INSERT') {
+            const newAppointment = mapAppointmentFromDB(payload.new);
+            console.log('Adding new appointment to state:', newAppointment);
+            setAppointments(current => [...current, newAppointment]);
+          } 
+          else if (payload.eventType === 'UPDATE') {
+            const updatedAppointment = mapAppointmentFromDB(payload.new);
+            console.log('Updating appointment in state:', updatedAppointment);
+            setAppointments(current => 
+              current.map(appointment => 
+                appointment.id === updatedAppointment.id ? updatedAppointment : appointment
+              )
+            );
+          }
+          else if (payload.eventType === 'DELETE') {
+            const deletedId = payload.old.id;
+            console.log('Removing appointment from state:', deletedId);
+            setAppointments(current => 
+              current.filter(appointment => appointment.id !== deletedId)
+            );
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Appointment realtime subscription status:', status);
+      });
 
     // Cleanup subscription on unmount
     return () => {
+      console.log('Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
-  }, [fetchAppointments]);
+  }, []);
 
   // Custom hook for appointment operations
   const { bookAppointment, updateAppointment: performUpdate, cancelAppointment: performCancel } = 
@@ -85,7 +115,9 @@ export function useAppointmentManager() {
       const result = await performUpdate(id, data);
       
       // Force refresh appointments from database to ensure we have latest state
-      await fetchAppointments();
+      if (!result) {
+        await fetchAppointments();
+      }
       
       return result;
     } catch (error) {
@@ -101,7 +133,9 @@ export function useAppointmentManager() {
       const result = await performCancel(id);
       
       // Force refresh appointments from database to ensure we have latest state
-      await fetchAppointments();
+      if (!result) {
+        await fetchAppointments();
+      }
       
       return result;
     } catch (error) {

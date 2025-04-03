@@ -4,29 +4,43 @@ import { Appointment } from '@/types';
 export function useAppointmentQueries(appointments: Appointment[]) {
   // Get appointments for a specific date
   const getAppointmentsForDate = (date: Date) => {
-    return appointments.filter(appointment => 
-      appointment.date.toDateString() === date.toDateString() && 
-      appointment.status !== 'cancelled'
-    );
+    return appointments.filter(appointment => {
+      // Normalize both dates to compare only year, month, day
+      const appointmentDate = appointment.date instanceof Date 
+        ? appointment.date 
+        : new Date(appointment.date);
+      
+      // Compare only the date portions (year, month, day)
+      const appDateStr = appointmentDate.toDateString();
+      const targetDateStr = date.toDateString();
+      
+      return appDateStr === targetDateStr && appointment.status !== 'cancelled';
+    });
   };
 
   // Get all dates that have appointments
   const getAppointmentDates = () => {
-    // Filter out cancelled appointments and create a unique list of dates
-    const uniqueDates = new Set();
-    const datesWithAppointments = appointments
-      .filter(appointment => appointment.status !== 'cancelled')
-      .map(appointment => {
-        const dateString = appointment.date.toDateString();
-        if (!uniqueDates.has(dateString)) {
-          uniqueDates.add(dateString);
-          return appointment.date;
-        }
-        return null;
-      })
-      .filter(Boolean) as Date[];
+    // Create a Set to track unique dates
+    const uniqueDateStrings = new Set<string>();
+    const uniqueDates: Date[] = [];
     
-    return datesWithAppointments;
+    // Filter out cancelled appointments and extract unique dates
+    appointments
+      .filter(appointment => appointment.status !== 'cancelled')
+      .forEach(appointment => {
+        const appDate = appointment.date instanceof Date 
+          ? appointment.date 
+          : new Date(appointment.date);
+        
+        const dateString = appDate.toDateString();
+        
+        if (!uniqueDateStrings.has(dateString)) {
+          uniqueDateStrings.add(dateString);
+          uniqueDates.push(new Date(dateString));
+        }
+      });
+    
+    return uniqueDates;
   };
 
   return {
