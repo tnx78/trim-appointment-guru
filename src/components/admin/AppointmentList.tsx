@@ -58,13 +58,23 @@ export function AppointmentList() {
   const filteredAppointments = getFilteredAppointments();
 
   const handleComplete = async (id: string): Promise<boolean> => {
-    const result = await updateAppointment(id, { status: 'completed' });
-    return result;
+    try {
+      const result = await updateAppointment(id, { status: 'completed' });
+      return result === true;
+    } catch (error) {
+      console.error('Error completing appointment:', error);
+      return false;
+    }
   };
 
   const handleCancel = async (id: string): Promise<boolean> => {
-    const result = await cancelAppointment(id);
-    return result;
+    try {
+      const result = await cancelAppointment(id);
+      return result === true;
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      return false;
+    }
   };
 
   const handleDateSelect = (date: Date | undefined) => {
