@@ -11,6 +11,7 @@ interface DateFilterCardProps {
   onDateSelect: (date: Date | undefined) => void;
   onToggleAllDates: (showAll: boolean) => void;
   appointmentDates?: Date[];
+  hideToggle?: boolean;
 }
 
 export function DateFilterCard({ 
@@ -18,7 +19,8 @@ export function DateFilterCard({
   showAllDates, 
   onDateSelect, 
   onToggleAllDates,
-  appointmentDates = []
+  appointmentDates = [],
+  hideToggle = false
 }: DateFilterCardProps) {
   // Create a Map with date strings as keys for faster lookup
   const datesWithAppointments = appointmentDates.reduce((acc, date) => {
@@ -48,44 +50,44 @@ export function DateFilterCard({
   return (
     <Card className="md:w-auto">
       <CardHeader>
-        <CardTitle className="text-lg">Date Filter</CardTitle>
-        <CardDescription>Select a date or view all appointments</CardDescription>
+        <CardTitle className="text-lg">Date Selection</CardTitle>
+        <CardDescription>Select a date to view appointments</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center space-x-2">
-          <Button 
-            variant={showAllDates ? "default" : "outline"} 
-            size="sm"
-            onClick={() => onToggleAllDates(true)}
-            className="flex items-center"
-          >
-            <CalendarDays className="mr-1 h-4 w-4" />
-            All Dates
-          </Button>
-          <Button 
-            variant={!showAllDates ? "default" : "outline"} 
-            size="sm"
-            onClick={() => onToggleAllDates(false)}
-            className="flex items-center"
-          >
-            <CalendarDays className="mr-1 h-4 w-4" />
-            Specific Date
-          </Button>
-        </div>
-        
-        {!showAllDates && (
-          <div className="rounded-md border">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={onDateSelect}
-              initialFocus
-              className="pointer-events-auto"
-              modifiers={modifiers}
-              modifiersClassNames={modifiersClassNames}
-            />
+        {!hideToggle && (
+          <div className="flex items-center space-x-2">
+            <Button 
+              variant={showAllDates ? "default" : "outline"} 
+              size="sm"
+              onClick={() => onToggleAllDates(true)}
+              className="flex items-center"
+            >
+              <CalendarDays className="mr-1 h-4 w-4" />
+              All Dates
+            </Button>
+            <Button 
+              variant={!showAllDates ? "default" : "outline"} 
+              size="sm"
+              onClick={() => onToggleAllDates(false)}
+              className="flex items-center"
+            >
+              <CalendarDays className="mr-1 h-4 w-4" />
+              Specific Date
+            </Button>
           </div>
         )}
+        
+        <div className="rounded-md border">
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={onDateSelect}
+            initialFocus
+            className="pointer-events-auto"
+            modifiers={modifiers}
+            modifiersClassNames={modifiersClassNames}
+          />
+        </div>
       </CardContent>
     </Card>
   );

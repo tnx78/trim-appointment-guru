@@ -7,7 +7,7 @@ import { AppointmentListCard } from './AppointmentListCard';
 import { WeeklyCalendarView } from './WeeklyCalendarView';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, List } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 
 export function AppointmentList() {
   const { getServiceById } = useServiceContext();
@@ -20,8 +20,7 @@ export function AppointmentList() {
   
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [view, setView] = useState<'all' | 'upcoming' | 'past'>('upcoming');
-  const [showAllDates, setShowAllDates] = useState(true);
-  const [displayMode, setDisplayMode] = useState<'list' | 'calendar'>('calendar');
+  const [displayMode, setDisplayMode] = useState<'weekly' | 'specific'>('weekly');
 
   // Get dates with appointments for calendar indicators - filter out cancelled appointments
   const appointmentDates = appointments
@@ -33,29 +32,34 @@ export function AppointmentList() {
   today.setHours(0, 0, 0, 0);
 
   // Filter appointments based on the selected view and date filter
-  const filteredAppointments = appointments.filter(appointment => {
-    // Make a new date object to compare only the date portion
-    const appointmentDate = appointment.date instanceof Date 
-      ? appointment.date 
-      : new Date(appointment.date);
-    appointmentDate.setHours(0, 0, 0, 0);
-    
-    // If showAllDates is true, don't filter by date
-    const dateMatches = showAllDates || 
-      (selectedDate && appointmentDate.getTime() === selectedDate.getTime());
-    
-    if (!dateMatches) return false;
-    
-    switch (view) {
-      case 'upcoming':
-        return (appointmentDate.getTime() >= today.getTime() && appointment.status !== 'cancelled');
-      case 'past':
-        return (appointmentDate.getTime() < today.getTime() || appointment.status === 'completed');
-      case 'all':
-      default:
-        return true;
-    }
-  });
+  const getFilteredAppointments = () => {
+    return appointments.filter(appointment => {
+      // Make a new date object to compare only the date portion
+      const appointmentDate = appointment.date instanceof Date 
+        ? appointment.date 
+        : new Date(appointment.date);
+      appointmentDate.setHours(0, 0, 0, 0);
+      
+      // If in weekly view, no date filtering
+      // If in specific date view, filter by selected date
+      const dateMatches = displayMode === 'weekly' || 
+        (selectedDate && appointmentDate.getTime() === selectedDate.getTime());
+      
+      if (!dateMatches) return false;
+      
+      switch (view) {
+        case 'upcoming':
+          return (appointmentDate.getTime() >= today.getTime() && appointment.status !== 'cancelled');
+        case 'past':
+          return (appointmentDate.getTime() < today.getTime() || appointment.status === 'completed');
+        case 'all':
+        default:
+          return true;
+      }
+    });
+  };
+
+  const filteredAppointments = getFilteredAppointments();
 
   // Mark appointment as completed
   const handleComplete = (id: string) => {
@@ -69,24 +73,11 @@ export function AppointmentList() {
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
-    if (date) {
-      setShowAllDates(false);
-      // When a specific date is selected, switch to list view
-      setDisplayMode('list');
-    }
   };
 
-  const handleToggleAllDates = (showAll: boolean) => {
-    setShowAllDates(showAll);
-    if (showAll) {
-      // When showing all dates, use calendar view by default
-      setDisplayMode('calendar');
-    }
-  };
-
-  // Toggle between list and calendar views
+  // Toggle between weekly calendar and specific date view
   const toggleDisplayMode = () => {
-    setDisplayMode(prev => prev === 'list' ? 'calendar' : 'list');
+    setDisplayMode(prev => prev === 'weekly' ? 'specific' : 'weekly');
   };
 
   return (
@@ -95,38 +86,16 @@ export function AppointmentList() {
         <h2 className="text-2xl font-semibold">Appointment Management</h2>
         
         <div className="flex items-center gap-2">
-          {/* View mode toggle */}
+          {/* Toggle between weekly and specific date view */}
           <Button 
-            variant="outline" 
+            variant={displayMode === 'specific' ? "default" : "outline"} 
             size="sm"
             onClick={toggleDisplayMode}
             className="flex items-center gap-2"
           >
-            {displayMode === 'calendar' ? (
-              <>
-                <List className="h-4 w-4" />
-                List View
-              </>
-            ) : (
-              <>
-                <CalendarDays className="h-4 w-4" />
-                Calendar View
-              </>
-            )}
+            <CalendarDays className="h-4 w-4" />
+            Specific Date
           </Button>
-          
-          {/* Show specific date button (only visible in calendar mode) */}
-          {displayMode === 'calendar' && (
-            <Button 
-              variant={!showAllDates ? "default" : "outline"} 
-              size="sm"
-              onClick={() => handleToggleAllDates(false)}
-              className="flex items-center gap-2"
-            >
-              <CalendarDays className="h-4 w-4" />
-              Specific Date
-            </Button>
-          )}
           
           {/* Appointment count badge */}
           <Badge variant="secondary" className="ml-2">
@@ -135,54 +104,41 @@ export function AppointmentList() {
         </div>
       </div>
       
-      <div className="flex flex-col gap-6">
-        {!showAllDates && displayMode === 'calendar' && (
-          <DateFilterCard 
-            selectedDate={selectedDate} 
-            showAllDates={showAllDates}
-            onDateSelect={handleDateSelect}
-            onToggleAllDates={handleToggleAllDates}
-            appointmentDates={appointmentDates}
+      <div className="space-y-6">
+        {displayMode === 'weekly' ? (
+          <WeeklyCalendarView 
+            appointments={filteredAppointments}
+            getServiceById={getServiceById}
+            onComplete={handleComplete}
+            onCancel={handleCancel}
           />
-        )}
-        
-        <div className="w-full">
-          {displayMode === 'calendar' ? (
-            <WeeklyCalendarView 
-              appointments={filteredAppointments}
-              getServiceById={getServiceById}
-              onComplete={handleComplete}
-              onCancel={handleCancel}
-            />
-          ) : (
-            <div className="flex gap-6">
-              {!showAllDates && (
-                <div className="w-1/3">
-                  <DateFilterCard 
-                    selectedDate={selectedDate} 
-                    showAllDates={showAllDates}
-                    onDateSelect={handleDateSelect}
-                    onToggleAllDates={handleToggleAllDates}
-                    appointmentDates={appointmentDates}
-                  />
-                </div>
-              )}
-              
-              <div className={showAllDates ? "w-full" : "w-2/3"}>
-                <AppointmentListCard 
-                  appointments={filteredAppointments}
-                  selectedDate={selectedDate}
-                  showAllDates={showAllDates}
-                  getServiceById={getServiceById}
-                  onComplete={handleComplete}
-                  onCancel={handleCancel}
-                  viewType={view}
-                  onViewChange={setView}
-                />
-              </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-1">
+              <DateFilterCard 
+                selectedDate={selectedDate} 
+                showAllDates={false}
+                onDateSelect={handleDateSelect}
+                onToggleAllDates={() => {}}
+                appointmentDates={appointmentDates}
+                hideToggle={true}
+              />
             </div>
-          )}
-        </div>
+            
+            <div className="md:col-span-2">
+              <AppointmentListCard 
+                appointments={filteredAppointments}
+                selectedDate={selectedDate}
+                showAllDates={false}
+                getServiceById={getServiceById}
+                onComplete={handleComplete}
+                onCancel={handleCancel}
+                viewType={view}
+                onViewChange={setView}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

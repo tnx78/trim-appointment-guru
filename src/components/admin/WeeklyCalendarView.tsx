@@ -1,11 +1,19 @@
 
 import React, { useState } from 'react';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, parseISO, isSameDay, addWeeks, subWeeks } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, isSameDay, addWeeks, subWeeks } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Appointment, Service } from '@/types';
-import { AppointmentCard } from './AppointmentCard';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface WeeklyCalendarViewProps {
   appointments: Appointment[];
@@ -22,7 +30,9 @@ export function WeeklyCalendarView({
 }: WeeklyCalendarViewProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-
+  const [showDetails, setShowDetails] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  
   // Generate array of days for the week
   const weekDays = eachDayOfInterval({
     start: currentWeekStart,
@@ -60,7 +70,7 @@ export function WeeklyCalendarView({
     display: `${i + 9}:00`
   }));
 
-  // Helper function to parse time string to minutes since midnight
+  // Parse time string to minutes since midnight
   const timeToMinutes = (timeString: string) => {
     const [hours, minutes] = timeString.split(':').map(Number);
     return hours * 60 + minutes;
@@ -82,23 +92,56 @@ export function WeeklyCalendarView({
 
   const handleAppointmentClick = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
+    setShowDetails(true);
   };
 
-  // Process appointments to avoid duplicates
-  const processAppointmentsForDay = (day: Date) => {
-    const dayAppointments = getAppointmentsForDay(day);
-    const processedAppointments = new Map();
+  const handleCompleteAppointment = () => {
+    if (selectedAppointment) {
+      onComplete(selectedAppointment.id);
+      setShowDetails(false);
+    }
+  };
+
+  const handleOpenCancelDialog = () => {
+    setShowCancelDialog(true);
+  };
+
+  const handleCancelAppointment = () => {
+    if (selectedAppointment) {
+      onCancel(selectedAppointment.id);
+      setShowCancelDialog(false);
+      setShowDetails(false);
+    }
+  };
+
+  // Create a map to track rendered appointments
+  // This will help us prevent duplicate renders of the same appointment
+  const createDayAppointmentMap = () => {
+    const appointmentMap = new Map<string, Appointment[]>();
     
-    dayAppointments.forEach(appointment => {
-      const key = `${appointment.clientName}-${appointment.serviceId}-${appointment.startTime}`;
+    weekDays.forEach(day => {
+      const dayKey = format(day, 'yyyy-MM-dd');
+      const dayAppointments = getAppointmentsForDay(day);
       
-      if (!processedAppointments.has(key)) {
-        processedAppointments.set(key, appointment);
-      }
+      // Group appointments by client+service to merge duplicates
+      const groupedAppointments = new Map<string, Appointment>();
+      
+      dayAppointments.forEach(appointment => {
+        const key = `${appointment.clientName}-${appointment.serviceId}-${appointment.startTime}`;
+        
+        // If this is the first occurrence of this appointment, store it
+        if (!groupedAppointments.has(key)) {
+          groupedAppointments.set(key, appointment);
+        }
+      });
+      
+      appointmentMap.set(dayKey, Array.from(groupedAppointments.values()));
     });
     
-    return Array.from(processedAppointments.values());
+    return appointmentMap;
   };
+
+  const dayAppointmentMap = createDayAppointmentMap();
 
   return (
     <Card className="w-full">
@@ -139,67 +182,146 @@ export function WeeklyCalendarView({
                 <div className="p-2 font-medium border-r text-center">
                   {slot.display}
                 </div>
-                {weekDays.map((day) => (
-                  <div key={day.toString()} className="border-r relative">
-                    {/* Render appointments for this day and time */}
-                    {processAppointmentsForDay(day).map((appointment) => {
-                      const service = getServiceById(appointment.serviceId);
-                      const startMinutes = timeToMinutes(appointment.startTime);
-                      const endMinutes = timeToMinutes(appointment.endTime);
-                      const appointmentStartHour = Math.floor(startMinutes / 60);
-                      const appointmentEndHour = Math.ceil(endMinutes / 60);
-                      const color = getAppointmentColor(appointment.status);
-                      
-                      // Only render if this appointment falls within this time slot's hour
-                      if (appointmentStartHour <= slot.hour && appointmentEndHour > slot.hour) {
-                        // Calculate position within the hour cell
-                        const topOffset = startMinutes >= slot.hour * 60 
-                          ? (startMinutes - slot.hour * 60) 
-                          : 0;
+                {weekDays.map((day) => {
+                  const dayKey = format(day, 'yyyy-MM-dd');
+                  const dayAppointments = dayAppointmentMap.get(dayKey) || [];
+                  
+                  return (
+                    <div key={day.toString()} className="border-r relative">
+                      {dayAppointments.map((appointment) => {
+                        const service = getServiceById(appointment.serviceId);
+                        const startMinutes = timeToMinutes(appointment.startTime);
+                        const endMinutes = timeToMinutes(appointment.endTime);
+                        const slotStartMinutes = slot.hour * 60;
+                        const slotEndMinutes = (slot.hour + 1) * 60;
                         
-                        // Calculate height within this cell
-                        const bottomTime = Math.min(endMinutes, (slot.hour + 1) * 60);
-                        const height = bottomTime - Math.max(startMinutes, slot.hour * 60);
-                        
-                        return (
-                          <div
-                            key={appointment.id}
-                            onClick={() => handleAppointmentClick(appointment)}
-                            className={`absolute left-0 right-0 mx-1 rounded px-2 py-1 text-white cursor-pointer transition-colors ${color}`}
-                            style={{
-                              top: `${topOffset}px`,
-                              height: `${height}px`,
-                              overflow: 'hidden',
-                              zIndex: 10
-                            }}
-                          >
-                            <div className="text-sm font-semibold truncate">{appointment.clientName}</div>
-                            <div className="text-xs truncate">{service?.name}</div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })}
-                  </div>
-                ))}
+                        // Check if this appointment falls within this time slot
+                        if (startMinutes < slotEndMinutes && endMinutes > slotStartMinutes) {
+                          // Calculate position within the hour cell
+                          const topOffset = Math.max(0, startMinutes - slotStartMinutes);
+                          const height = Math.min(60, Math.min(endMinutes, slotEndMinutes) - Math.max(startMinutes, slotStartMinutes));
+                          const color = getAppointmentColor(appointment.status);
+                          
+                          // Only render if the appointment starts in this slot
+                          // This prevents duplicate renders across hour boundaries
+                          if (startMinutes >= slotStartMinutes && startMinutes < slotEndMinutes) {
+                            return (
+                              <div
+                                key={appointment.id}
+                                onClick={() => handleAppointmentClick(appointment)}
+                                className={`absolute left-0 right-0 mx-1 rounded px-2 py-1 text-white cursor-pointer transition-colors ${color}`}
+                                style={{
+                                  top: `${topOffset}px`,
+                                  height: `${height}px`,
+                                  overflow: 'hidden',
+                                  zIndex: 10
+                                }}
+                              >
+                                <div className="text-sm font-semibold truncate">{appointment.clientName}</div>
+                                <div className="text-xs truncate">{service?.name}</div>
+                              </div>
+                            );
+                          }
+                        }
+                        return null;
+                      })}
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>
         </div>
-
-        {/* Appointment detail card */}
-        {selectedAppointment && (
-          <div className="mt-4">
-            <AppointmentCard
-              appointment={selectedAppointment}
-              service={getServiceById(selectedAppointment.serviceId)}
-              onClose={() => setSelectedAppointment(null)}
-              onComplete={onComplete}
-              onCancel={onCancel}
-            />
-          </div>
-        )}
       </CardContent>
+
+      {/* Dialog for appointment details */}
+      <Dialog open={showDetails} onOpenChange={setShowDetails}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Appointment Details</DialogTitle>
+          </DialogHeader>
+          {selectedAppointment && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="text-sm font-medium">Client:</div>
+                <div className="text-sm">{selectedAppointment.clientName}</div>
+                
+                <div className="text-sm font-medium">Service:</div>
+                <div className="text-sm">{getServiceById(selectedAppointment.serviceId)?.name}</div>
+                
+                <div className="text-sm font-medium">Date:</div>
+                <div className="text-sm">
+                  {selectedAppointment.date instanceof Date 
+                    ? format(selectedAppointment.date, 'MMMM dd, yyyy') 
+                    : format(new Date(selectedAppointment.date), 'MMMM dd, yyyy')}
+                </div>
+                
+                <div className="text-sm font-medium">Time:</div>
+                <div className="text-sm">{selectedAppointment.startTime} - {selectedAppointment.endTime}</div>
+                
+                <div className="text-sm font-medium">Status:</div>
+                <div className="text-sm">
+                  <Badge 
+                    variant={selectedAppointment.status === 'cancelled' ? 'destructive' : 'default'}
+                  >
+                    {selectedAppointment.status.charAt(0).toUpperCase() + selectedAppointment.status.slice(1)}
+                  </Badge>
+                </div>
+                
+                <div className="text-sm font-medium">Phone:</div>
+                <div className="text-sm">{selectedAppointment.phone}</div>
+                
+                <div className="text-sm font-medium">Email:</div>
+                <div className="text-sm">{selectedAppointment.email}</div>
+                
+                {selectedAppointment.notes && (
+                  <>
+                    <div className="text-sm font-medium">Notes:</div>
+                    <div className="text-sm">{selectedAppointment.notes}</div>
+                  </>
+                )}
+              </div>
+              
+              <div className="flex justify-end space-x-2 pt-4">
+                {selectedAppointment.status !== 'cancelled' && selectedAppointment.status !== 'completed' && (
+                  <>
+                    <Button 
+                      onClick={handleCompleteAppointment}
+                      variant="default"
+                    >
+                      Mark Completed
+                    </Button>
+                    <Button 
+                      onClick={handleOpenCancelDialog} 
+                      variant="destructive"
+                    >
+                      Cancel Appointment
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation dialog for cancellation */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Appointment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this appointment? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, Keep It</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelAppointment} className="bg-red-600 hover:bg-red-700">
+              Yes, Cancel It
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
