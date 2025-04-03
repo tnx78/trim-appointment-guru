@@ -52,6 +52,28 @@ export function useAppointmentManager() {
     fetchAppointments();
   }, [fetchAppointments]);
 
+  // Set up realtime subscription for appointments
+  useEffect(() => {
+    // Subscribe to changes in the appointments table
+    const channel = supabase
+      .channel('appointments-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments' },
+        (payload) => {
+          console.log('Realtime appointment change detected:', payload);
+          // Refresh the appointments list when any changes happen
+          fetchAppointments();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchAppointments]);
+
   // Custom hook for appointment operations
   const { bookAppointment, updateAppointment: performUpdate, cancelAppointment: performCancel } = 
     useAppointmentOperations(appointments, setAppointments);

@@ -1,4 +1,3 @@
-
 import { Service, ServiceCategory, Appointment } from '@/types';
 
 // Helper functions to convert between snake_case and camelCase
@@ -47,29 +46,55 @@ export const mapCategoryFromDB = (dbCategory: any): ServiceCategory => {
   };
 };
 
-// Convert snake_case database record to camelCase object
+// Preserve the original date when mapping from DB without timezone conversion
 export const mapAppointmentFromDB = (dbAppointment: any): Appointment => {
+  // Create a date from the date string but keep it as the date that was selected
+  // This preserves the chosen date regardless of timezone
+  const dateStr = dbAppointment.date;
+  let date = new Date(dateStr);
+  
+  // Ensure we're using the date as it appears in the database without timezone adjustment
+  if (dateStr && typeof dateStr === 'string') {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    // Create date object with the exact year, month, day from the database
+    // Month is 0-based in JavaScript Date
+    date = new Date(year, month - 1, day);
+  }
+
   return {
     id: dbAppointment.id,
     serviceId: dbAppointment.service_id,
     clientName: dbAppointment.client_name,
     clientEmail: dbAppointment.client_email,
     clientPhone: dbAppointment.client_phone,
-    date: new Date(dbAppointment.date),
+    date: date,
     startTime: dbAppointment.start_time,
     endTime: dbAppointment.end_time,
     status: dbAppointment.status as 'pending' | 'confirmed' | 'cancelled' | 'completed'
   };
 };
 
-// Convert camelCase object to snake_case for database
+// Convert camelCase object to snake_case for database and handle date properly
 export const mapAppointmentToDB = (appointment: Omit<Appointment, 'id' | 'status'> & { status?: string }): any => {
+  // Format the date consistently for the database to prevent timezone issues
+  let formattedDate;
+  
+  if (appointment.date instanceof Date) {
+    // Format as YYYY-MM-DD to preserve the selected date
+    const year = appointment.date.getFullYear();
+    const month = String(appointment.date.getMonth() + 1).padStart(2, '0');
+    const day = String(appointment.date.getDate()).padStart(2, '0');
+    formattedDate = `${year}-${month}-${day}`;
+  } else {
+    formattedDate = appointment.date;
+  }
+
   return {
     service_id: appointment.serviceId,
     client_name: appointment.clientName,
     client_email: appointment.clientEmail,
     client_phone: appointment.clientPhone,
-    date: appointment.date instanceof Date ? appointment.date.toISOString().split('T')[0] : appointment.date,
+    date: formattedDate,
     start_time: appointment.startTime,
     end_time: appointment.endTime,
     status: appointment.status || 'confirmed'

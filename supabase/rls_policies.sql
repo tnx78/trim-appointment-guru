@@ -21,3 +21,11 @@ TO authenticated
 USING (
   user_id = auth.uid()
 );
+
+-- Add policy for users to create appointments without a user_id
+CREATE POLICY "Users can create appointments without user_id"
+ON public.appointments
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
