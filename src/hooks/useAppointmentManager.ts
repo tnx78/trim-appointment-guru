@@ -57,15 +57,15 @@ export function useAppointmentManager() {
     useAppointmentOperations(appointments, setAppointments);
   
   // Wrap operations to ensure database updates are completed and UI is refreshed
-  const updateAppointment = async (id: string, data: Partial<Appointment>) => {
+  const updateAppointment = async (id: string, data: Partial<Appointment>): Promise<boolean> => {
     try {
       // Update in database first
-      await performUpdate(id, data);
+      const result = await performUpdate(id, data);
       
       // Force refresh appointments from database to ensure we have latest state
       await fetchAppointments();
       
-      return true;
+      return result;
     } catch (error) {
       console.error('Error in updateAppointment:', error);
       toast.error('Failed to update appointment');
@@ -73,15 +73,15 @@ export function useAppointmentManager() {
     }
   };
   
-  const cancelAppointment = async (id: string) => {
+  const cancelAppointment = async (id: string): Promise<boolean> => {
     try {
       // Cancel in database first
-      await performCancel(id);
+      const result = await performCancel(id);
       
       // Force refresh appointments from database to ensure we have latest state
       await fetchAppointments();
       
-      return true;
+      return result;
     } catch (error) {
       console.error('Error in cancelAppointment:', error);
       toast.error('Failed to cancel appointment');

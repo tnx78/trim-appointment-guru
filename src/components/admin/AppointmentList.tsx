@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useServiceContext } from '@/context/ServiceContext';
 import { useAppointmentContext } from '@/context/AppointmentContext';
@@ -59,9 +58,7 @@ export function AppointmentList() {
 
   const handleComplete = async (id: string): Promise<boolean> => {
     try {
-      await updateAppointment(id, { status: 'completed' });
-      // Since updateAppointment doesn't return a value, we'll return true if no exception occurs
-      return true;
+      return await updateAppointment(id, { status: 'completed' });
     } catch (error) {
       console.error('Error completing appointment:', error);
       return false;
@@ -70,9 +67,7 @@ export function AppointmentList() {
 
   const handleCancel = async (id: string): Promise<boolean> => {
     try {
-      await cancelAppointment(id);
-      // Since cancelAppointment doesn't return a value, we'll return true if no exception occurs
-      return true;
+      return await cancelAppointment(id);
     } catch (error) {
       console.error('Error cancelling appointment:', error);
       return false;

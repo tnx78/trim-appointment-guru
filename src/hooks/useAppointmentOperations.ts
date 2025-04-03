@@ -56,7 +56,7 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
   };
 
   // Update an existing appointment
-  const updateAppointment = async (id: string, updatedData: Partial<Appointment>) => {
+  const updateAppointment = async (id: string, updatedData: Partial<Appointment>): Promise<boolean> => {
     try {
       console.log('Updating appointment:', id, updatedData);
       
@@ -114,12 +114,12 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
     } catch (error: any) {
       console.error('Error updating appointment:', error);
       toast.error(`Failed to update appointment: ${error.message || 'Unknown error'}`);
-      throw error; // Rethrow to allow caller to handle
+      return false; // Return false on error instead of throwing
     }
   };
 
   // Cancel an appointment
-  const cancelAppointment = async (id: string) => {
+  const cancelAppointment = async (id: string): Promise<boolean> => {
     try {
       console.log('Cancelling appointment:', id);
       
@@ -157,7 +157,7 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
     } catch (error: any) {
       console.error('Error cancelling appointment:', error);
       toast.error(`Failed to cancel appointment: ${error.message || 'Unknown error'}`);
-      throw error; // Rethrow to allow caller to handle
+      return false; // Return false on error instead of throwing
     }
   };
 

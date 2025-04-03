@@ -14,8 +14,8 @@ interface AppointmentContextType {
 
   // Actions
   bookAppointment: (appointment: Omit<Appointment, 'id' | 'status'>) => Promise<string | null>;
-  updateAppointment: (id: string, appointment: Partial<Appointment>) => Promise<boolean>; // Updated return type
-  cancelAppointment: (id: string) => Promise<boolean>; // Updated return type
+  updateAppointment: (id: string, appointment: Partial<Appointment>) => Promise<boolean>;
+  cancelAppointment: (id: string) => Promise<boolean>;
   
   selectDate: (date: Date) => void;
   selectTime: (time: string) => void;
