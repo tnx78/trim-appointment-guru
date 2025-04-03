@@ -257,7 +257,11 @@ export function WeeklyCalendarView({
                 <div className="text-sm font-medium">Status:</div>
                 <div className="text-sm">
                   <Badge 
-                    variant={selectedAppointment.status === 'cancelled' ? 'destructive' : 'default'}
+                    className={
+                      selectedAppointment.status === 'confirmed' ? "bg-green-500" :
+                      selectedAppointment.status === 'cancelled' ? "bg-red-400" :
+                      selectedAppointment.status === 'completed' ? "bg-purple-500" : ""
+                    }
                   >
                     {selectedAppointment.status.charAt(0).toUpperCase() + selectedAppointment.status.slice(1)}
                   </Badge>

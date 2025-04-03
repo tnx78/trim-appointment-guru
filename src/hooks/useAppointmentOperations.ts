@@ -60,7 +60,7 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
     try {
       console.log('Updating appointment:', id, updatedData);
       
-      // Convert camelCase to snake_case for fields that need to be updated
+      // Convert to snake_case for database
       const dbUpdatedData: any = {};
       
       if (updatedData.serviceId !== undefined) dbUpdatedData.service_id = updatedData.serviceId;
@@ -78,6 +78,7 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
           : updatedData.date;
       }
       
+      // Make sure to wait for the database update to complete
       const { error } = await supabase
         .from('appointments')
         .update(dbUpdatedData)
@@ -89,11 +90,14 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
         return;
       }
       
-      setAppointments(appointments.map(appointment => 
-        appointment.id === id 
-          ? { ...appointment, ...updatedData } 
-          : appointment
-      ));
+      // Update the local state only after confirming the database update was successful
+      setAppointments(prevAppointments => 
+        prevAppointments.map(appointment => 
+          appointment.id === id 
+            ? { ...appointment, ...updatedData } 
+            : appointment
+        )
+      );
       
       toast.success("Appointment updated successfully");
     } catch (error: any) {
@@ -107,6 +111,7 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
     try {
       console.log('Cancelling appointment:', id);
       
+      // Make sure to wait for the database update to complete
       const { error } = await supabase
         .from('appointments')
         .update({ status: 'cancelled' })
@@ -118,11 +123,14 @@ export function useAppointmentOperations(appointments: Appointment[], setAppoint
         return;
       }
       
-      setAppointments(appointments.map(appointment => 
-        appointment.id === id 
-          ? { ...appointment, status: 'cancelled' as const } 
-          : appointment
-      ));
+      // Update the local state only after confirming the database update was successful
+      setAppointments(prevAppointments => 
+        prevAppointments.map(appointment => 
+          appointment.id === id 
+            ? { ...appointment, status: 'cancelled' as const } 
+            : appointment
+        )
+      );
       
       toast.success("Appointment cancelled successfully");
     } catch (error: any) {

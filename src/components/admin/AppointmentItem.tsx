@@ -25,9 +25,9 @@ export function AppointmentItem({
       case 'confirmed':
         return <Badge className="bg-green-500">Confirmed</Badge>;
       case 'cancelled':
-        return <Badge variant="destructive">Cancelled</Badge>;
+        return <Badge className="bg-red-400">Cancelled</Badge>;
       case 'completed':
-        return <Badge className="bg-salon-400">Completed</Badge>;
+        return <Badge className="bg-purple-500">Completed</Badge>;
       default:
         return <Badge variant="outline">Pending</Badge>;
     }
