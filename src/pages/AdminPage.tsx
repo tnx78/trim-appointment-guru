@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CategoriesTab } from '@/components/admin/CategoriesTab';
@@ -10,7 +9,7 @@ import { EmailTemplatesTab } from '@/components/admin/EmailTemplatesTab';
 import { GalleryTab } from '@/components/admin/GalleryTab';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Calendar, Category, ChevronRight, Clock, Gallery, LogOut, Mail, Settings, Sparkles } from 'lucide-react';
+import { Calendar, FolderOpen, ChevronRight, Clock, ImageIcon, LogOut, Mail, Settings, Sparkles } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -31,7 +30,6 @@ export default function AdminPage() {
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState("appointments");
   
-  // Log auth state for debugging
   useEffect(() => {
     console.log('AdminPage auth state:', { 
       isAuthenticated, 
@@ -41,12 +39,10 @@ export default function AdminPage() {
     });
   }, [isAuthenticated, isAdmin, loading, user]);
   
-  // This will help for showing tabs on mobile
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
   
-  // Display loading state
   if (loading) {
     return (
       <div className="container py-10 flex justify-center">
@@ -55,14 +51,12 @@ export default function AdminPage() {
     );
   }
 
-  // If not authenticated, redirect to auth page
   if (!isAuthenticated) {
     console.log('User not authenticated, redirecting to auth page');
     toast.error('Please log in to access the admin panel');
     return <Navigate to="/auth" />;
   }
   
-  // If authenticated but not admin, redirect to home with error message
   if (!isAdmin) {
     console.log('User authenticated but not admin, redirecting to home');
     toast.error('You do not have permission to access the admin panel');
@@ -79,15 +73,14 @@ export default function AdminPage() {
     }
   };
 
-  // Admin navigation items with icons
   const tabItems = [
     { id: "appointments", label: "Appointments", icon: <Calendar className="h-5 w-5" /> },
     { id: "services", label: "Services", icon: <Sparkles className="h-5 w-5" /> },
-    { id: "categories", label: "Categories", icon: <Category className="h-5 w-5" /> },
+    { id: "categories", label: "Categories", icon: <FolderOpen className="h-5 w-5" /> },
     { id: "hours", label: "Opening Hours", icon: <Clock className="h-5 w-5" /> },
     { id: "daysoff", label: "Days Off", icon: <Calendar className="h-5 w-5" /> },
     { id: "emails", label: "Emails", icon: <Mail className="h-5 w-5" /> },
-    { id: "gallery", label: "Gallery", icon: <Gallery className="h-5 w-5" /> }
+    { id: "gallery", label: "Gallery", icon: <ImageIcon className="h-5 w-5" /> }
   ];
 
   return (
@@ -116,7 +109,6 @@ export default function AdminPage() {
                   <DrawerTitle className="text-center">Admin Navigation</DrawerTitle>
                 </DrawerHeader>
                 <div className="flex flex-col p-4">
-                  {/* User info */}
                   <div className="flex items-center gap-3 mb-4 p-2 bg-muted/30 rounded-lg">
                     <Avatar>
                       <AvatarFallback>
@@ -131,7 +123,6 @@ export default function AdminPage() {
                   
                   <Separator className="my-2" />
                   
-                  {/* Navigation items with icons */}
                   {tabItems.map((tab) => (
                     <DrawerClose asChild key={tab.id}>
                       <Button 
