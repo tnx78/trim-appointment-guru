@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Clock, DollarSign } from 'lucide-react';
 import { BookingProgressBar } from './BookingProgressBar';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useRef, useEffect } from 'react';
 
 export function ServiceList({ onServiceSelect }: { onServiceSelect?: () => void }) {
   const { categories } = useCategoryContext();
   const { services } = useServiceContext();
   const { selectService } = useBookingContext();
   const isMobile = useIsMobile();
+  const tabsListRef = useRef<HTMLDivElement>(null);
 
   const handleSelectService = (serviceId: string) => {
     const service = services.find(s => s.id === serviceId);
@@ -24,6 +26,65 @@ export function ServiceList({ onServiceSelect }: { onServiceSelect?: () => void 
     }
   };
 
+  // Add horizontal scrolling to the tabs on mobile
+  useEffect(() => {
+    if (isMobile && tabsListRef.current) {
+      const tabsList = tabsListRef.current;
+      let isDown = false;
+      let startX: number;
+      let scrollLeft: number;
+
+      const handleMouseDown = (e: MouseEvent | TouchEvent) => {
+        isDown = true;
+        if ('clientX' in e) {
+          startX = e.clientX - tabsList.offsetLeft;
+        } else {
+          startX = e.touches[0].clientX - tabsList.offsetLeft;
+        }
+        scrollLeft = tabsList.scrollLeft;
+      };
+
+      const handleMouseUp = () => {
+        isDown = false;
+      };
+
+      const handleMouseLeave = () => {
+        isDown = false;
+      };
+
+      const handleMouseMove = (e: MouseEvent | TouchEvent) => {
+        if (!isDown) return;
+        e.preventDefault();
+        let x: number;
+        if ('clientX' in e) {
+          x = e.clientX - tabsList.offsetLeft;
+        } else {
+          x = e.touches[0].clientX - tabsList.offsetLeft;
+        }
+        const walk = (x - startX) * 2;
+        tabsList.scrollLeft = scrollLeft - walk;
+      };
+
+      tabsList.addEventListener('mousedown', handleMouseDown);
+      tabsList.addEventListener('touchstart', handleMouseDown);
+      tabsList.addEventListener('mouseup', handleMouseUp);
+      tabsList.addEventListener('touchend', handleMouseUp);
+      tabsList.addEventListener('mouseleave', handleMouseLeave);
+      tabsList.addEventListener('mousemove', handleMouseMove);
+      tabsList.addEventListener('touchmove', handleMouseMove);
+
+      return () => {
+        tabsList.removeEventListener('mousedown', handleMouseDown);
+        tabsList.removeEventListener('touchstart', handleMouseDown);
+        tabsList.removeEventListener('mouseup', handleMouseUp);
+        tabsList.removeEventListener('touchend', handleMouseUp);
+        tabsList.removeEventListener('mouseleave', handleMouseLeave);
+        tabsList.removeEventListener('mousemove', handleMouseMove);
+        tabsList.removeEventListener('touchmove', handleMouseMove);
+      };
+    }
+  }, [isMobile]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -34,14 +95,23 @@ export function ServiceList({ onServiceSelect }: { onServiceSelect?: () => void 
 
       {categories.length > 0 ? (
         <Tabs defaultValue={categories[0]?.id} className="w-full">
-          <TabsList className={`overflow-auto ${isMobile ? 'grid-cols-1 flex' : 'grid'}`} 
-            style={!isMobile ? { gridTemplateColumns: `repeat(${categories.length}, minmax(0, 1fr))` } : undefined}>
-            {categories.map((category) => (
-              <TabsTrigger key={category.id} value={category.id} className="whitespace-nowrap px-4">
-                {category.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="relative">
+            <TabsList 
+              className={`overflow-x-auto scrollbar-hide ${isMobile ? 'flex justify-start p-1' : 'grid'}`}
+              style={!isMobile ? { gridTemplateColumns: `repeat(${categories.length}, minmax(0, 1fr))` } : {}}
+              ref={tabsListRef}
+            >
+              {categories.map((category) => (
+                <TabsTrigger 
+                  key={category.id} 
+                  value={category.id} 
+                  className={`whitespace-nowrap px-4 ${isMobile ? 'flex-shrink-0' : ''}`}
+                >
+                  {category.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
           
           {categories.map((category) => {
             const categoryServices = services.filter(service => service.categoryId === category.id);
