@@ -13,10 +13,27 @@ export function NavBar() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
-  // Get first letter of user name for avatar
+  // Get first letter of user name for avatar or use profile picture from social login
   const getInitials = () => {
-    if (!user?.email) return '?';
-    return user.email.charAt(0).toUpperCase();
+    if (!user) return '?';
+    
+    // Check if full_name is available in user metadata
+    const fullName = user.user_metadata?.full_name || user.user_metadata?.name;
+    if (fullName) return fullName.charAt(0).toUpperCase();
+    
+    // Fallback to email
+    return user.email ? user.email.charAt(0).toUpperCase() : '?';
+  };
+
+  // Get user profile image from social login providers if available
+  const getProfileImage = () => {
+    if (!user) return undefined;
+    
+    // Check various locations where avatar/picture might be stored
+    return user.user_metadata?.avatar_url || 
+           user.user_metadata?.picture ||
+           user.user_metadata?.avatar ||
+           undefined;
   };
 
   const handleLogout = async () => {
@@ -106,7 +123,7 @@ export function NavBar() {
               {/* Show Account avatar for all logged in users */}
               <Link to="/account">
                 <Avatar>
-                  <AvatarImage src={user?.user_metadata?.avatar || undefined} />
+                  <AvatarImage src={getProfileImage()} />
                   <AvatarFallback>{getInitials()}</AvatarFallback>
                 </Avatar>
               </Link>

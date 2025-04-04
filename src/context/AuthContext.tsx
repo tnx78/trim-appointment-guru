@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +11,8 @@ interface AuthContextType {
   register: (email: string, password: string, fullName: string, phone?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isAdmin: boolean;
+  loginWithGoogle: () => Promise<void>;
+  loginWithFacebook: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -169,6 +170,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithGoogle = async (): Promise<void> => {
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      
+      if (error) {
+        console.error('Google login error:', error);
+        toast.error(error.message || 'Failed to login with Google');
+      }
+    } catch (error: any) {
+      console.error('Google login error:', error);
+      toast.error(error.message || 'Failed to login with Google');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginWithFacebook = async (): Promise<void> => {
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      
+      if (error) {
+        console.error('Facebook login error:', error);
+        toast.error(error.message || 'Failed to login with Facebook');
+      }
+    } catch (error: any) {
+      console.error('Facebook login error:', error);
+      toast.error(error.message || 'Failed to login with Facebook');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = async (): Promise<void> => {
     try {
       setLoading(true);
@@ -205,7 +252,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login, 
       register, 
       logout, 
-      isAdmin 
+      isAdmin,
+      loginWithGoogle,
+      loginWithFacebook
     }}>
       {children}
     </AuthContext.Provider>
