@@ -34,14 +34,28 @@ export function ServiceList({ onServiceSelect }: { onServiceSelect?: () => void 
 
       {categories.length > 0 ? (
         <Tabs defaultValue={categories[0]?.id} className="w-full">
-          <TabsList className={`overflow-auto ${isMobile ? 'grid-cols-1 flex' : 'grid'}`} 
-            style={!isMobile ? { gridTemplateColumns: `repeat(${categories.length}, minmax(0, 1fr))` } : undefined}>
-            {categories.map((category) => (
-              <TabsTrigger key={category.id} value={category.id} className="whitespace-nowrap px-4">
-                {category.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="relative">
+            <TabsList 
+              className={`overflow-x-auto ${isMobile ? 'flex whitespace-nowrap px-0' : 'grid'} no-scrollbar`}
+              style={!isMobile ? { gridTemplateColumns: `repeat(${categories.length}, minmax(0, 1fr))` } : undefined}>
+              {categories.map((category) => (
+                <TabsTrigger 
+                  key={category.id} 
+                  value={category.id} 
+                  className={`${isMobile ? 'min-w-max flex-shrink-0 px-4' : ''}`}
+                >
+                  {category.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {/* Gradient fades for scroll indication on mobile */}
+            {isMobile && (
+              <>
+                <div className="absolute top-0 left-0 h-full w-4 bg-gradient-to-r from-background to-transparent pointer-events-none" />
+                <div className="absolute top-0 right-0 h-full w-4 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+              </>
+            )}
+          </div>
           
           {categories.map((category) => {
             const categoryServices = services.filter(service => service.categoryId === category.id);
@@ -53,7 +67,7 @@ export function ServiceList({ onServiceSelect }: { onServiceSelect?: () => void 
                     <CardTitle>{category.name}</CardTitle>
                     <CardDescription>{category.description}</CardDescription>
                   </CardHeader>
-                  <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {categoryServices.map((service) => (
                       <Card key={service.id} className="overflow-hidden">
                         {service.image && (
@@ -80,7 +94,7 @@ export function ServiceList({ onServiceSelect }: { onServiceSelect?: () => void 
                           </div>
                           <Button 
                             onClick={() => handleSelectService(service.id)} 
-                            className="w-full text-xs md:text-sm py-1 md:py-2"
+                            className="w-full"
                             size={isMobile ? "sm" : "default"}
                           >
                             Select

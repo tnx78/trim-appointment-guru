@@ -10,7 +10,7 @@ import { EmailTemplatesTab } from '@/components/admin/EmailTemplatesTab';
 import { GalleryTab } from '@/components/admin/GalleryTab';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
+import { Calendar, Category, ChevronRight, Clock, Gallery, LogOut, Mail, Settings, Sparkles } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -22,6 +22,8 @@ import {
   DrawerTitle,
   DrawerTrigger 
 } from "@/components/ui/drawer";
+import { Separator } from '@/components/ui/separator';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function AdminPage() {
   const { isAuthenticated, logout, isAdmin, loading, user } = useAuth();
@@ -77,14 +79,15 @@ export default function AdminPage() {
     }
   };
 
+  // Admin navigation items with icons
   const tabItems = [
-    { id: "appointments", label: "Appointments" },
-    { id: "services", label: "Services" },
-    { id: "categories", label: "Categories" },
-    { id: "hours", label: "Opening Hours" },
-    { id: "daysoff", label: "Days Off" },
-    { id: "emails", label: "Emails" },
-    { id: "gallery", label: "Gallery" }
+    { id: "appointments", label: "Appointments", icon: <Calendar className="h-5 w-5" /> },
+    { id: "services", label: "Services", icon: <Sparkles className="h-5 w-5" /> },
+    { id: "categories", label: "Categories", icon: <Category className="h-5 w-5" /> },
+    { id: "hours", label: "Opening Hours", icon: <Clock className="h-5 w-5" /> },
+    { id: "daysoff", label: "Days Off", icon: <Calendar className="h-5 w-5" /> },
+    { id: "emails", label: "Emails", icon: <Mail className="h-5 w-5" /> },
+    { id: "gallery", label: "Gallery", icon: <Gallery className="h-5 w-5" /> }
   ];
 
   return (
@@ -102,23 +105,41 @@ export default function AdminPage() {
           <div className="flex justify-between items-center mb-4">
             <Drawer>
               <DrawerTrigger asChild>
-                <Button variant="outline" className="w-full flex justify-between">
-                  {tabItems.find(tab => tab.id === activeTab)?.label}
-                  <ChevronRight className="h-4 w-4 ml-2" />
+                <Button variant="outline" className="w-full flex justify-between items-center">
+                  {tabItems.find(tab => tab.id === activeTab)?.icon}
+                  <span className="mx-2">{tabItems.find(tab => tab.id === activeTab)?.label}</span>
+                  <ChevronRight className="h-4 w-4 ml-auto" />
                 </Button>
               </DrawerTrigger>
-              <DrawerContent>
+              <DrawerContent className="max-h-[85vh]">
                 <DrawerHeader>
-                  <DrawerTitle>Select Section</DrawerTitle>
+                  <DrawerTitle className="text-center">Admin Navigation</DrawerTitle>
                 </DrawerHeader>
                 <div className="flex flex-col p-4">
+                  {/* User info */}
+                  <div className="flex items-center gap-3 mb-4 p-2 bg-muted/30 rounded-lg">
+                    <Avatar>
+                      <AvatarFallback>
+                        {user?.email?.charAt(0).toUpperCase() || 'A'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium text-sm">{user?.email}</p>
+                      <p className="text-xs text-muted-foreground">Administrator</p>
+                    </div>
+                  </div>
+                  
+                  <Separator className="my-2" />
+                  
+                  {/* Navigation items with icons */}
                   {tabItems.map((tab) => (
                     <DrawerClose asChild key={tab.id}>
                       <Button 
                         variant={activeTab === tab.id ? "default" : "ghost"} 
-                        className="w-full justify-start mb-1" 
+                        className="w-full justify-start mb-1 gap-3" 
                         onClick={() => setActiveTab(tab.id)}
                       >
+                        {tab.icon}
                         {tab.label}
                       </Button>
                     </DrawerClose>
@@ -142,7 +163,10 @@ export default function AdminPage() {
         <Tabs defaultValue="appointments" className="w-full" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-7">
             {tabItems.map((tab) => (
-              <TabsTrigger key={tab.id} value={tab.id}>{tab.label}</TabsTrigger>
+              <TabsTrigger key={tab.id} value={tab.id} className="flex gap-2 items-center">
+                {tab.icon}
+                <span>{tab.label}</span>
+              </TabsTrigger>
             ))}
           </TabsList>
           

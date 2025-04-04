@@ -6,8 +6,9 @@ import { useAuth } from '@/context/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from '@/components/ui/navigation-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Menu, X } from 'lucide-react';
+import { Home, Camera, Menu, LogOut, User, Book, Grid3X3 } from 'lucide-react';
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
 
 export function NavBar() {
   const { isAuthenticated, user, logout, isAdmin, loading } = useAuth();
@@ -47,7 +48,7 @@ export function NavBar() {
     }
   };
 
-  // Navigation items shared between desktop and mobile views
+  // Navigation items with icons for both desktop and mobile views
   const navigationItems = (closeMenu?: () => void) => (
     <>
       <NavigationMenuItem>
@@ -103,6 +104,30 @@ export function NavBar() {
     </>
   );
 
+  // Mobile navigation items with icons
+  const mobileNavigationItems = [
+    { name: "Home", icon: <Home className="h-5 w-5" />, path: "/" },
+    { name: "Services", icon: <Book className="h-5 w-5" />, path: "/services" },
+    { name: "Gallery", icon: <Camera className="h-5 w-5" />, path: "/gallery" },
+  ];
+
+  // Add conditional items
+  if (isAuthenticated && !isAdmin) {
+    mobileNavigationItems.push({ 
+      name: "My Bookings", 
+      icon: <Grid3X3 className="h-5 w-5" />, 
+      path: "/my-appointments" 
+    });
+  }
+
+  if (isAuthenticated && isAdmin) {
+    mobileNavigationItems.push({ 
+      name: "Admin Panel", 
+      icon: <User className="h-5 w-5" />, 
+      path: "/admin" 
+    });
+  }
+
   return (
     <header className="border-b">
       <div className="container mx-auto px-4 flex justify-between items-center py-3">
@@ -128,7 +153,7 @@ export function NavBar() {
 
           {loading ? (
             <Button variant="ghost" size="icon" disabled>
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
             </Button>
           ) : isAuthenticated ? (
             <div className="flex items-center gap-3">
@@ -149,7 +174,7 @@ export function NavBar() {
             </Link>
           )}
 
-          {/* Mobile burger menu */}
+          {/* Mobile burger menu with beautiful slide-in drawer */}
           {isMobile && (
             <Sheet>
               <SheetTrigger asChild>
@@ -157,34 +182,81 @@ export function NavBar() {
                   <Menu className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[75vw] sm:max-w-xs">
-                <SheetHeader>
-                  <SheetTitle>Menu</SheetTitle>
-                </SheetHeader>
-                <div className="py-4">
-                  <nav className="flex flex-col space-y-4">
-                    <NavigationMenu orientation="vertical" className="w-full">
-                      <NavigationMenuList className="flex-col items-start space-y-2 w-full">
-                        {navigationItems(() => {})}
-                      </NavigationMenuList>
-                    </NavigationMenu>
-                    <div className="pt-4 flex flex-col space-y-4">
-                      <Link to="/services" className="w-full">
-                        <Button variant="default" className="w-full">Book Now</Button>
+              <SheetContent side="right" className="w-[75vw] sm:max-w-xs flex flex-col p-0">
+                {/* Profile section at the top */}
+                <div className="px-4 py-6 flex flex-col items-center bg-muted/40">
+                  {isAuthenticated ? (
+                    <>
+                      <Avatar className="h-16 w-16 mb-2">
+                        <AvatarImage src={getProfileImage()} />
+                        <AvatarFallback className="text-lg">{getInitials()}</AvatarFallback>
+                      </Avatar>
+                      <p className="text-sm font-medium">
+                        {user?.user_metadata?.full_name || 
+                         user?.user_metadata?.name || 
+                         user?.email || 'User'}
+                      </p>
+                      <Link to="/account" className="text-xs text-muted-foreground mt-1">
+                        View Profile
                       </Link>
-                      {!loading && !isAuthenticated && (
-                        <Link to="/auth" className="w-full">
-                          <Button variant="outline" className="w-full">Login</Button>
-                        </Link>
-                      )}
-                      {!loading && isAuthenticated && (
-                        <Button variant="outline" className="w-full" onClick={handleLogout}>
-                          Logout
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <Avatar className="h-16 w-16 mb-2">
+                        <AvatarFallback className="text-lg">?</AvatarFallback>
+                      </Avatar>
+                      <Link to="/auth">
+                        <Button variant="outline" size="sm" className="mt-2">
+                          Sign In
                         </Button>
-                      )}
+                      </Link>
                     </div>
+                  )}
+                </div>
+
+                {/* Navigation menu */}
+                <div className="flex-1 overflow-auto py-2 px-2">
+                  <nav className="flex flex-col">
+                    {mobileNavigationItems.map((item) => (
+                      <SheetClose asChild key={item.name}>
+                        <Link 
+                          to={item.path} 
+                          className="flex items-center gap-3 px-4 py-3 text-base rounded-lg hover:bg-accent"
+                        >
+                          {item.icon}
+                          <span>{item.name}</span>
+                        </Link>
+                      </SheetClose>
+                    ))}
                   </nav>
                 </div>
+
+                {/* Book Now button */}
+                <div className="px-4 py-3">
+                  <SheetClose asChild>
+                    <Link to="/services" className="w-full block">
+                      <Button className="w-full" size="lg">
+                        Book Now
+                      </Button>
+                    </Link>
+                  </SheetClose>
+                </div>
+
+                {/* Logout at the bottom */}
+                {isAuthenticated && (
+                  <div className="p-4 border-t">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start text-muted-foreground"
+                      onClick={() => {
+                        handleLogout();
+                      }}
+                    >
+                      <LogOut className="mr-2 h-5 w-5" />
+                      Logout
+                    </Button>
+                  </div>
+                )}
               </SheetContent>
             </Sheet>
           )}
