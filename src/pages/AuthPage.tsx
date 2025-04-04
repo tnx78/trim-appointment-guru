@@ -95,11 +95,19 @@ export default function AuthPage() {
   };
 
   const handleGoogleLogin = async () => {
-    await loginWithGoogle();
+    try {
+      await loginWithGoogle();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to login with Google");
+    }
   };
 
   const handleFacebookLogin = async () => {
-    await loginWithFacebook();
+    try {
+      await loginWithFacebook();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to login with Facebook");
+    }
   };
 
   return (
