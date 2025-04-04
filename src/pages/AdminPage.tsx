@@ -10,7 +10,7 @@ import { EmailTemplatesTab } from '@/components/admin/EmailTemplatesTab';
 import { GalleryTab } from '@/components/admin/GalleryTab';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, LogOut } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -42,7 +42,7 @@ export default function AdminPage() {
   // This will help for showing tabs on mobile
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [activeTab]);
+  }, []);
   
   // Display loading state
   if (loading) {
@@ -99,70 +99,33 @@ export default function AdminPage() {
 
       {isMobile ? (
         <div className="w-full">
-          <div className="flex flex-col mb-4 gap-2">
-            <div className="flex justify-between items-center">
-              <Drawer>
-                <DrawerTrigger asChild>
-                  <Button variant="outline" className="w-full flex justify-between">
-                    {tabItems.find(tab => tab.id === activeTab)?.label}
-                    <span className="ml-1 text-xs bg-primary text-primary-foreground rounded-full px-2 py-0.5">
-                      {tabItems.indexOf(tabItems.find(tab => tab.id === activeTab) || tabItems[0]) + 1}/{tabItems.length}
-                    </span>
-                  </Button>
-                </DrawerTrigger>
-                <DrawerContent className="h-[70vh]">
-                  <DrawerHeader>
-                    <DrawerTitle>Select Section</DrawerTitle>
-                  </DrawerHeader>
-                  <div className="flex flex-col p-4">
-                    {tabItems.map((tab) => (
-                      <DrawerClose asChild key={tab.id}>
-                        <Button 
-                          variant={activeTab === tab.id ? "default" : "ghost"} 
-                          className="w-full justify-start mb-1 text-left" 
-                          onClick={() => setActiveTab(tab.id)}
-                        >
-                          {tab.label}
-                        </Button>
-                      </DrawerClose>
-                    ))}
-                  </div>
-                </DrawerContent>
-              </Drawer>
-            </div>
-            
-            <div className="flex justify-between">
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="w-[49%]"
-                onClick={() => {
-                  const currentIndex = tabItems.findIndex(tab => tab.id === activeTab);
-                  if (currentIndex > 0) {
-                    setActiveTab(tabItems[currentIndex - 1].id);
-                  }
-                }}
-                disabled={tabItems.findIndex(tab => tab.id === activeTab) === 0}
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Previous
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="w-[49%]"
-                onClick={() => {
-                  const currentIndex = tabItems.findIndex(tab => tab.id === activeTab);
-                  if (currentIndex < tabItems.length - 1) {
-                    setActiveTab(tabItems[currentIndex + 1].id);
-                  }
-                }}
-                disabled={tabItems.findIndex(tab => tab.id === activeTab) === tabItems.length - 1}
-              >
-                Next
-                <ChevronLeft className="h-4 w-4 ml-1 rotate-180" />
-              </Button>
-            </div>
+          <div className="flex justify-between items-center mb-4">
+            <Drawer>
+              <DrawerTrigger asChild>
+                <Button variant="outline" className="w-full flex justify-between">
+                  {tabItems.find(tab => tab.id === activeTab)?.label}
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Select Section</DrawerTitle>
+                </DrawerHeader>
+                <div className="flex flex-col p-4">
+                  {tabItems.map((tab) => (
+                    <DrawerClose asChild key={tab.id}>
+                      <Button 
+                        variant={activeTab === tab.id ? "default" : "ghost"} 
+                        className="w-full justify-start mb-1" 
+                        onClick={() => setActiveTab(tab.id)}
+                      >
+                        {tab.label}
+                      </Button>
+                    </DrawerClose>
+                  ))}
+                </div>
+              </DrawerContent>
+            </Drawer>
           </div>
           
           <div className="pt-2">
