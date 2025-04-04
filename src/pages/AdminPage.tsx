@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CategoriesTab } from '@/components/admin/CategoriesTab';
 import { ServicesTab } from '@/components/admin/ServicesTab';
@@ -10,13 +10,24 @@ import { EmailTemplatesTab } from '@/components/admin/EmailTemplatesTab';
 import { GalleryTab } from '@/components/admin/GalleryTab';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { 
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger 
+} from "@/components/ui/drawer";
 
 export default function AdminPage() {
   const { isAuthenticated, logout, isAdmin, loading, user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState("appointments");
   
   // Log auth state for debugging
   useEffect(() => {
@@ -66,55 +77,104 @@ export default function AdminPage() {
     }
   };
 
+  const tabItems = [
+    { id: "appointments", label: "Appointments" },
+    { id: "services", label: "Services" },
+    { id: "categories", label: "Categories" },
+    { id: "hours", label: "Opening Hours" },
+    { id: "daysoff", label: "Days Off" },
+    { id: "emails", label: "Emails" },
+    { id: "gallery", label: "Gallery" }
+  ];
+
   return (
-    <div className="container py-10">
+    <div className="container py-4 md:py-10">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Salon Administration</h1>
+        <h1 className="text-xl md:text-3xl font-bold">Salon Administration</h1>
         <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2">
           <LogOut className="h-4 w-4" />
-          Logout
+          <span className="hidden sm:inline">Logout</span>
         </Button>
       </div>
 
-      <Tabs defaultValue="appointments" className="w-full">
-        <TabsList className="grid w-full grid-cols-7 md:grid-cols-7 overflow-auto">
-          <TabsTrigger value="appointments">Appointments</TabsTrigger>
-          <TabsTrigger value="services">Services</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="hours">Opening Hours</TabsTrigger>
-          <TabsTrigger value="daysoff">Days Off</TabsTrigger>
-          <TabsTrigger value="emails">Emails</TabsTrigger>
-          <TabsTrigger value="gallery">Gallery</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="appointments" className="pt-6">
-          <AppointmentList />
-        </TabsContent>
-        
-        <TabsContent value="services" className="pt-6">
-          <ServicesTab />
-        </TabsContent>
-        
-        <TabsContent value="categories" className="pt-6">
-          <CategoriesTab />
-        </TabsContent>
-        
-        <TabsContent value="hours" className="pt-6">
-          <SalonHoursTab />
-        </TabsContent>
-        
-        <TabsContent value="daysoff" className="pt-6">
-          <DayOffTab />
-        </TabsContent>
-        
-        <TabsContent value="emails" className="pt-6">
-          <EmailTemplatesTab />
-        </TabsContent>
-        
-        <TabsContent value="gallery" className="pt-6">
-          <GalleryTab />
-        </TabsContent>
-      </Tabs>
+      {isMobile ? (
+        <div className="w-full">
+          <div className="flex justify-between items-center mb-4">
+            <Drawer>
+              <DrawerTrigger asChild>
+                <Button variant="outline" className="w-full flex justify-between">
+                  {tabItems.find(tab => tab.id === activeTab)?.label}
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Select Section</DrawerTitle>
+                </DrawerHeader>
+                <div className="flex flex-col p-4">
+                  {tabItems.map((tab) => (
+                    <DrawerClose asChild key={tab.id}>
+                      <Button 
+                        variant={activeTab === tab.id ? "default" : "ghost"} 
+                        className="w-full justify-start mb-1" 
+                        onClick={() => setActiveTab(tab.id)}
+                      >
+                        {tab.label}
+                      </Button>
+                    </DrawerClose>
+                  ))}
+                </div>
+              </DrawerContent>
+            </Drawer>
+          </div>
+          
+          <div className="pt-2">
+            {activeTab === "appointments" && <AppointmentList />}
+            {activeTab === "services" && <ServicesTab />}
+            {activeTab === "categories" && <CategoriesTab />}
+            {activeTab === "hours" && <SalonHoursTab />}
+            {activeTab === "daysoff" && <DayOffTab />}
+            {activeTab === "emails" && <EmailTemplatesTab />}
+            {activeTab === "gallery" && <GalleryTab />}
+          </div>
+        </div>
+      ) : (
+        <Tabs defaultValue="appointments" className="w-full" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-7">
+            {tabItems.map((tab) => (
+              <TabsTrigger key={tab.id} value={tab.id}>{tab.label}</TabsTrigger>
+            ))}
+          </TabsList>
+          
+          <TabsContent value="appointments" className="pt-6">
+            <AppointmentList />
+          </TabsContent>
+          
+          <TabsContent value="services" className="pt-6">
+            <ServicesTab />
+          </TabsContent>
+          
+          <TabsContent value="categories" className="pt-6">
+            <CategoriesTab />
+          </TabsContent>
+          
+          <TabsContent value="hours" className="pt-6">
+            <SalonHoursTab />
+          </TabsContent>
+          
+          <TabsContent value="daysoff" className="pt-6">
+            <DayOffTab />
+          </TabsContent>
+          
+          <TabsContent value="emails" className="pt-6">
+            <EmailTemplatesTab />
+          </TabsContent>
+          
+          <TabsContent value="gallery" className="pt-6">
+            <GalleryTab />
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   );
 }

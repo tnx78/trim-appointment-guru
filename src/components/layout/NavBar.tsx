@@ -1,17 +1,19 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from '@/components/ui/navigation-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Menu, X } from 'lucide-react';
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 export function NavBar() {
   const { isAuthenticated, user, logout, isAdmin, loading } = useAuth();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const [isOpen, setIsOpen] = useState(false);
 
   // Get first letter of user name for avatar or use profile picture from social login
   const getInitials = () => {
@@ -45,6 +47,62 @@ export function NavBar() {
     }
   };
 
+  // Navigation items shared between desktop and mobile views
+  const navigationItems = (closeMenu?: () => void) => (
+    <>
+      <NavigationMenuItem>
+        <Link to="/" onClick={closeMenu}>
+          <NavigationMenuLink className="px-4 py-2">
+            Home
+          </NavigationMenuLink>
+        </Link>
+      </NavigationMenuItem>
+
+      <NavigationMenuItem>
+        <Link to="/services" onClick={closeMenu}>
+          <NavigationMenuLink className="px-4 py-2">
+            Services
+          </NavigationMenuLink>
+        </Link>
+      </NavigationMenuItem>
+      
+      <NavigationMenuItem>
+        <Link to="/gallery" onClick={closeMenu}>
+          <NavigationMenuLink className="px-4 py-2">
+            Gallery
+          </NavigationMenuLink>
+        </Link>
+      </NavigationMenuItem>
+
+      {/* Only show menu items if auth state is determined */}
+      {!loading && (
+        <>
+          {/* Show My Bookings for authenticated customers */}
+          {isAuthenticated && !isAdmin && (
+            <NavigationMenuItem>
+              <Link to="/my-appointments" onClick={closeMenu}>
+                <NavigationMenuLink className="px-4 py-2">
+                  My Bookings
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
+          )}
+                
+          {/* Show Admin for users with admin role */}
+          {isAuthenticated && isAdmin && (
+            <NavigationMenuItem>
+              <Link to="/admin" onClick={closeMenu}>
+                <NavigationMenuLink className="px-4 py-2">
+                  Admin Panel
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
+          )}
+        </>
+      )}
+    </>
+  );
+
   return (
     <header className="border-b">
       <div className="container mx-auto px-4 flex justify-between items-center py-3">
@@ -54,64 +112,18 @@ export function NavBar() {
           </Link>
         </div>
 
-        <NavigationMenu>
-          <NavigationMenuList>
-            <NavigationMenuItem>
-              <Link to="/">
-                <NavigationMenuLink className="px-4 py-2">
-                  Home
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
-
-            <NavigationMenuItem>
-              <Link to="/services">
-                <NavigationMenuLink className="px-4 py-2">
-                  Services
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
-            
-            <NavigationMenuItem>
-              <Link to="/gallery">
-                <NavigationMenuLink className="px-4 py-2">
-                  Gallery
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
-
-            {/* Only show menu items if auth state is determined */}
-            {!loading && (
-              <>
-                {/* Show My Bookings for authenticated customers */}
-                {isAuthenticated && !isAdmin && (
-                  <NavigationMenuItem>
-                    <Link to="/my-appointments">
-                      <NavigationMenuLink className="px-4 py-2">
-                        My Bookings
-                      </NavigationMenuLink>
-                    </Link>
-                  </NavigationMenuItem>
-                )}
-                    
-                {/* Show Admin for users with admin role */}
-                {isAuthenticated && isAdmin && (
-                  <NavigationMenuItem>
-                    <Link to="/admin">
-                      <NavigationMenuLink className="px-4 py-2">
-                        Admin Panel
-                      </NavigationMenuLink>
-                    </Link>
-                  </NavigationMenuItem>
-                )}
-              </>
-            )}
-          </NavigationMenuList>
-        </NavigationMenu>
+        {/* Desktop navigation */}
+        {!isMobile && (
+          <NavigationMenu>
+            <NavigationMenuList>
+              {navigationItems()}
+            </NavigationMenuList>
+          </NavigationMenu>
+        )}
 
         <div className="flex items-center gap-4">
           <Link to="/services">
-            <Button variant="default">Book Now</Button>
+            <Button variant="default" className={isMobile ? "hidden sm:flex" : ""}>Book Now</Button>
           </Link>
 
           {loading ? (
@@ -127,14 +139,54 @@ export function NavBar() {
                   <AvatarFallback>{getInitials()}</AvatarFallback>
                 </Avatar>
               </Link>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
+              <Button variant="outline" size="sm" onClick={handleLogout} className="hidden sm:flex">
                 Logout
               </Button>
             </div>
           ) : (
             <Link to="/auth">
-              <Button variant="outline">Login</Button>
+              <Button variant="outline" className="hidden sm:flex">Login</Button>
             </Link>
+          )}
+
+          {/* Mobile burger menu */}
+          {isMobile && (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[75vw] sm:max-w-xs">
+                <SheetHeader>
+                  <SheetTitle>Menu</SheetTitle>
+                </SheetHeader>
+                <div className="py-4">
+                  <nav className="flex flex-col space-y-4">
+                    <NavigationMenu orientation="vertical" className="w-full">
+                      <NavigationMenuList className="flex-col items-start space-y-2 w-full">
+                        {navigationItems(() => {})}
+                      </NavigationMenuList>
+                    </NavigationMenu>
+                    <div className="pt-4 flex flex-col space-y-4">
+                      <Link to="/services" className="w-full">
+                        <Button variant="default" className="w-full">Book Now</Button>
+                      </Link>
+                      {!loading && !isAuthenticated && (
+                        <Link to="/auth" className="w-full">
+                          <Button variant="outline" className="w-full">Login</Button>
+                        </Link>
+                      )}
+                      {!loading && isAuthenticated && (
+                        <Button variant="outline" className="w-full" onClick={handleLogout}>
+                          Logout
+                        </Button>
+                      )}
+                    </div>
+                  </nav>
+                </div>
+              </SheetContent>
+            </Sheet>
           )}
         </div>
       </div>
