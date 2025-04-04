@@ -17,6 +17,9 @@ export function useIsMobile() {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
     }
     
+    // Run once on mount to ensure we have the correct initial state
+    checkMobile()
+    
     // Add event listeners for resize and orientation change
     window.addEventListener("resize", checkMobile)
     window.addEventListener("orientationchange", checkMobile)

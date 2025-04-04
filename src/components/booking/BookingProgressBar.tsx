@@ -1,15 +1,30 @@
 
 import React from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface BookingProgressBarProps {
   activeStep: number;
 }
 
 export function BookingProgressBar({ activeStep }: BookingProgressBarProps) {
+  const isMobile = useIsMobile();
+  
   const steps = [
-    { number: 1, label: 'Choose Service' },
-    { number: 2, label: 'Select Date & Time' },
-    { number: 3, label: 'Your Information' }
+    { 
+      number: 1, 
+      label: 'Choose Service', 
+      mobileLabel: 'Service' 
+    },
+    { 
+      number: 2, 
+      label: 'Select Date & Time', 
+      mobileLabel: 'Date/Time' 
+    },
+    { 
+      number: 3, 
+      label: 'Your Information', 
+      mobileLabel: 'You' 
+    }
   ];
   
   return (
@@ -28,7 +43,7 @@ export function BookingProgressBar({ activeStep }: BookingProgressBarProps) {
               {step.number}
             </div>
             <span className="text-sm font-medium">
-              {step.label}
+              {isMobile ? step.mobileLabel : step.label}
             </span>
           </div>
         ))}

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useBookingContext } from '@/context/BookingContext';
 import { useAppointmentContext } from '@/context/AppointmentContext';
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
@@ -17,6 +17,7 @@ export function DateTimeSelection({ onBack, onNext }: { onBack?: () => void; onN
   const { isDateAvailable } = useSalonHours();
   const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeSlot[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const timeCardRef = useRef<HTMLDivElement>(null);
 
   // Generate time slots based on selected date and existing appointments
   useEffect(() => {
@@ -38,6 +39,14 @@ export function DateTimeSelection({ onBack, onNext }: { onBack?: () => void; onN
               selectTime(null);
             }
           }
+          
+          // Scroll to time slots section after loading
+          setTimeout(() => {
+            if (timeCardRef.current) {
+              timeCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 300);
+          
         } catch (error) {
           console.error('Error fetching time slots:', error);
           setAvailableTimeSlots([]);
@@ -145,7 +154,7 @@ export function DateTimeSelection({ onBack, onNext }: { onBack?: () => void; onN
         </Card>
 
         {/* Time Selection Card */}
-        <Card>
+        <Card ref={timeCardRef}>
           <CardHeader>
             <CardTitle>Select a Time</CardTitle>
             <CardDescription>

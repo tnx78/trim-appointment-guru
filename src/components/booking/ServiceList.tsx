@@ -36,13 +36,15 @@ export function ServiceList({ onServiceSelect }: { onServiceSelect?: () => void 
         <Tabs defaultValue={categories[0]?.id} className="w-full">
           <div className="relative">
             <TabsList 
-              className={`overflow-x-auto ${isMobile ? 'flex whitespace-nowrap px-0' : 'grid'} no-scrollbar`}
+              className={`overflow-x-auto ${isMobile ? 'flex justify-start whitespace-nowrap px-0 bg-transparent p-0 space-x-2' : 'grid'} no-scrollbar`}
               style={!isMobile ? { gridTemplateColumns: `repeat(${categories.length}, minmax(0, 1fr))` } : undefined}>
               {categories.map((category) => (
                 <TabsTrigger 
                   key={category.id} 
                   value={category.id} 
-                  className={`${isMobile ? 'min-w-max flex-shrink-0 px-4' : ''}`}
+                  className={`${isMobile ? 
+                    'min-w-max flex-shrink-0 px-4 rounded-full border border-muted bg-background data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary' : 
+                    ''}`}
                 >
                   {category.name}
                 </TabsTrigger>
