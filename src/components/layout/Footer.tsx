@@ -16,13 +16,6 @@ export function Footer() {
           <p className="text-center text-sm text-muted-foreground">
             Built with ♥ for hairdressers
           </p>
-          <span className="text-muted-foreground mx-1">•</span>
-          <Link 
-            to="/admin" 
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Salon Admin
-          </Link>
         </div>
       </div>
     </footer>

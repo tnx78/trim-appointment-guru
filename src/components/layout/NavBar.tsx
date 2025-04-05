@@ -184,35 +184,22 @@ export function NavBar() {
               </SheetTrigger>
               <SheetContent side="right" className="w-[75vw] sm:max-w-xs flex flex-col p-0">
                 {/* Profile section at the top */}
-                <div className="px-4 py-6 flex flex-col items-center bg-muted/40">
-                  {isAuthenticated ? (
-                    <>
-                      <Avatar className="h-16 w-16 mb-2">
-                        <AvatarImage src={getProfileImage()} />
-                        <AvatarFallback className="text-lg">{getInitials()}</AvatarFallback>
-                      </Avatar>
-                      <p className="text-sm font-medium">
-                        {user?.user_metadata?.full_name || 
-                         user?.user_metadata?.name || 
-                         user?.email || 'User'}
-                      </p>
-                      <Link to="/account" className="text-xs text-muted-foreground mt-1">
-                        View Profile
-                      </Link>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <Avatar className="h-16 w-16 mb-2">
-                        <AvatarFallback className="text-lg">?</AvatarFallback>
-                      </Avatar>
-                      <Link to="/auth">
-                        <Button variant="outline" size="sm" className="mt-2">
-                          Sign In
-                        </Button>
-                      </Link>
-                    </div>
-                  )}
-                </div>
+                {isAuthenticated ? (
+                  <div className="px-4 py-6 flex flex-col items-center bg-muted/40">
+                    <Avatar className="h-16 w-16 mb-2">
+                      <AvatarImage src={getProfileImage()} />
+                      <AvatarFallback className="text-lg">{getInitials()}</AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm font-medium">
+                      {user?.user_metadata?.full_name || 
+                       user?.user_metadata?.name || 
+                       user?.email || 'User'}
+                    </p>
+                    <Link to="/account" className="text-xs text-muted-foreground mt-1 hover:text-foreground">
+                      Manage Account
+                    </Link>
+                  </div>
+                ) : null}
 
                 {/* Navigation menu */}
                 <div className="flex-1 overflow-auto py-2 px-2">
@@ -242,9 +229,9 @@ export function NavBar() {
                   </SheetClose>
                 </div>
 
-                {/* Logout at the bottom */}
-                {isAuthenticated && (
-                  <div className="p-4 border-t">
+                {/* Login/Logout at the bottom */}
+                <div className="p-4 border-t">
+                  {isAuthenticated ? (
                     <Button 
                       variant="ghost" 
                       className="w-full justify-start text-muted-foreground"
@@ -255,8 +242,19 @@ export function NavBar() {
                       <LogOut className="mr-2 h-5 w-5" />
                       Logout
                     </Button>
-                  </div>
-                )}
+                  ) : (
+                    <SheetClose asChild>
+                      <Link to="/auth" className="w-full block">
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-center"
+                        >
+                          Sign In
+                        </Button>
+                      </Link>
+                    </SheetClose>
+                  )}
+                </div>
               </SheetContent>
             </Sheet>
           )}
