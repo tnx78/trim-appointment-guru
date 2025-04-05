@@ -50,13 +50,7 @@ export function ServiceList({ onServiceSelect }: { onServiceSelect?: () => void 
                 </TabsTrigger>
               ))}
             </TabsList>
-            {/* Gradient fades for scroll indication on mobile */}
-            {isMobile && (
-              <>
-                <div className="absolute top-0 left-0 h-full w-4 bg-gradient-to-r from-background to-transparent pointer-events-none" />
-                <div className="absolute top-0 right-0 h-full w-4 bg-gradient-to-l from-background to-transparent pointer-events-none" />
-              </>
-            )}
+            {/* Removed gradient fades for scroll indication on mobile as requested */}
           </div>
           
           {categories.map((category) => {
