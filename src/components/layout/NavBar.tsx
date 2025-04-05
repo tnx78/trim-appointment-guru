@@ -195,9 +195,6 @@ export function NavBar() {
                        user?.user_metadata?.name || 
                        user?.email || 'User'}
                     </p>
-                    <Link to="/account" className="text-xs text-muted-foreground mt-1 hover:text-foreground">
-                      Manage Account
-                    </Link>
                   </div>
                 ) : null}
 
