@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Appointment, Service } from '@/types';
 import { AppointmentItem } from './AppointmentItem';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AppointmentListCardProps {
   appointments: Appointment[];
@@ -16,7 +15,7 @@ interface AppointmentListCardProps {
   onCancel: (id: string) => Promise<boolean>;
   viewType: 'all' | 'upcoming' | 'past';
   onViewChange: (view: 'all' | 'upcoming' | 'past') => void;
-  hideViewSwitch?: boolean;
+  hideViewSwitch?: boolean; // Add this prop
 }
 
 export function AppointmentListCard({
@@ -28,7 +27,7 @@ export function AppointmentListCard({
   onCancel,
   viewType,
   onViewChange,
-  hideViewSwitch = false
+  hideViewSwitch = false // Default to false for backward compatibility
 }: AppointmentListCardProps) {
   return (
     <Card>
@@ -55,31 +54,29 @@ export function AppointmentListCard({
           )}
         </div>
       </CardHeader>
-      <CardContent className="overflow-x-auto">
-        <div style={{ width: "1500px" }}>
-          {appointments.length === 0 ? (
-            <div className="text-center py-6 text-muted-foreground">
-              {showAllDates 
-                ? "No appointments found"
-                : "No appointments for this date"}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {appointments.map((appointment) => {
-                const service = getServiceById(appointment.serviceId);
-                return (
-                  <AppointmentItem
-                    key={appointment.id}
-                    appointment={appointment}
-                    service={service}
-                    onComplete={onComplete}
-                    onCancel={onCancel}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </div>
+      <CardContent>
+        {appointments.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground">
+            {showAllDates 
+              ? "No appointments found"
+              : "No appointments for this date"}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {appointments.map((appointment) => {
+              const service = getServiceById(appointment.serviceId);
+              return (
+                <AppointmentItem
+                  key={appointment.id}
+                  appointment={appointment}
+                  service={service}
+                  onComplete={onComplete}
+                  onCancel={onCancel}
+                />
+              );
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

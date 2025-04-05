@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface WeeklyCalendarViewProps {
   appointments: Appointment[];
@@ -35,23 +34,28 @@ export function WeeklyCalendarView({
   const [isCancelling, setIsCancelling] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   
+  // Generate array of days for the week
   const weekDays = eachDayOfInterval({
     start: currentWeekStart,
     end: endOfWeek(currentWeekStart, { weekStartsOn: 1 })
   });
 
+  // Navigate to previous week
   const goToPreviousWeek = () => {
     setCurrentWeekStart(prevWeek => subWeeks(prevWeek, 1));
   };
 
+  // Navigate to next week
   const goToNextWeek = () => {
     setCurrentWeekStart(prevWeek => addWeeks(prevWeek, 1));
   };
 
+  // Go to current week
   const goToCurrentWeek = () => {
     setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
   };
 
+  // Get appointments for a specific day (including past appointments)
   const getAppointmentsForDay = (day: Date) => {
     return appointments.filter(appointment => {
       const appointmentDate = appointment.date instanceof Date 
@@ -61,16 +65,19 @@ export function WeeklyCalendarView({
     });
   };
 
+  // Generate time slots (from 9:00 to 18:00)
   const timeSlots = Array.from({ length: 10 }, (_, i) => ({
     hour: i + 9,
     display: `${i + 9}:00`
   }));
 
+  // Parse time string to minutes since midnight
   const timeToMinutes = (timeString: string) => {
     const [hours, minutes] = timeString.split(':').map(Number);
     return hours * 60 + minutes;
   };
 
+  // Get color based on appointment status
   const getAppointmentColor = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -96,6 +103,7 @@ export function WeeklyCalendarView({
         const success = await onComplete(selectedAppointment.id);
         
         if (success) {
+          // Update the selected appointment state to match the updated status
           setSelectedAppointment({
             ...selectedAppointment,
             status: 'completed'
@@ -120,17 +128,21 @@ export function WeeklyCalendarView({
         const success = await onCancel(selectedAppointment.id);
         
         if (success) {
+          // Update the selected appointment state to match the updated status
           setSelectedAppointment({
             ...selectedAppointment,
             status: 'cancelled'
           });
           
+          // Close the cancel dialog first
           setShowCancelDialog(false);
           
+          // Then close the details dialog after a short delay
           setTimeout(() => {
             setShowDetails(false);
           }, 500);
         } else {
+          // If unsuccessful, just close the cancel dialog
           setShowCancelDialog(false);
         }
       } catch (error) {
@@ -142,6 +154,8 @@ export function WeeklyCalendarView({
     }
   };
 
+  // Create a map to track appointments by day and time
+  // This helps prevent duplicate renders of appointments that span multiple slots
   const createDayAppointmentMap = () => {
     const dayMap = new Map<string, Map<string, Appointment>>();
     
@@ -182,74 +196,80 @@ export function WeeklyCalendarView({
         </div>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="w-full">
-          <div className="rounded-md border" style={{ width: "1500px" }}>
-            <div className="grid grid-cols-[60px_1fr_1fr_1fr_1fr_1fr_1fr_1fr] border-b">
-              <div className="p-2 font-medium border-r text-center">Time</div>
-              {weekDays.map((day) => (
-                <div key={day.toString()} className="p-2 font-medium border-r text-center">
-                  <div>{format(day, 'EEEE')}</div>
-                  <div className="text-sm text-gray-500">{format(day, 'MMM dd')}</div>
-                </div>
-              ))}
-            </div>
-            
-            <div className="relative">
-              {timeSlots.map((slot) => (
-                <div key={slot.hour} className="grid grid-cols-[60px_1fr_1fr_1fr_1fr_1fr_1fr_1fr] border-b h-[60px]">
-                  <div className="p-2 font-medium border-r text-center">
-                    {slot.display}
-                  </div>
-                  {weekDays.map((day) => {
-                    const dayKey = format(day, 'yyyy-MM-dd');
-                    const appointmentsForDay = dayAppointmentMap.get(dayKey);
-                    
-                    return (
-                      <div key={day.toString()} className="border-r relative">
-                        {appointmentsForDay && Array.from(appointmentsForDay.values()).map((appointment) => {
-                          const service = getServiceById(appointment.serviceId);
-                          const startMinutes = timeToMinutes(appointment.startTime);
-                          const endMinutes = timeToMinutes(appointment.endTime);
-                          const slotStartMinutes = slot.hour * 60;
-                          const slotEndMinutes = (slot.hour + 1) * 60;
-                          
-                          if (startMinutes < slotEndMinutes && endMinutes > slotStartMinutes) {
-                            const top = Math.max(0, startMinutes - slotStartMinutes);
-                            if (startMinutes >= slotStartMinutes && startMinutes < slotEndMinutes) {
-                              const duration = endMinutes - startMinutes;
-                              const height = duration;
-                              const color = getAppointmentColor(appointment.status);
-                              
-                              return (
-                                <div
-                                  key={appointment.id}
-                                  onClick={() => handleAppointmentClick(appointment)}
-                                  className={`absolute left-0 right-0 mx-1 rounded px-2 py-1 text-white cursor-pointer transition-colors ${color}`}
-                                  style={{
-                                    top: `${top}px`,
-                                    height: `${height}px`,
-                                    overflow: 'hidden',
-                                    zIndex: 10
-                                  }}
-                                >
-                                  <div className="text-sm font-semibold truncate">{appointment.clientName}</div>
-                                  <div className="text-xs truncate">{service?.name}</div>
-                                </div>
-                              );
-                            }
-                          }
-                          return null;
-                        })}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
+        {/* Weekly calendar grid */}
+        <div className="rounded-md border">
+          {/* Header row with day names */}
+          <div className="grid grid-cols-[60px_1fr_1fr_1fr_1fr_1fr_1fr_1fr] border-b">
+            <div className="p-2 font-medium border-r text-center">Time</div>
+            {weekDays.map((day) => (
+              <div key={day.toString()} className="p-2 font-medium border-r text-center">
+                <div>{format(day, 'EEEE')}</div>
+                <div className="text-sm text-gray-500">{format(day, 'MMM dd')}</div>
+              </div>
+            ))}
           </div>
-        </ScrollArea>
+          
+          {/* Time slots rows */}
+          <div className="relative">
+            {timeSlots.map((slot) => (
+              <div key={slot.hour} className="grid grid-cols-[60px_1fr_1fr_1fr_1fr_1fr_1fr_1fr] border-b h-[60px]">
+                <div className="p-2 font-medium border-r text-center">
+                  {slot.display}
+                </div>
+                {weekDays.map((day) => {
+                  const dayKey = format(day, 'yyyy-MM-dd');
+                  const appointmentsForDay = dayAppointmentMap.get(dayKey);
+                  
+                  return (
+                    <div key={day.toString()} className="border-r relative">
+                      {appointmentsForDay && Array.from(appointmentsForDay.values()).map((appointment) => {
+                        const service = getServiceById(appointment.serviceId);
+                        const startMinutes = timeToMinutes(appointment.startTime);
+                        const endMinutes = timeToMinutes(appointment.endTime);
+                        const slotStartMinutes = slot.hour * 60;
+                        const slotEndMinutes = (slot.hour + 1) * 60;
+                        
+                        // Only render if this appointment overlaps with this time slot
+                        if (startMinutes < slotEndMinutes && endMinutes > slotStartMinutes) {
+                          // Calculate position and height 
+                          const top = Math.max(0, startMinutes - slotStartMinutes);
+                          
+                          // Only render appointment at its starting slot
+                          if (startMinutes >= slotStartMinutes && startMinutes < slotEndMinutes) {
+                            const duration = endMinutes - startMinutes;
+                            const height = duration; // 1 minute = 1px
+                            const color = getAppointmentColor(appointment.status);
+                            
+                            return (
+                              <div
+                                key={appointment.id}
+                                onClick={() => handleAppointmentClick(appointment)}
+                                className={`absolute left-0 right-0 mx-1 rounded px-2 py-1 text-white cursor-pointer transition-colors ${color}`}
+                                style={{
+                                  top: `${top}px`,
+                                  height: `${height}px`,
+                                  overflow: 'hidden',
+                                  zIndex: 10
+                                }}
+                              >
+                                <div className="text-sm font-semibold truncate">{appointment.clientName}</div>
+                                <div className="text-xs truncate">{service?.name}</div>
+                              </div>
+                            );
+                          }
+                        }
+                        return null;
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
       </CardContent>
 
+      {/* Dialog for appointment details */}
       <Dialog open={showDetails} onOpenChange={(open) => {
         if (!isCancelling && !isCompleting) {
           setShowDetails(open);
@@ -324,6 +344,7 @@ export function WeeklyCalendarView({
         </DialogContent>
       </Dialog>
 
+      {/* Confirmation dialog for cancellation */}
       <AlertDialog 
         open={showCancelDialog} 
         onOpenChange={(open) => {
