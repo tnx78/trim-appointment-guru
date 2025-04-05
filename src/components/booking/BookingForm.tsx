@@ -113,20 +113,23 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardContent className="p-6">
+    <div className="space-y-6">
+      <div>
         <BookingProgressBar activeStep={3} />
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Your Information</h1>
-          <p className="text-muted-foreground mb-6">Please enter your details to complete the booking</p>
+        <h1 className="text-2xl md:text-3xl font-bold mt-4">Your Information</h1>
+        <p className="text-muted-foreground">Please enter your details to complete the booking</p>
+      </div>
+
+      <Card className="w-full">
+        <CardContent className="p-6">
           <UserInfoForm 
             onBack={handleBack}
             onSubmit={handleSubmit}
             loading={loading}
           />
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
