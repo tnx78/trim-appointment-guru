@@ -112,6 +112,7 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
     }
   };
 
+  // --- Updated layout for visual consistency across steps ---
   return (
     <div className="space-y-6">
       <div>
@@ -119,7 +120,6 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
         <h1 className="text-2xl md:text-3xl font-bold mt-4">Your Information</h1>
         <p className="text-muted-foreground">Please enter your details to complete the booking</p>
       </div>
-
       <Card className="w-full">
         <CardContent className="p-6">
           <UserInfoForm 
@@ -134,3 +134,4 @@ const BookingForm = ({ onBack }: { onBack?: () => void }) => {
 };
 
 export default BookingForm;
+
