@@ -13,6 +13,7 @@ interface AuthContextType {
   isAdmin: boolean;
   loginWithGoogle: () => Promise<void>;
   loginWithFacebook: () => Promise<void>;
+  resetPassword: (email: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,7 +24,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
-  // Helper function to check if user has admin role
   const checkUserRole = async (userId: string): Promise<boolean> => {
     try {
       console.log('Checking user role for:', userId);
@@ -47,11 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Main session initialization and auth state change listener
   useEffect(() => {
     console.log('Setting up auth state listener...');
     
-    // Set up the auth state change listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         console.log('Auth state changed:', event, currentSession ? 'Session exists' : 'No session');
@@ -60,7 +58,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(currentSession.user);
           setIsAuthenticated(true);
           
-          // Use setTimeout to prevent potential deadlocks with Supabase client
           setTimeout(async () => {
             const isAdminUser = await checkUserRole(currentSession.user.id);
             console.log('Setting isAdmin to:', isAdminUser);
@@ -76,7 +73,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
     
-    // Check for existing session
     const initializeAuth = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
@@ -107,7 +103,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     initializeAuth();
     
-    // Clean up subscription when component unmounts
     return () => {
       subscription.unsubscribe();
     };
@@ -229,7 +224,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      // Explicitly clear state
       setUser(null);
       setIsAuthenticated(false);
       setIsAdmin(false);
@@ -243,7 +237,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Provide the auth state and functions
+  const resetPassword = async (email: string): Promise<boolean> => {
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?tab=login`,
+      });
+      
+      if (error) {
+        console.error("Password reset error:", error);
+        toast.error(error.message);
+        return false;
+      }
+      
+      toast.success("Password reset email sent. Please check your inbox.");
+      return true;
+    } catch (error: any) {
+      console.error("Password reset error:", error);
+      toast.error(error.message || "Failed to send password reset email");
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       isAuthenticated, 
@@ -254,7 +272,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout, 
       isAdmin,
       loginWithGoogle,
-      loginWithFacebook
+      loginWithFacebook,
+      resetPassword
     }}>
       {children}
     </AuthContext.Provider>
