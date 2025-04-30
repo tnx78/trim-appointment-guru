@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -43,12 +42,12 @@ export function useGalleryStorage() {
     const uniqueFileName = `${uuidv4()}.${fileExtension}`;
     console.log('Uploading file to Supabase with name:', uniqueFileName);
     
+    // This is the critical fix: use the File object directly without any transformations
     const { data, error } = await supabase.storage
       .from('gallery')
       .upload(uniqueFileName, file, {
         cacheControl: '3600',
-        upsert: true,
-        contentType: file.type
+        upsert: true
       });
     
     if (error) {

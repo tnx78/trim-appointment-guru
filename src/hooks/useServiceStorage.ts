@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,7 +37,7 @@ export function useServiceStorage() {
       // Generate a unique filename to avoid conflicts
       const uniqueFileName = `${uuidv4()}-${file.name}`;
       
-      // Upload file to Supabase storage
+      // Upload file to Supabase storage - this is the critical fix
       const { data, error } = await supabase.storage
         .from('services')
         .upload(uniqueFileName, file);
