@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { GalleryCategory } from '@/context/GalleryContext';
+import { GalleryCategory, GalleryImage } from '@/context/GalleryContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GalleryCategoryContent } from './GalleryCategoryContent';
 
