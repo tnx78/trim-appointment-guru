@@ -27,6 +27,8 @@ interface GalleryContextType {
   images: GalleryImage[];
   isLoading: boolean;
   error: string | null;
+  isUploading: boolean;
+  demoMode: boolean;
   loadGalleryData: () => Promise<void>;
   addCategory: (category: Omit<GalleryCategory, 'id'>) => Promise<GalleryCategory | null>;
   updateCategory: (category: GalleryCategory) => Promise<GalleryCategory | null>;
@@ -36,8 +38,6 @@ interface GalleryContextType {
   deleteImage: (id: string) => Promise<void>;
   getImagesByCategory: (categoryId: string) => GalleryImage[];
   uploadImage: (file: File) => Promise<string | null>;
-  isUploading: boolean;
-  demoMode: boolean;
 }
 
 const GalleryContext = createContext<GalleryContextType | undefined>(undefined);
@@ -82,6 +82,8 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     images,
     isLoading,
     error,
+    isUploading,
+    demoMode,
     loadGalleryData,
     addCategory,
     updateCategory,
@@ -90,9 +92,7 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     updateImage,
     deleteImage,
     getImagesByCategory,
-    uploadImage,
-    isUploading,
-    demoMode
+    uploadImage
   };
 
   return <GalleryContext.Provider value={value}>{children}</GalleryContext.Provider>;

@@ -48,45 +48,42 @@ export function useGalleryStorage() {
       const uniqueFileName = `${uuidv4()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
       console.log('Uploading file with name:', uniqueFileName);
       
-      // Check if the gallery bucket exists, if not, let the user know
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const galleryBucketExists = buckets?.some(bucket => bucket.name === 'gallery');
-      
-      if (!galleryBucketExists) {
-        console.error('Gallery bucket does not exist. Please create it in Supabase.');
-        toast.error('Gallery storage bucket not configured. Please contact administrator.');
+      // Try to upload to Supabase storage
+      try {
+        const { data, error } = await supabase.storage
+          .from('gallery')
+          .upload(uniqueFileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+        
+        if (error) {
+          console.error('Upload error:', error);
+          toast.error(`Upload failed: ${error.message}`);
+          return null;
+        }
+        
+        if (!data || !data.path) {
+          console.error('Upload succeeded but no path returned');
+          toast.error('Upload failed: No file path returned');
+          return null;
+        }
+        
+        // Get the public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('gallery')
+          .getPublicUrl(data.path);
+        
+        console.log('File uploaded successfully:', publicUrl);
+        toast.success('Image uploaded successfully');
+        
+        return publicUrl;
+      } catch (uploadError: any) {
+        // Handle specific errors if needed
+        console.error('Specific upload error:', uploadError);
+        toast.error(`Upload error: ${uploadError.message || 'Unknown error'}`);
         return null;
       }
-      
-      // Upload file to Supabase storage
-      const { data, error } = await supabase.storage
-        .from('gallery')
-        .upload(uniqueFileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-      
-      if (error) {
-        console.error('Upload error:', error);
-        toast.error(`Upload failed: ${error.message}`);
-        return null;
-      }
-      
-      if (!data || !data.path) {
-        console.error('Upload succeeded but no path returned');
-        toast.error('Upload failed: No file path returned');
-        return null;
-      }
-      
-      // Get the public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('gallery')
-        .getPublicUrl(data.path);
-      
-      console.log('File uploaded successfully:', publicUrl);
-      toast.success('Image uploaded successfully');
-      
-      return publicUrl;
     } catch (error: any) {
       console.error('Error uploading image:', error);
       toast.error(`Upload error: ${error.message || 'Unknown error'}`);
@@ -123,7 +120,7 @@ export function useGalleryStorage() {
       }
       
       // Extract the filename from the URL
-      const pathParts = url.split('/');
+      const pathParts = new URL(url).pathname.split('/');
       const fileName = pathParts[pathParts.length - 1];
       
       if (!fileName) {

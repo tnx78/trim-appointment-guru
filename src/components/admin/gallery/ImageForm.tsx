@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { GalleryCategory, GalleryImage } from '@/context/GalleryContext';
 import { Image, X, Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useGalleryStorage } from '@/hooks/useGalleryStorage';
 
 interface ImageFormProps {
   image?: GalleryImage;
@@ -25,7 +24,6 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
   const [previewUrl, setPreviewUrl] = useState<string | null>(image?.image_url || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const { isUploading, uploadImage } = useGalleryStorage();
 
   // Reset the form if the image prop changes
   useEffect(() => {
@@ -102,7 +100,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
     }
 
     // Prevent multiple submissions
-    if (isSubmitting || isUploading) {
+    if (isSubmitting) {
       return;
     }
     
@@ -116,27 +114,12 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
         image_url: image?.image_url || '',
       });
       
-      let imageUrl = image?.image_url || '';
-      
-      // If there's a file, upload it first
-      if (imageFile) {
-        console.log('Uploading file:', imageFile.name);
-        const uploadedUrl = await uploadImage(imageFile);
-        
-        if (!uploadedUrl) {
-          setUploadError('Failed to upload image. Please try again.');
-          throw new Error('Failed to upload image');
-        }
-        
-        imageUrl = uploadedUrl;
-      }
-      
-      // Now submit with the image URL
+      // Submit with the image data and file
       await onSubmit({
         category_id: categoryId,
         title: title || undefined,
         description: description || undefined,
-        image_url: imageUrl,
+        image_url: image?.image_url || '',
         sort_order: image?.sort_order
       }, imageFile);
       
@@ -187,14 +170,14 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
                 size="icon"
                 className="absolute top-2 right-2"
                 onClick={removeImage}
-                disabled={isUploading || isSubmitting}
+                disabled={isSubmitting}
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
           ) : (
             <div className="flex items-center justify-center w-full aspect-video bg-muted rounded-md border-2 border-dashed border-muted-foreground/20">
-              {isUploading ? (
+              {isSubmitting ? (
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               ) : (
                 <div className="flex flex-col items-center gap-2">
@@ -208,7 +191,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
                 accept="image/*"
                 onChange={handleImageChange}
                 className="hidden"
-                disabled={isUploading || isSubmitting}
+                disabled={isSubmitting}
               />
               <label
                 htmlFor="image-upload"
@@ -230,7 +213,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Image title"
-          disabled={isSubmitting || isUploading}
+          disabled={isSubmitting}
         />
       </div>
 
@@ -242,7 +225,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
           onChange={(e) => setDescription(e.target.value)}
           placeholder="A brief description of this image"
           rows={3}
-          disabled={isSubmitting || isUploading}
+          disabled={isSubmitting}
         />
       </div>
 
@@ -251,18 +234,18 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
           type="button"
           variant="outline"
           onClick={onCancel}
-          disabled={isSubmitting || isUploading}
+          disabled={isSubmitting}
         >
           Cancel
         </Button>
         <Button
           type="submit"
-          disabled={isSubmitting || isUploading || (!image && !imageFile) || !categoryId}
+          disabled={isSubmitting || (!image && !imageFile) || !categoryId}
         >
-          {isSubmitting || isUploading ? (
+          {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {isUploading ? 'Uploading...' : (image ? 'Updating...' : 'Adding...')}
+              {image ? 'Updating...' : 'Adding...'}
             </>
           ) : (
             <>{image ? 'Update' : 'Add'} Image</>

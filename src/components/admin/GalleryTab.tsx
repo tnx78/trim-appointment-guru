@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -44,19 +45,9 @@ export function GalleryTab() {
     loadGalleryData();
   }, []);
 
-  console.log('Current categories:', categories);
-  console.log('Current images:', images);
-
-  // Count images in each category
-  const imageCountMap = categories.reduce((acc, category) => {
-    acc[category.id] = getImagesByCategory(category.id).length;
-    return acc;
-  }, {} as Record<string, number>);
-
   // Handle category form submission
   const handleCategorySubmit = async (categoryData: Omit<GalleryCategory, 'id'>) => {
     try {
-      console.log('Submitting category data:', categoryData);
       if (editingCategory) {
         await updateCategory({
           ...editingCategory,
@@ -76,20 +67,45 @@ export function GalleryTab() {
   // Handle image form submission
   const handleImageSubmit = async (imageData: Omit<GalleryImage, 'id'>, file?: File) => {
     try {
-      console.log('Submitting image data:', imageData);
+      console.log('Handling image submission:', imageData, file);
       
-      if (editingImage) {
-        await updateImage({
-          ...editingImage,
-          ...imageData
-        });
-      } else {
-        // For new images, ensure we have a valid image URL
-        if (!imageData.image_url && !file) {
-          throw new Error('No image provided');
+      let finalImageUrl = imageData.image_url;
+      
+      // If we have a new file, upload it first
+      if (file) {
+        console.log('Uploading new file...');
+        const uploadedUrl = await uploadImage(file);
+        
+        if (!uploadedUrl) {
+          throw new Error('Failed to upload image');
         }
         
-        await addImage(imageData);
+        finalImageUrl = uploadedUrl;
+        console.log('File uploaded, got URL:', finalImageUrl);
+      }
+      
+      if (editingImage) {
+        console.log('Updating existing image with data:', {
+          ...editingImage,
+          ...imageData,
+          image_url: finalImageUrl
+        });
+        
+        await updateImage({
+          ...editingImage,
+          ...imageData,
+          image_url: finalImageUrl
+        });
+      } else {
+        console.log('Adding new image with data:', {
+          ...imageData,
+          image_url: finalImageUrl
+        });
+        
+        await addImage({
+          ...imageData,
+          image_url: finalImageUrl
+        });
       }
       
       setShowImageModal(false);
@@ -243,7 +259,10 @@ export function GalleryTab() {
           }}
           onDelete={handleDeleteCategory}
           onViewImages={handleViewCategoryImages}
-          imageCountMap={imageCountMap}
+          imageCountMap={categories.reduce((acc, category) => {
+            acc[category.id] = getImagesByCategory(category.id).length;
+            return acc;
+          }, {} as Record<string, number>)}
         />
       ) : (
         <ImageList 
