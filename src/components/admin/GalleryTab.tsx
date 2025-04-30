@@ -1,19 +1,17 @@
 
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import React, { useEffect } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useGalleryContext, GalleryCategory, GalleryImage } from '@/context/GalleryContext';
-
-// Import our components
-import { CategoryForm } from './gallery/CategoryForm';
-import { ImageForm } from './gallery/ImageForm';
-import { CategoryList } from './gallery/CategoryList';
-import { ImageList } from './gallery/ImageList';
 import { GalleryHeader } from './gallery/GalleryHeader';
 import { GalleryTabManager } from './gallery/GalleryTabManager';
+import { CategoryTab } from './gallery/tabs/CategoryTab';
+import { ImagesTab } from './gallery/tabs/ImagesTab';
+import { CategoryModal } from './gallery/modals/CategoryModal';
+import { ImageModal } from './gallery/modals/ImageModal';
+import { useGalleryTabState } from './gallery/hooks/useGalleryTabState';
 
 export function GalleryTab() {
   const {
@@ -29,16 +27,26 @@ export function GalleryTab() {
     updateImage,
     deleteImage,
     getImagesByCategory,
-    uploadImage,
-    isUploading
+    uploadImage
   } = useGalleryContext();
 
-  const [activeTab, setActiveTab] = useState<'categories' | 'images'>('categories');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<GalleryCategory | undefined>(undefined);
-  const [editingImage, setEditingImage] = useState<GalleryImage | undefined>(undefined);
+  const {
+    activeTab,
+    setActiveTab,
+    selectedCategoryId,
+    showCategoryModal,
+    showImageModal,
+    editingCategory,
+    editingImage,
+    handleViewCategoryImages,
+    handleBackToCategories,
+    handleAddImage,
+    handleEditImage,
+    handleAddCategory,
+    handleEditCategory,
+    handleCloseCategoryModal,
+    handleCloseImageModal
+  } = useGalleryTabState();
 
   // Initialize or refresh data - Force refresh on mount
   useEffect(() => {
@@ -57,8 +65,7 @@ export function GalleryTab() {
       } else {
         await addCategory(categoryData);
       }
-      setShowCategoryModal(false);
-      setEditingCategory(undefined);
+      handleCloseCategoryModal();
     } catch (error: any) {
       console.error('Failed to save category:', error);
       toast.error('Failed to save category: ' + error.message);
@@ -86,31 +93,19 @@ export function GalleryTab() {
       }
       
       if (editingImage) {
-        console.log('Updating existing image with data:', {
-          ...editingImage,
-          ...imageData,
-          image_url: finalImageUrl
-        });
-        
         await updateImage({
           ...editingImage,
           ...imageData,
           image_url: finalImageUrl
         });
       } else {
-        console.log('Adding new image with data:', {
-          ...imageData,
-          image_url: finalImageUrl
-        });
-        
         await addImage({
           ...imageData,
           image_url: finalImageUrl
         });
       }
       
-      setShowImageModal(false);
-      setEditingImage(undefined);
+      handleCloseImageModal();
       toast.success(editingImage ? 'Image updated successfully' : 'Image added successfully');
     } catch (error: any) {
       console.error('Failed to save image:', error);
@@ -137,37 +132,6 @@ export function GalleryTab() {
     if (window.confirm('Are you sure you want to delete this image?')) {
       await deleteImage(id);
     }
-  };
-
-  // View a specific category's images
-  const handleViewCategoryImages = (categoryId: string) => {
-    setSelectedCategoryId(categoryId);
-    setActiveTab('images');
-  };
-
-  // Back to categories view
-  const handleBackToCategories = () => {
-    setSelectedCategoryId(null);
-    setActiveTab('categories');
-  };
-
-  // Handle adding a new image
-  const handleAddImage = () => {
-    // If we're in a specific category view, pre-select that category
-    setEditingImage(undefined);
-    setShowImageModal(true);
-  };
-
-  // Handle editing an image
-  const handleEditImage = (image: GalleryImage) => {
-    setEditingImage(image);
-    setShowImageModal(true);
-  };
-
-  // Handle adding a new category
-  const handleAddCategory = () => {
-    setEditingCategory(undefined);
-    setShowCategoryModal(true);
   };
 
   // If loading, show spinner
@@ -204,6 +168,12 @@ export function GalleryTab() {
     ? getImagesByCategory(selectedCategoryId)
     : images;
 
+  // Image count map for categories
+  const imageCountMap = categories.reduce((acc, category) => {
+    acc[category.id] = getImagesByCategory(category.id).length;
+    return acc;
+  }, {} as Record<string, number>);
+
   return (
     <>
       <GalleryHeader 
@@ -221,71 +191,35 @@ export function GalleryTab() {
       />
       
       {activeTab === 'categories' ? (
-        <CategoryList 
-          categories={categories} 
-          onEdit={(category) => {
-            setEditingCategory(category);
-            setShowCategoryModal(true);
-          }}
+        <CategoryTab
+          categories={categories}
+          imageCountMap={imageCountMap}
+          onEdit={handleEditCategory}
           onDelete={handleDeleteCategory}
           onViewImages={handleViewCategoryImages}
-          imageCountMap={categories.reduce((acc, category) => {
-            acc[category.id] = getImagesByCategory(category.id).length;
-            return acc;
-          }, {} as Record<string, number>)}
         />
       ) : (
-        <ImageList 
-          images={displayedImages} 
+        <ImagesTab 
+          images={displayedImages}
           onEdit={handleEditImage}
           onDelete={handleDeleteImage}
         />
       )}
       
-      {/* Category Modal */}
-      <Dialog open={showCategoryModal} onOpenChange={setShowCategoryModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingCategory ? 'Edit Category' : 'Add New Category'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingCategory ? 'Edit this gallery category' : 'Add a new gallery category'}
-            </DialogDescription>
-          </DialogHeader>
-          <CategoryForm 
-            category={editingCategory} 
-            onSubmit={handleCategorySubmit}
-            onCancel={() => {
-              setShowCategoryModal(false);
-              setEditingCategory(undefined);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      <CategoryModal
+        isOpen={showCategoryModal}
+        onClose={handleCloseCategoryModal}
+        category={editingCategory}
+        onSubmit={handleCategorySubmit}
+      />
       
-      {/* Image Modal */}
-      <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingImage ? 'Edit Image' : 'Add New Image'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingImage ? 'Edit this gallery image' : 'Add a new image to the gallery'}
-            </DialogDescription>
-          </DialogHeader>
-          <ImageForm 
-            image={editingImage} 
-            categories={categories}
-            onSubmit={handleImageSubmit}
-            onCancel={() => {
-              setShowImageModal(false);
-              setEditingImage(undefined);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      <ImageModal
+        isOpen={showImageModal}
+        onClose={handleCloseImageModal}
+        image={editingImage}
+        categories={categories}
+        onSubmit={handleImageSubmit}
+      />
     </>
   );
 }

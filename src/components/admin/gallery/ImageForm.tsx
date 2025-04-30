@@ -1,16 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GalleryCategory, GalleryImage } from '@/context/GalleryContext';
-import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { validateImageFile } from '@/hooks/gallery/useGalleryFileUpload';
-import { ImagePreview } from './ImagePreview';
-import { ImageUploader } from './ImageUploader';
+import { CategorySelector } from './formComponents/CategorySelector';
+import { ImageSelector } from './formComponents/ImageSelector';
+import { ImageDetailsForm } from './formComponents/ImageDetailsForm';
+import { FormActions } from './formComponents/FormActions';
 
 interface ImageFormProps {
   image?: GalleryImage;
@@ -119,14 +115,6 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
     setIsSubmitting(true);
     
     try {
-      console.log('Submitting image data:', {
-        category_id: categoryId,
-        title,
-        description,
-        image_url: image?.image_url || '',
-        file: imageFile ? imageFile.name : 'none'
-      });
-      
       // Submit with the image data and file
       await onSubmit({
         category_id: categoryId,
@@ -145,96 +133,39 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
     }
   };
 
+  const isValid = !!categoryId && (!!image || !!imageFile);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="category">Category</Label>
-        <Select
-          value={categoryId}
-          onValueChange={setCategoryId}
-          required
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select a category" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((category) => (
-              <SelectItem key={category.id} value={category.id}>
-                {category.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <CategorySelector 
+        categories={categories}
+        categoryId={categoryId}
+        setCategoryId={setCategoryId}
+        isSubmitting={isSubmitting}
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="image">Image</Label>
-        <div className="space-y-2">
-          {previewUrl ? (
-            <ImagePreview 
-              previewUrl={previewUrl}
-              removeImage={removeImage}
-              isSubmitting={isSubmitting}
-            />
-          ) : (
-            <ImageUploader
-              isSubmitting={isSubmitting}
-              handleImageChange={handleImageChange}
-            />
-          )}
+      <ImageSelector
+        previewUrl={previewUrl}
+        removeImage={removeImage}
+        handleImageChange={handleImageChange}
+        isSubmitting={isSubmitting}
+        uploadError={uploadError}
+      />
 
-          {uploadError && (
-            <div className="text-sm text-destructive mt-1">{uploadError}</div>
-          )}
-        </div>
-      </div>
+      <ImageDetailsForm
+        title={title}
+        setTitle={setTitle}
+        description={description}
+        setDescription={setDescription}
+        isSubmitting={isSubmitting}
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="title">Title (Optional)</Label>
-        <Input
-          id="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Image title"
-          disabled={isSubmitting}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description (Optional)</Label>
-        <Textarea
-          id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="A brief description of this image"
-          rows={3}
-          disabled={isSubmitting}
-        />
-      </div>
-
-      <div className="flex justify-end space-x-2 pt-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          disabled={isSubmitting || (!image && !imageFile) || !categoryId}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {image ? 'Updating...' : 'Adding...'}
-            </>
-          ) : (
-            <>{image ? 'Update' : 'Add'} Image</>
-          )}
-        </Button>
-      </div>
+      <FormActions
+        isSubmitting={isSubmitting}
+        onCancel={onCancel}
+        isValid={isValid}
+        isEditing={!!image}
+      />
     </form>
   );
 }
