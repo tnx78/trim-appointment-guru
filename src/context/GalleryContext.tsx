@@ -44,32 +44,16 @@ const GalleryContext = createContext<GalleryContextType | undefined>(undefined);
 
 export function GalleryProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
-  const {
-    categories,
-    images,
-    isLoading,
-    error,
-    isUploading,
-    demoMode,
-    loadGalleryData,
-    addCategory,
-    updateCategory,
-    deleteCategory,
-    addImage,
-    updateImage,
-    deleteImage,
-    getImagesByCategory,
-    uploadImage
-  } = useGalleryOperations();
+  const galleryOperations = useGalleryOperations();
 
   useEffect(() => {
     console.log('GalleryProvider mounted');
-    loadGalleryData();
+    galleryOperations.loadGalleryData();
     
     // Listen for auth changes and reload gallery data
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session ? 'User logged in' : 'No session');
-      loadGalleryData();
+      galleryOperations.loadGalleryData();
     });
     
     return () => {
@@ -77,25 +61,7 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const value = {
-    categories,
-    images,
-    isLoading,
-    error,
-    isUploading,
-    demoMode,
-    loadGalleryData,
-    addCategory,
-    updateCategory,
-    deleteCategory,
-    addImage,
-    updateImage,
-    deleteImage,
-    getImagesByCategory,
-    uploadImage
-  };
-
-  return <GalleryContext.Provider value={value}>{children}</GalleryContext.Provider>;
+  return <GalleryContext.Provider value={galleryOperations}>{children}</GalleryContext.Provider>;
 }
 
 export function useGalleryContext() {

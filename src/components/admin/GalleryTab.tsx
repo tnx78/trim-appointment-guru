@@ -1,10 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, PlusCircle, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useGalleryContext, GalleryCategory, GalleryImage } from '@/context/GalleryContext';
 
@@ -13,6 +12,8 @@ import { CategoryForm } from './gallery/CategoryForm';
 import { ImageForm } from './gallery/ImageForm';
 import { CategoryList } from './gallery/CategoryList';
 import { ImageList } from './gallery/ImageList';
+import { GalleryHeader } from './gallery/GalleryHeader';
+import { GalleryTabManager } from './gallery/GalleryTabManager';
 
 export function GalleryTab() {
   const {
@@ -163,6 +164,12 @@ export function GalleryTab() {
     setShowImageModal(true);
   };
 
+  // Handle adding a new category
+  const handleAddCategory = () => {
+    setEditingCategory(undefined);
+    setShowCategoryModal(true);
+  };
+
   // If loading, show spinner
   if (isLoading) {
     return (
@@ -199,56 +206,19 @@ export function GalleryTab() {
 
   return (
     <>
-      <div className="flex justify-between items-center mb-6">
-        {activeTab === 'images' && selectedCategoryId ? (
-          <div className="flex items-center">
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="mr-2"
-              onClick={handleBackToCategories}
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Categories
-            </Button>
-            <h2 className="text-xl font-semibold">
-              {selectedCategory?.name} Images
-            </h2>
-          </div>
-        ) : (
-          <h2 className="text-xl font-semibold">Gallery Management</h2>
-        )}
-        
-        <div>
-          {activeTab === 'categories' ? (
-            <Button onClick={() => {
-              setEditingCategory(undefined);
-              setShowCategoryModal(true);
-            }}>
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Add Category
-            </Button>
-          ) : (
-            <Button onClick={handleAddImage}>
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Add Image
-            </Button>
-          )}
-        </div>
-      </div>
+      <GalleryHeader 
+        activeTab={activeTab}
+        selectedCategoryId={selectedCategoryId}
+        selectedCategory={selectedCategory}
+        onAddClick={activeTab === 'categories' ? handleAddCategory : handleAddImage}
+        onBackClick={handleBackToCategories}
+      />
       
-      {!selectedCategoryId && (
-        <Tabs 
-          value={activeTab} 
-          onValueChange={(value) => setActiveTab(value as 'categories' | 'images')}
-          className="mb-6"
-        >
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="categories">Categories</TabsTrigger>
-            <TabsTrigger value="images">All Images</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      )}
+      <GalleryTabManager
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        selectedCategoryId={selectedCategoryId}
+      />
       
       {activeTab === 'categories' ? (
         <CategoryList 

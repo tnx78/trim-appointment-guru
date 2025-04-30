@@ -4,23 +4,23 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
+// Separating validation logic
+export const validateImageFile = (file: File): { valid: boolean; error?: string } => {
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    return { valid: false, error: 'Invalid file type. Please select an image file.' };
+  }
+  
+  // Validate file size (5MB limit)
+  if (file.size > 5 * 1024 * 1024) {
+    return { valid: false, error: 'File too large. Image size should be less than 5MB.' };
+  }
+  
+  return { valid: true };
+};
+
 export function useGalleryFileUpload() {
   const [isUploading, setIsUploading] = useState(false);
-
-  // Validate that the file is an image with proper size
-  const validateImageFile = (file: File): { valid: boolean; error?: string } => {
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      return { valid: false, error: 'Invalid file type. Please select an image file.' };
-    }
-    
-    // Validate file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      return { valid: false, error: 'File too large. Image size should be less than 5MB.' };
-    }
-    
-    return { valid: true };
-  };
 
   // Upload and return a URL for the image
   const uploadImageFile = async (file: File): Promise<string | null> => {
@@ -61,7 +61,7 @@ export function useGalleryFileUpload() {
       const uniqueFileName = `${uuidv4()}.${fileExtension}`;
       console.log('Uploading file with name:', uniqueFileName, 'type:', file.type);
       
-      // IMPORTANT: Upload the file directly, with the correct content type
+      // Upload the file directly, with the correct content type
       const { data, error } = await supabase.storage
         .from('gallery')
         .upload(uniqueFileName, file, {

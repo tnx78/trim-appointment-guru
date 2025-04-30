@@ -6,9 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GalleryCategory, GalleryImage } from '@/context/GalleryContext';
-import { Image, X, Upload, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useGalleryFileUpload } from '@/hooks/gallery/useGalleryFileUpload';
+import { validateImageFile } from '@/hooks/gallery/useGalleryFileUpload';
+import { ImagePreview } from './ImagePreview';
+import { ImageUploader } from './ImageUploader';
 
 interface ImageFormProps {
   image?: GalleryImage;
@@ -25,7 +27,6 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
   const [previewUrl, setPreviewUrl] = useState<string | null>(image?.image_url || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const { validateImageFile } = useGalleryFileUpload();
 
   // Reset the form if the image prop changes
   useEffect(() => {
@@ -170,46 +171,16 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
         <Label htmlFor="image">Image</Label>
         <div className="space-y-2">
           {previewUrl ? (
-            <div className="relative w-full aspect-video bg-muted rounded-md overflow-hidden">
-              <img
-                src={previewUrl}
-                alt="Preview"
-                className="w-full h-full object-cover"
-              />
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                className="absolute top-2 right-2"
-                onClick={removeImage}
-                disabled={isSubmitting}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <ImagePreview 
+              previewUrl={previewUrl}
+              removeImage={removeImage}
+              isSubmitting={isSubmitting}
+            />
           ) : (
-            <div className="flex items-center justify-center w-full aspect-video bg-muted rounded-md border-2 border-dashed border-muted-foreground/20">
-              {isSubmitting ? (
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              ) : (
-                <div className="flex flex-col items-center gap-2">
-                  <Upload className="h-8 w-8 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Click to upload an image</p>
-                </div>
-              )}
-              <Input
-                id="image-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
-                disabled={isSubmitting}
-              />
-              <label
-                htmlFor="image-upload"
-                className="absolute inset-0 cursor-pointer"
-              />
-            </div>
+            <ImageUploader
+              isSubmitting={isSubmitting}
+              handleImageChange={handleImageChange}
+            />
           )}
 
           {uploadError && (
