@@ -15,7 +15,7 @@ export function useGalleryStorage() {
 
     try {
       setIsUploading(true);
-      console.log('Starting image upload process for file:', file.name);
+      console.log('Starting image upload process for file:', file.name, 'type:', file.type);
       
       // Check if we're in demo mode
       const { data: sessionData } = await supabase.auth.getSession();
@@ -54,7 +54,8 @@ export function useGalleryStorage() {
           .from('gallery')
           .upload(uniqueFileName, file, {
             cacheControl: '3600',
-            upsert: false
+            upsert: false,
+            contentType: file.type // Set content type explicitly from the file
           });
         
         if (error) {

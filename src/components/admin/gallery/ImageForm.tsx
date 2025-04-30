@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { GalleryCategory, GalleryImage } from '@/context/GalleryContext';
 import { Image, X, Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useGalleryFileUpload } from '@/hooks/gallery/useGalleryFileUpload';
 
 interface ImageFormProps {
   image?: GalleryImage;
@@ -24,6 +25,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
   const [previewUrl, setPreviewUrl] = useState<string | null>(image?.image_url || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const { validateImageFile } = useGalleryFileUpload();
 
   // Reset the form if the image prop changes
   useEffect(() => {
@@ -49,17 +51,11 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
     setUploadError(null);
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please select an image file');
-        setUploadError('Invalid file type. Please select an image file.');
-        return;
-      }
-      
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size should be less than 5MB');
-        setUploadError('File too large. Image size should be less than 5MB.');
+      // Validate file using our hook
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        toast.error(validation.error);
+        setUploadError(validation.error);
         return;
       }
       
@@ -69,7 +65,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
       const objectUrl = URL.createObjectURL(file);
       setPreviewUrl(objectUrl);
       
-      // Clean up the object URL when it's no longer needed
+      // Clean up the object URL when component unmounts
       return () => URL.revokeObjectURL(objectUrl);
     }
   };
@@ -109,8 +105,8 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
     try {
       console.log('Submitting image data:', {
         category_id: categoryId,
-        title: title || undefined,
-        description: description || undefined,
+        title,
+        description,
         image_url: image?.image_url || '',
       });
       

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, PlusCircle, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
@@ -279,6 +279,9 @@ export function GalleryTab() {
             <DialogTitle>
               {editingCategory ? 'Edit Category' : 'Add New Category'}
             </DialogTitle>
+            <DialogDescription>
+              {editingCategory ? 'Edit this gallery category' : 'Add a new gallery category'}
+            </DialogDescription>
           </DialogHeader>
           <CategoryForm 
             category={editingCategory} 
@@ -298,6 +301,9 @@ export function GalleryTab() {
             <DialogTitle>
               {editingImage ? 'Edit Image' : 'Add New Image'}
             </DialogTitle>
+            <DialogDescription>
+              {editingImage ? 'Edit this gallery image' : 'Add a new image to the gallery'}
+            </DialogDescription>
           </DialogHeader>
           <ImageForm 
             image={editingImage} 

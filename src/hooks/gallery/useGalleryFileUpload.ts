@@ -52,12 +52,13 @@ export function useGalleryFileUpload() {
       const uniqueFileName = `${uuidv4()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
       console.log('Uploading file with name:', uniqueFileName);
       
-      // Upload file to Supabase storage
+      // Upload file to Supabase storage - fixed to use the file directly, not JSON
       const { data, error } = await supabase.storage
         .from('gallery')
         .upload(uniqueFileName, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: false,
+          contentType: file.type // Explicitly set content type from the file
         });
       
       if (error) {
@@ -76,6 +77,9 @@ export function useGalleryFileUpload() {
       
       console.log('File uploaded successfully:', publicUrl);
       return publicUrl;
+    } catch (error: any) {
+      console.error('Error in createImageUrl:', error);
+      throw error;
     } finally {
       setIsUploading(false);
     }

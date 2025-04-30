@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { GalleryCategory, GalleryImage } from '@/context/GalleryContext';
 import { useGalleryCategories } from '@/hooks/useGalleryCategories';
 import { useGalleryImages } from '@/hooks/useGalleryImages';
-import { useGalleryStorage } from '@/hooks/useGalleryStorage';
+import { useGalleryFileUpload } from '@/hooks/gallery/useGalleryFileUpload';
 import { toast } from 'sonner';
 
 export function useGalleryOperations() {
@@ -30,8 +30,8 @@ export function useGalleryOperations() {
   
   const { 
     isUploading, 
-    uploadImage: uploadImageToStorage
-  } = useGalleryStorage();
+    createImageUrl
+  } = useGalleryFileUpload();
 
   // Wrap the hook methods to ensure they update the UI and reload data
   const addCategory = async (category: Omit<GalleryCategory, 'id'>): Promise<GalleryCategory | null> => {
@@ -64,7 +64,7 @@ export function useGalleryOperations() {
         return null;
       }
       
-      return await uploadImageToStorage(file);
+      return await createImageUrl(file);
     } catch (err: any) {
       console.error('Error in uploadImage:', err);
       toast.error('Failed to upload image: ' + (err.message || 'Unknown error'));
