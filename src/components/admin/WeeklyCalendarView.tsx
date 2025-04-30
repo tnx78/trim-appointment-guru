@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, isSameDay, addWeeks, subWeeks } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -129,28 +130,29 @@ export function WeeklyCalendarView({
         
         if (success) {
           // Update the selected appointment state to match the updated status
-          setSelectedAppointment({
-            ...selectedAppointment,
+          setSelectedAppointment(prev => prev ? {
+            ...prev,
             status: 'cancelled'
-          });
+          } : null);
           
-          // Close the cancel dialog first
+          // Safely close dialogs with a delay between them
           setShowCancelDialog(false);
           
-          // Then close the details dialog after a short delay
+          // Use setTimeout to close details dialog after cancel dialog animation completes
           setTimeout(() => {
             setShowDetails(false);
-          }, 500);
-        } else {
-          // If unsuccessful, just close the cancel dialog
-          setShowCancelDialog(false);
+            setIsCancelling(false); // Move this here to ensure it happens after dialog closes
+          }, 300);
+          
+          return; // Exit early to prevent setting isCancelling = false prematurely
         }
       } catch (error) {
         console.error('Error during cancellation:', error);
-        setShowCancelDialog(false);
-      } finally {
-        setIsCancelling(false);
       }
+      
+      // Only reached if cancellation failed or there was an error
+      setShowCancelDialog(false);
+      setIsCancelling(false);
     }
   };
 
@@ -176,6 +178,19 @@ export function WeeklyCalendarView({
   };
 
   const dayAppointmentMap = createDayAppointmentMap();
+
+  // Handle safe dialog closing
+  const handleDetailsDialogChange = (open: boolean) => {
+    if (!open && !isCancelling && !isCompleting) {
+      setShowDetails(false);
+    }
+  };
+
+  const handleCancelDialogChange = (open: boolean) => {
+    if (!open && !isCancelling) {
+      setShowCancelDialog(false);
+    }
+  };
 
   return (
     <Card className="w-full">
@@ -270,11 +285,10 @@ export function WeeklyCalendarView({
       </CardContent>
 
       {/* Dialog for appointment details */}
-      <Dialog open={showDetails} onOpenChange={(open) => {
-        if (!isCancelling && !isCompleting) {
-          setShowDetails(open);
-        }
-      }}>
+      <Dialog 
+        open={showDetails} 
+        onOpenChange={handleDetailsDialogChange}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Appointment Details</DialogTitle>
@@ -347,11 +361,7 @@ export function WeeklyCalendarView({
       {/* Confirmation dialog for cancellation */}
       <AlertDialog 
         open={showCancelDialog} 
-        onOpenChange={(open) => {
-          if (!isCancelling) {
-            setShowCancelDialog(open);
-          }
-        }}
+        onOpenChange={handleCancelDialogChange}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
