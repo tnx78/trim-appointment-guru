@@ -11,10 +11,48 @@ export function useServiceStorage() {
   const verifyBucket = async (): Promise<boolean> => {
     try {
       console.log('Verifying services bucket exists...');
+      
+      // First, check if we're in demo mode
+      const { data: sessionData } = await supabase.auth.getSession();
+      const hasRealSession = !!sessionData.session;
+      const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
+      
+      // Skip actual verification for demo mode
+      if (inDemoMode) {
+        console.log('Demo mode: Skipping bucket verification');
+        return true;
+      }
+      
+      // Get actual bucket info from Supabase
       const { data, error } = await supabase.storage.getBucket('services');
       
       if (error) {
         console.error('Error checking services bucket:', error);
+        
+        // Check if bucket doesn't exist
+        if (error.message.includes('does not exist')) {
+          console.log('Attempting to create services bucket...');
+          
+          try {
+            const { data: createData, error: createError } = await supabase.storage.createBucket('services', {
+              public: true,
+              fileSizeLimit: 5242880, // 5MB
+              allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg']
+            });
+            
+            if (createError) {
+              console.error('Error creating services bucket:', createError);
+              return false;
+            }
+            
+            console.log('Services bucket created successfully:', createData);
+            return true;
+          } catch (createErr) {
+            console.error('Exception creating bucket:', createErr);
+            return false;
+          }
+        }
+        
         return false;
       }
       
@@ -69,6 +107,7 @@ export function useServiceStorage() {
       // Verify bucket exists
       const bucketExists = await verifyBucket();
       if (!bucketExists) {
+        console.error('Services bucket verification failed');
         toast.error('Services storage is not configured properly. Please contact support.');
         return null;
       }

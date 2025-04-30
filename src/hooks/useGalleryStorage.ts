@@ -41,10 +41,37 @@ export function useGalleryStorage() {
   const verifyBucket = async (): Promise<boolean> => {
     try {
       console.log('Verifying gallery bucket exists...');
+      
+      // Get actual bucket info from Supabase
       const { data, error } = await supabase.storage.getBucket('gallery');
       
       if (error) {
         console.error('Error checking gallery bucket:', error);
+        
+        // Check if bucket doesn't exist
+        if (error.message.includes('does not exist')) {
+          console.log('Attempting to create gallery bucket...');
+          
+          try {
+            const { data: createData, error: createError } = await supabase.storage.createBucket('gallery', {
+              public: true,
+              fileSizeLimit: 5242880, // 5MB
+              allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg']
+            });
+            
+            if (createError) {
+              console.error('Error creating gallery bucket:', createError);
+              return false;
+            }
+            
+            console.log('Gallery bucket created successfully:', createData);
+            return true;
+          } catch (createErr) {
+            console.error('Exception creating bucket:', createErr);
+            return false;
+          }
+        }
+        
         return false;
       }
       
