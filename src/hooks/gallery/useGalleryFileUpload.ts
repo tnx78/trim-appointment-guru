@@ -7,8 +7,9 @@ import { v4 as uuidv4 } from 'uuid';
 // Separating validation logic
 export const validateImageFile = (file: File): { valid: boolean; error?: string } => {
   // Validate file type
-  if (!file.type.startsWith('image/')) {
-    return { valid: false, error: 'Invalid file type. Please select an image file.' };
+  const validMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+  if (!validMimeTypes.includes(file.type)) {
+    return { valid: false, error: 'Unsupported file type. Please use JPG, PNG or GIF images.' };
   }
   
   // Validate file size (5MB limit)
@@ -57,16 +58,20 @@ export function useGalleryFileUpload() {
       }
       
       // Generate a unique filename to avoid conflicts
-      const fileExtension = file.name.split('.').pop() || '';
+      const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
       const uniqueFileName = `${uuidv4()}.${fileExtension}`;
       console.log('Uploading file with name:', uniqueFileName, 'type:', file.type, 'size:', file.size);
       
-      // Direct file upload with content-type explicitly set
+      // Create formData object with proper content-type
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Direct file upload
       console.log('Starting upload to Supabase storage...');
       const { data, error } = await supabase.storage
         .from('gallery')
         .upload(uniqueFileName, file, {
-          contentType: file.type, // Explicitly set content type
+          contentType: file.type,
           cacheControl: '3600'
         });
       
@@ -76,7 +81,7 @@ export function useGalleryFileUpload() {
           toast.error('Gallery storage is not available. Please contact support.');
         } else if (error.message.includes('mime type')) {
           console.error('MIME type issue detected. File type:', file.type);
-          toast.error(`Upload failed: Unsupported file type. Please use JPG, PNG or GIF images.`);
+          toast.error('Unsupported file type. Please use JPG, PNG or GIF images.');
         } else {
           toast.error(`Upload failed: ${error.message}`);
         }

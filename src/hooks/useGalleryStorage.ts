@@ -37,25 +37,54 @@ export function useGalleryStorage() {
     });
   };
 
-  // Upload image to Supabase storage
-  const uploadToSupabase = async (file: File): Promise<string | null> => {
+  // Upload image to Supabase storage or create data URL in demo mode
+  const uploadImage = async (file: File): Promise<string | null> => {
+    if (!file) {
+      console.error('No file provided for upload');
+      toast.error('No file selected');
+      return null;
+    }
+
+    // Validate file
+    const validMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!validMimeTypes.includes(file.type)) {
+      toast.error('Unsupported file type. Please use JPG, PNG or GIF images.');
+      return null;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      return null;
+    }
+
     try {
-      const fileExtension = file.name.split('.').pop() || '';
-      const uniqueFileName = `${uuidv4()}.${fileExtension}`;
-      console.log('Uploading file to Supabase with name:', uniqueFileName, 'type:', file.type, 'size:', file.size);
+      setIsUploading(true);
+      console.log('Starting image upload process for file:', file.name, 'type:', file.type, 'size:', file.size);
       
-      // Direct file upload with explicit content type
+      const inDemoMode = await checkDemoMode();
+      
+      // For demo mode, create a data URL
+      if (inDemoMode) {
+        return await uploadDemoImage(file);
+      }
+      
+      // Generate a unique filename with correct extension
+      const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
+      const uniqueFileName = `${uuidv4()}.${fileExtension}`;
+      console.log('Uploading file to Supabase with name:', uniqueFileName, 'type:', file.type);
+      
+      // Direct upload to Supabase
       const { data, error } = await supabase.storage
         .from('gallery')
         .upload(uniqueFileName, file, {
-          contentType: file.type, // Explicitly set content type
+          contentType: file.type,
           cacheControl: '3600'
         });
       
       if (error) {
         console.error('Upload error:', error);
         if (error.message.includes('does not exist')) {
-          toast.error('Gallery storage is not available. Please contact support.');
+          toast.error('Gallery storage bucket not found. Please contact support.');
         } else if (error.message.includes('mime type')) {
           toast.error('Unsupported file type. Please use JPG, PNG or GIF images.');
         } else {
@@ -79,40 +108,6 @@ export function useGalleryStorage() {
       toast.success('Image uploaded successfully');
       
       return publicUrl;
-    } catch (error: any) {
-      console.error('Error in uploadToSupabase:', error);
-      return null;
-    }
-  };
-
-  // Upload image to Supabase storage or create data URL in demo mode
-  const uploadImage = async (file: File): Promise<string | null> => {
-    if (!file) {
-      console.error('No file provided for upload');
-      toast.error('No file selected');
-      return null;
-    }
-
-    // Validate file
-    const validation = validateImageFile(file);
-    if (!validation.valid) {
-      toast.error(validation.error);
-      return null;
-    }
-
-    try {
-      setIsUploading(true);
-      console.log('Starting image upload process for file:', file.name, 'type:', file.type, 'size:', file.size);
-      
-      const inDemoMode = await checkDemoMode();
-      
-      // For demo mode, create a data URL
-      if (inDemoMode) {
-        return await uploadDemoImage(file);
-      }
-      
-      // For real uploads, use Supabase
-      return await uploadToSupabase(file);
     } catch (error: any) {
       console.error('Error uploading image:', error);
       toast.error(`Upload error: ${error.message || 'Unknown error'}`);

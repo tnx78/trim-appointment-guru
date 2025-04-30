@@ -38,12 +38,14 @@ export function useServiceStorage() {
       return null;
     }
 
-    // Validate file
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+    // Validate file type
+    const validMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!validMimeTypes.includes(file.type)) {
+      toast.error('Unsupported file type. Please use JPG, PNG or GIF images.');
       return null;
     }
 
+    // Validate file size
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image size should be less than 5MB');
       return null;
@@ -63,7 +65,7 @@ export function useServiceStorage() {
       }
 
       // Generate a unique filename to avoid conflicts
-      const fileExtension = file.name.split('.').pop() || '';
+      const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
       const uniqueFileName = `${uuidv4()}.${fileExtension}`;
       console.log('Uploading to services bucket with name:', uniqueFileName);
       
@@ -71,14 +73,14 @@ export function useServiceStorage() {
       const { data, error } = await supabase.storage
         .from('services')
         .upload(uniqueFileName, file, {
-          contentType: file.type, // Explicitly set content type
+          contentType: file.type,
           cacheControl: '3600'
         });
       
       if (error) {
         console.error('Upload error:', error);
         if (error.message.includes('does not exist')) {
-          toast.error('Service storage is not available. Please contact support.');
+          toast.error('Service storage bucket not found. Please contact support.');
         } else if (error.message.includes('mime type')) {
           toast.error('Unsupported file type. Please use JPG, PNG or GIF images.');
         } else {
