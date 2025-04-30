@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,39 +39,41 @@ export function useGalleryStorage() {
 
   // Upload image to Supabase storage
   const uploadToSupabase = async (file: File): Promise<string | null> => {
-    const fileExtension = file.name.split('.').pop() || '';
-    const uniqueFileName = `${uuidv4()}.${fileExtension}`;
-    console.log('Uploading file to Supabase with name:', uniqueFileName);
-    
-    // This is the critical fix: use the File object directly without any transformations
-    const { data, error } = await supabase.storage
-      .from('gallery')
-      .upload(uniqueFileName, file, {
-        cacheControl: '3600',
-        upsert: true
-      });
-    
-    if (error) {
-      console.error('Upload error:', error);
-      toast.error(`Upload failed: ${error.message}`);
+    try {
+      const fileExtension = file.name.split('.').pop() || '';
+      const uniqueFileName = `${uuidv4()}.${fileExtension}`;
+      console.log('Uploading file to Supabase with name:', uniqueFileName);
+      
+      // FIXED: Don't use object form for upload, directly use File object
+      const { data, error } = await supabase.storage
+        .from('gallery')
+        .upload(uniqueFileName, file);
+      
+      if (error) {
+        console.error('Upload error:', error);
+        toast.error(`Upload failed: ${error.message}`);
+        return null;
+      }
+      
+      if (!data || !data.path) {
+        console.error('Upload succeeded but no path returned');
+        toast.error('Upload failed: No file path returned');
+        return null;
+      }
+      
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('gallery')
+        .getPublicUrl(data.path);
+      
+      console.log('File uploaded successfully:', publicUrl);
+      toast.success('Image uploaded successfully');
+      
+      return publicUrl;
+    } catch (error: any) {
+      console.error('Error in uploadToSupabase:', error);
       return null;
     }
-    
-    if (!data || !data.path) {
-      console.error('Upload succeeded but no path returned');
-      toast.error('Upload failed: No file path returned');
-      return null;
-    }
-    
-    // Get the public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('gallery')
-      .getPublicUrl(data.path);
-    
-    console.log('File uploaded successfully:', publicUrl);
-    toast.success('Image uploaded successfully');
-    
-    return publicUrl;
   };
 
   // Upload image to Supabase storage or create data URL in demo mode

@@ -61,13 +61,10 @@ export function useGalleryFileUpload() {
       const uniqueFileName = `${uuidv4()}.${fileExtension}`;
       console.log('Uploading file with name:', uniqueFileName, 'type:', file.type);
       
-      // Upload the file directly - this is the critical fix
+      // FIXED: Direct file upload without transformation
       const { data, error } = await supabase.storage
         .from('gallery')
-        .upload(uniqueFileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
+        .upload(uniqueFileName, file);
       
       if (error) {
         console.error('Supabase storage upload error:', error);

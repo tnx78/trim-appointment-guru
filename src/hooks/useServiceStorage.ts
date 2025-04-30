@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,9 +36,10 @@ export function useServiceStorage() {
       }
       
       // Generate a unique filename to avoid conflicts
-      const uniqueFileName = `${uuidv4()}-${file.name}`;
+      const fileExtension = file.name.split('.').pop() || '';
+      const uniqueFileName = `${uuidv4()}.${fileExtension}`;
       
-      // Upload file to Supabase storage - this is the critical fix
+      // FIXED: Direct file upload without transformation
       const { data, error } = await supabase.storage
         .from('services')
         .upload(uniqueFileName, file);
