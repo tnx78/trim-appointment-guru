@@ -59,17 +59,43 @@ export function useGalleryFileUpload() {
       // Generate a unique filename to avoid conflicts
       const fileExtension = file.name.split('.').pop() || '';
       const uniqueFileName = `${uuidv4()}.${fileExtension}`;
-      console.log('Uploading file with name:', uniqueFileName, 'type:', file.type);
+      console.log('Uploading file with name:', uniqueFileName, 'type:', file.type, 'size:', file.size);
       
-      // Direct file upload with content-type explicitly set to the file's mime type
+      // Verify the file and bucket exist before upload
+      console.log('Verifying storage bucket exists...');
+      try {
+        const { data: bucketData, error: bucketError } = await supabase.storage
+          .getBucket('gallery');
+          
+        if (bucketError) {
+          console.error('Error verifying gallery bucket:', bucketError);
+          throw new Error(`Storage bucket check failed: ${bucketError.message}`);
+        }
+        
+        console.log('Bucket verified:', bucketData?.id);
+      } catch (bucketCheckError) {
+        console.error('Failed to check bucket:', bucketCheckError);
+        toast.error('Storage not properly configured. Please contact support.');
+        throw bucketCheckError;
+      }
+      
+      // Direct file upload with content-type explicitly set
+      console.log('Starting upload to Supabase storage...');
       const { data, error } = await supabase.storage
         .from('gallery')
         .upload(uniqueFileName, file, {
-          contentType: file.type // Explicitly set content type to the file's type
+          contentType: file.type, // Explicitly set content type
+          cacheControl: '3600'
         });
       
       if (error) {
         console.error('Supabase storage upload error:', error);
+        if (error.message.includes('mime type')) {
+          console.error('MIME type issue detected. File type:', file.type);
+          toast.error(`Upload failed: Unsupported file type. Please use JPG, PNG or GIF images.`);
+        } else {
+          toast.error(`Upload failed: ${error.message}`);
+        }
         throw new Error(`Storage upload failed: ${error.message}`);
       }
       

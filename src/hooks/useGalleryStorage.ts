@@ -37,23 +37,54 @@ export function useGalleryStorage() {
     });
   };
 
+  // Verify storage bucket exists
+  const verifyBucket = async (): Promise<boolean> => {
+    try {
+      console.log('Verifying gallery bucket exists...');
+      const { data, error } = await supabase.storage.getBucket('gallery');
+      
+      if (error) {
+        console.error('Error checking gallery bucket:', error);
+        return false;
+      }
+      
+      console.log('Gallery bucket verified:', data);
+      return true;
+    } catch (error) {
+      console.error('Exception checking bucket:', error);
+      return false;
+    }
+  };
+
   // Upload image to Supabase storage
   const uploadToSupabase = async (file: File): Promise<string | null> => {
     try {
+      // Verify bucket exists first
+      const bucketExists = await verifyBucket();
+      if (!bucketExists) {
+        toast.error('Gallery storage is not configured properly. Please contact support.');
+        return null;
+      }
+
       const fileExtension = file.name.split('.').pop() || '';
       const uniqueFileName = `${uuidv4()}.${fileExtension}`;
-      console.log('Uploading file to Supabase with name:', uniqueFileName);
+      console.log('Uploading file to Supabase with name:', uniqueFileName, 'type:', file.type, 'size:', file.size);
       
       // Direct file upload with explicit content type
       const { data, error } = await supabase.storage
         .from('gallery')
         .upload(uniqueFileName, file, {
-          contentType: file.type // Explicitly set content type
+          contentType: file.type, // Explicitly set content type
+          cacheControl: '3600'
         });
       
       if (error) {
         console.error('Upload error:', error);
-        toast.error(`Upload failed: ${error.message}`);
+        if (error.message.includes('mime type')) {
+          toast.error('Unsupported file type. Please use JPG, PNG or GIF images.');
+        } else {
+          toast.error(`Upload failed: ${error.message}`);
+        }
         return null;
       }
       

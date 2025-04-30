@@ -7,14 +7,45 @@ import { v4 as uuidv4 } from 'uuid';
 export function useServiceStorage() {
   const [isUploading, setIsUploading] = useState(false);
 
+  // Verify bucket exists
+  const verifyBucket = async (): Promise<boolean> => {
+    try {
+      console.log('Verifying services bucket exists...');
+      const { data, error } = await supabase.storage.getBucket('services');
+      
+      if (error) {
+        console.error('Error checking services bucket:', error);
+        return false;
+      }
+      
+      console.log('Services bucket verified:', data);
+      return true;
+    } catch (error) {
+      console.error('Exception checking bucket:', error);
+      return false;
+    }
+  };
+
   const uploadImage = async (file: File): Promise<string | null> => {
     if (!file) {
       toast.error('No file selected');
       return null;
     }
 
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return null;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      return null;
+    }
+
     try {
       setIsUploading(true);
+      console.log('Starting service image upload for file:', file.name, 'type:', file.type, 'size:', file.size);
       
       // Check if we're in demo mode
       const { data: sessionData } = await supabase.auth.getSession();
@@ -34,21 +65,40 @@ export function useServiceStorage() {
           reader.readAsDataURL(file);
         });
       }
+
+      // Verify bucket exists
+      const bucketExists = await verifyBucket();
+      if (!bucketExists) {
+        toast.error('Services storage is not configured properly. Please contact support.');
+        return null;
+      }
       
       // Generate a unique filename to avoid conflicts
       const fileExtension = file.name.split('.').pop() || '';
       const uniqueFileName = `${uuidv4()}.${fileExtension}`;
+      console.log('Uploading to services bucket with name:', uniqueFileName);
       
       // Direct file upload with content-type explicitly set
       const { data, error } = await supabase.storage
         .from('services')
         .upload(uniqueFileName, file, {
-          contentType: file.type // Explicitly set content type
+          contentType: file.type, // Explicitly set content type
+          cacheControl: '3600'
         });
       
       if (error) {
         console.error('Upload error:', error);
-        toast.error(`Upload failed: ${error.message}`);
+        if (error.message.includes('mime type')) {
+          toast.error('Unsupported file type. Please use JPG, PNG or GIF images.');
+        } else {
+          toast.error(`Upload failed: ${error.message}`);
+        }
+        return null;
+      }
+      
+      if (!data || !data.path) {
+        console.error('Upload succeeded but no path returned');
+        toast.error('Upload failed: No file path returned');
         return null;
       }
       
