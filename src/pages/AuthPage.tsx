@@ -1,35 +1,18 @@
+
 import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Scissors } from 'lucide-react';
-import { toast } from 'sonner';
-import { Separator } from '@/components/ui/separator';
-import { supabase } from '@/integrations/supabase/client';
+import { LoginForm } from '@/components/auth/LoginForm';
+import { RegisterForm } from '@/components/auth/RegisterForm';
+import { ResetPasswordForm } from '@/components/auth/ResetPasswordForm';
 
 export default function AuthPage() {
-  const { isAuthenticated, login, register, loading, isAdmin, loginWithGoogle, loginWithFacebook } = useAuth();
+  const { isAuthenticated, loading, isAdmin, loginWithGoogle, loginWithFacebook } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('login');
-
-  // Login form state
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-
-  // Registration form state
-  const [regEmail, setRegEmail] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-  const [regConfirmPassword, setRegConfirmPassword] = useState('');
-  const [regName, setRegName] = useState('');
-  const [regPhone, setRegPhone] = useState('');
-  
-  // Password reset state
-  const [resetEmail, setResetEmail] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
 
   // Handle redirection when auth state changes
   useEffect(() => {
@@ -61,48 +44,11 @@ export default function AuthPage() {
     return <Navigate to="/" />;
   }
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const success = await login(loginEmail, loginPassword);
-      if (success) {
-        toast.success('Login successful');
-        // Navigation will happen in the useEffect hook based on isAdmin state
-      }
-    } catch (error: any) {
-      toast.error(error.message || "Please check your credentials and try again");
-    }
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (regPassword !== regConfirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-    
-    if (regPassword.length < 6) {
-      toast.error("Password must be at least 6 characters long");
-      return;
-    }
-    
-    try {
-      const success = await register(regEmail, regPassword, regName, regPhone);
-      if (success) {
-        toast.success("Registration successful! You can now log in.");
-        setActiveTab('login');
-      }
-    } catch (error: any) {
-      toast.error(error.message || "Please try again with different credentials");
-    }
-  };
-
   const handleGoogleLogin = async () => {
     try {
       await loginWithGoogle();
     } catch (error: any) {
-      toast.error(error.message || "Failed to login with Google");
+      console.error('Google login error:', error);
     }
   };
 
@@ -110,37 +56,7 @@ export default function AuthPage() {
     try {
       await loginWithFacebook();
     } catch (error: any) {
-      toast.error(error.message || "Failed to login with Facebook");
-    }
-  };
-
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!resetEmail) {
-      toast.error("Please enter your email address");
-      return;
-    }
-    
-    try {
-      setResetLoading(true);
-      
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/auth?tab=login`,
-      });
-      
-      if (error) {
-        console.error("Password reset error:", error);
-        throw error;
-      }
-      
-      toast.success("Password reset email sent. Please check your inbox.");
-      setResetEmail('');
-      setActiveTab('login');
-    } catch (error: any) {
-      toast.error(error.message || "Failed to send password reset email");
-    } finally {
-      setResetLoading(false);
+      console.error('Facebook login error:', error);
     }
   };
 
@@ -164,81 +80,13 @@ export default function AuthPage() {
               <CardTitle>Login</CardTitle>
               <CardDescription>Enter your credentials to access your account</CardDescription>
             </CardHeader>
-            <form onSubmit={handleLogin}>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <Input 
-                    id="login-email" 
-                    type="email" 
-                    placeholder="your@email.com" 
-                    value={loginEmail} 
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
-                  <Input 
-                    id="login-password" 
-                    type="password" 
-                    value={loginPassword} 
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="flex justify-end">
-                  <Button 
-                    type="button" 
-                    variant="link" 
-                    className="px-0 font-normal" 
-                    onClick={() => setActiveTab('reset')}
-                  >
-                    Forgot password?
-                  </Button>
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Logging in...' : 'Login'}
-                </Button>
-                
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <Separator className="w-full" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col space-y-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={handleGoogleLogin}
-                    className="w-full"
-                    disabled={loading}
-                  >
-                    <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
-                      <path d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"/>
-                    </svg>
-                    Sign in with Google
-                  </Button>
-                  
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={handleFacebookLogin}
-                    className="w-full"
-                    disabled={loading}
-                  >
-                    <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
-                      <path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"/>
-                    </svg>
-                    Sign in with Facebook
-                  </Button>
-                </div>
-              </CardContent>
-            </form>
+            <CardContent>
+              <LoginForm 
+                onForgotPassword={() => setActiveTab('reset')}
+                onGoogleLogin={handleGoogleLogin}
+                onFacebookLogin={handleFacebookLogin}
+              />
+            </CardContent>
           </Card>
         </TabsContent>
         
@@ -248,101 +96,13 @@ export default function AuthPage() {
               <CardTitle>Create an account</CardTitle>
               <CardDescription>Fill in your details to create a new account</CardDescription>
             </CardHeader>
-            <form onSubmit={handleRegister}>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reg-name">Full Name</Label>
-                  <Input 
-                    id="reg-name" 
-                    placeholder="John Doe" 
-                    value={regName} 
-                    onChange={(e) => setRegName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reg-email">Email</Label>
-                  <Input 
-                    id="reg-email" 
-                    type="email" 
-                    placeholder="your@email.com" 
-                    value={regEmail} 
-                    onChange={(e) => setRegEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reg-phone">Phone (optional)</Label>
-                  <Input 
-                    id="reg-phone" 
-                    type="tel" 
-                    placeholder="+1234567890" 
-                    value={regPhone} 
-                    onChange={(e) => setRegPhone(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reg-password">Password</Label>
-                  <Input 
-                    id="reg-password" 
-                    type="password" 
-                    value={regPassword} 
-                    onChange={(e) => setRegPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reg-confirm-password">Confirm Password</Label>
-                  <Input 
-                    id="reg-confirm-password" 
-                    type="password" 
-                    value={regConfirmPassword} 
-                    onChange={(e) => setRegConfirmPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Creating account...' : 'Register'}
-                </Button>
-                
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <Separator className="w-full" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col space-y-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={handleGoogleLogin}
-                    className="w-full"
-                    disabled={loading}
-                  >
-                    <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
-                      <path d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"/>
-                    </svg>
-                    Sign up with Google
-                  </Button>
-                  
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={handleFacebookLogin}
-                    className="w-full"
-                    disabled={loading}
-                  >
-                    <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
-                      <path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"/>
-                    </svg>
-                    Sign up with Facebook
-                  </Button>
-                </div>
-              </CardContent>
-            </form>
+            <CardContent>
+              <RegisterForm 
+                onGoogleLogin={handleGoogleLogin}
+                onFacebookLogin={handleFacebookLogin}
+                onSuccess={() => setActiveTab('login')}
+              />
+            </CardContent>
           </Card>
         </TabsContent>
 
@@ -352,33 +112,11 @@ export default function AuthPage() {
               <CardTitle>Reset Password</CardTitle>
               <CardDescription>Enter your email to receive a password reset link</CardDescription>
             </CardHeader>
-            <form onSubmit={handleResetPassword}>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email">Email</Label>
-                  <Input 
-                    id="reset-email" 
-                    type="email" 
-                    placeholder="your@email.com" 
-                    value={resetEmail} 
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={resetLoading}>
-                  {resetLoading ? 'Sending...' : 'Send Reset Link'}
-                </Button>
-                <div className="text-center">
-                  <Button 
-                    type="button" 
-                    variant="link" 
-                    onClick={() => setActiveTab('login')}
-                  >
-                    Back to login
-                  </Button>
-                </div>
-              </CardContent>
-            </form>
+            <CardContent>
+              <ResetPasswordForm
+                onBackToLogin={() => setActiveTab('login')}
+              />
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
