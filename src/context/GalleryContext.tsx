@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -87,54 +86,51 @@ export function GalleryProvider({ children }: { children: ReactNode }) {
       if (inDemoMode) {
         console.log('Loading gallery data in demo mode');
         
-        // Load categories from localStorage
-        const demoCategories = JSON.parse(
-          localStorage.getItem('demoCategories') || '[]'
-        ) as GalleryCategory[];
+        // Use our refactored hooks to load data
+        await Promise.all([
+          (async () => {
+            try {
+              // Load categories from localStorage
+              const demoCategories = JSON.parse(
+                localStorage.getItem('demoCategories') || '[]'
+              ) as GalleryCategory[];
+              setCategories(demoCategories);
+            } catch (err) {
+              console.error('Error loading demo categories:', err);
+            }
+          })(),
+          loadImages()
+        ]);
         
-        // Load images from localStorage
-        const demoImages = JSON.parse(
-          localStorage.getItem('demoImages') || '[]'
-        ) as GalleryImage[];
-        
-        setCategories(demoCategories);
-        setImages(demoImages);
         return;
       }
 
       // With real session, load from Supabase
-      // Fetch categories from Supabase
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('gallery_categories')
-        .select('*')
-        .order('sort_order', { ascending: true });
+      await Promise.all([
+        (async () => {
+          try {
+            // Fetch categories from Supabase
+            const { data: categoriesData, error: categoriesError } = await supabase
+              .from('gallery_categories')
+              .select('*')
+              .order('sort_order', { ascending: true });
 
-      if (categoriesError) {
-        console.error('Error fetching categories from Supabase:', categoriesError);
-        setError(categoriesError.message);
-        toast.error('Error loading categories: ' + categoriesError.message);
-        return;
-      }
-      
-      console.log('Fetched categories from Supabase:', categoriesData);
-      setCategories(categoriesData || []);
-
-      // Fetch images from Supabase
-      const { data: imagesData, error: imagesError } = await supabase
-        .from('gallery_images')
-        .select('*')
-        .order('sort_order', { ascending: true });
-
-      if (imagesError) {
-        console.error('Error fetching images from Supabase:', imagesError);
-        setError(imagesError.message);
-        toast.error('Error loading images: ' + imagesError.message);
-        return;
-      }
-      
-      console.log('Fetched images from Supabase:', imagesData);
-      setImages(imagesData || []);
-      
+            if (categoriesError) {
+              console.error('Error fetching categories from Supabase:', categoriesError);
+              setError(categoriesError.message);
+              toast.error('Error loading categories: ' + categoriesError.message);
+              return;
+            }
+            
+            console.log('Fetched categories from Supabase:', categoriesData);
+            setCategories(categoriesData || []);
+          } catch (err: any) {
+            console.error('Error fetching categories:', err);
+            toast.error('Error loading categories: ' + err.message);
+          }
+        })(),
+        loadImages()
+      ]);
     } catch (error: any) {
       console.error('Error loading gallery data:', error.message);
       setError(error.message);
