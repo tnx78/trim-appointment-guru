@@ -67,13 +67,13 @@ export function GalleryTab() {
   // Handle image form submission
   const handleImageSubmit = async (imageData: Omit<GalleryImage, 'id'>, file?: File) => {
     try {
-      console.log('Handling image submission:', imageData, file);
+      console.log('Handling image submission:', imageData, file ? `${file.name} (${file.type})` : 'no file');
       
       let finalImageUrl = imageData.image_url;
       
       // If we have a new file, upload it first
       if (file) {
-        console.log('Uploading new file...');
+        console.log('Uploading new file...', file.name, file.type, file.size);
         const uploadedUrl = await uploadImage(file);
         
         if (!uploadedUrl) {

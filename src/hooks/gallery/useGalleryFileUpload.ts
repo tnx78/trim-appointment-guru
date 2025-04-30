@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 export function useGalleryFileUpload() {
   const [isUploading, setIsUploading] = useState(false);
 
+  // Validate that the file is an image with proper size
   const validateImageFile = (file: File): { valid: boolean; error?: string } => {
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -21,18 +22,25 @@ export function useGalleryFileUpload() {
     return { valid: true };
   };
 
-  const createImageUrl = async (file: File): Promise<string | null> => {
+  // Upload and return a URL for the image
+  const uploadImageFile = async (file: File): Promise<string | null> => {
+    if (!file) {
+      console.error('No file provided for upload');
+      return null;
+    }
+
     try {
       setIsUploading(true);
+      console.log('Starting image upload process for file:', file.name, 'type:', file.type);
       
-      // Check if we're in demo mode
+      // Check if we're in demo mode (no real auth session)
       const { data: sessionData } = await supabase.auth.getSession();
       const hasRealSession = !!sessionData.session;
       const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
       
-      // For demo mode, create a data URL
+      // For demo mode, return a data URL instead of uploading to Supabase
       if (inDemoMode) {
-        console.log('Demo mode: Creating data URL for image');
+        console.log('Demo mode: Creating data URL for image instead of uploading');
         return new Promise((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => {
@@ -49,36 +57,38 @@ export function useGalleryFileUpload() {
       }
       
       // Generate a unique filename to avoid conflicts
-      const uniqueFileName = `${uuidv4()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const fileExtension = file.name.split('.').pop() || '';
+      const uniqueFileName = `${uuidv4()}.${fileExtension}`;
       console.log('Uploading file with name:', uniqueFileName, 'type:', file.type);
       
-      // Upload file to Supabase storage - explicitly use the file's contentType
+      // IMPORTANT: Upload the file directly, with the correct content type
       const { data, error } = await supabase.storage
         .from('gallery')
         .upload(uniqueFileName, file, {
+          contentType: file.type,
           cacheControl: '3600',
-          upsert: true, // Change to true to overwrite if filename conflict occurs
-          contentType: file.type // Explicitly set content type from the file
+          upsert: true
         });
       
       if (error) {
-        console.error('Upload error:', error);
-        throw new Error(error.message);
+        console.error('Supabase storage upload error:', error);
+        throw new Error(`Storage upload failed: ${error.message}`);
       }
       
       if (!data || !data.path) {
-        throw new Error('No file path returned');
+        console.error('No file path returned from upload');
+        throw new Error('No file path returned from upload');
       }
       
-      // Get the public URL
+      // Get the public URL for the uploaded file
       const { data: { publicUrl } } = supabase.storage
         .from('gallery')
         .getPublicUrl(data.path);
       
-      console.log('File uploaded successfully:', publicUrl);
+      console.log('File uploaded successfully to Supabase, public URL:', publicUrl);
       return publicUrl;
     } catch (error: any) {
-      console.error('Error in createImageUrl:', error);
+      console.error('Error in uploadImageFile:', error);
       throw error;
     } finally {
       setIsUploading(false);
@@ -88,6 +98,6 @@ export function useGalleryFileUpload() {
   return {
     isUploading,
     validateImageFile,
-    createImageUrl
+    uploadImageFile
   };
 }

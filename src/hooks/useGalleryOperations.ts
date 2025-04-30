@@ -30,7 +30,7 @@ export function useGalleryOperations() {
   
   const { 
     isUploading, 
-    createImageUrl,
+    uploadImageFile,
     validateImageFile
   } = useGalleryFileUpload();
 
@@ -73,16 +73,16 @@ export function useGalleryOperations() {
         return null;
       }
       
-      console.log('Uploading file:', file.name, 'type:', file.type);
-      
-      // Attempt to create image URL
-      const imageUrl = await createImageUrl(file);
+      // Upload the file using our dedicated function
+      console.log('Uploading file:', file.name, 'type:', file.type, 'size:', file.size);
+      const imageUrl = await uploadImageFile(file);
       
       if (!imageUrl) {
         throw new Error('Failed to upload image');
       }
       
       console.log('Image uploaded successfully, URL:', imageUrl);
+      toast.success('Image uploaded successfully');
       return imageUrl;
     } catch (err: any) {
       console.error('Error in uploadImage:', err);
@@ -106,8 +106,7 @@ export function useGalleryOperations() {
       await Promise.all([
         (async () => {
           try {
-            // The useGalleryCategories hook handles the loading logic
-            // This is just a placeholder to handle potential errors
+            // The useGalleryCategories hook handles the loading logic internally
           } catch (err: any) {
             console.error('Error loading categories:', err);
             toast.error('Error loading categories: ' + err.message);

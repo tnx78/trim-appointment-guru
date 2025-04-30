@@ -43,6 +43,10 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
       } else {
         setCategoryId('');
       }
+      setTitle('');
+      setDescription('');
+      setPreviewUrl(null);
+      setImageFile(null);
       setUploadError(null);
     }
   }, [image, categories]);
@@ -50,33 +54,44 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUploadError(null);
     const file = e.target.files?.[0];
-    if (file) {
-      // Validate file using our hook
-      const validation = validateImageFile(file);
-      if (!validation.valid) {
-        toast.error(validation.error);
-        setUploadError(validation.error);
-        return;
-      }
-      
-      setImageFile(file);
-      
-      // Create a preview URL
-      const objectUrl = URL.createObjectURL(file);
-      setPreviewUrl(objectUrl);
-      
-      // Clean up the object URL when component unmounts
-      return () => URL.revokeObjectURL(objectUrl);
+    
+    if (!file) {
+      return;
     }
+    
+    // Validate file using our hook
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      setUploadError(validation.error);
+      toast.error(validation.error);
+      return;
+    }
+    
+    console.log('Selected file:', file.name, 'type:', file.type, 'size:', file.size);
+    setImageFile(file);
+    
+    // Create a preview URL
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    
+    // Return cleanup function
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
   };
 
   const removeImage = () => {
-    setImageFile(null);
+    if (imageFile) {
+      setImageFile(null);
+    }
+    
     if (!image) {
       setPreviewUrl(null);
     } else {
+      // Revert to the original image if we're editing
       setPreviewUrl(image.image_url);
     }
+    
     setUploadError(null);
   };
 
@@ -108,6 +123,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
         title,
         description,
         image_url: image?.image_url || '',
+        file: imageFile ? imageFile.name : 'none'
       });
       
       // Submit with the image data and file
