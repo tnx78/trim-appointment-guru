@@ -50,14 +50,14 @@ export function useGalleryFileUpload() {
       
       // Generate a unique filename to avoid conflicts
       const uniqueFileName = `${uuidv4()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-      console.log('Uploading file with name:', uniqueFileName);
+      console.log('Uploading file with name:', uniqueFileName, 'type:', file.type);
       
-      // Upload file to Supabase storage - fixed to use the file directly, not JSON
+      // Upload file to Supabase storage - explicitly use the file's contentType
       const { data, error } = await supabase.storage
         .from('gallery')
         .upload(uniqueFileName, file, {
           cacheControl: '3600',
-          upsert: false,
+          upsert: true, // Change to true to overwrite if filename conflict occurs
           contentType: file.type // Explicitly set content type from the file
         });
       

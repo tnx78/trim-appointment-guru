@@ -50,6 +50,8 @@ export function useGalleryStorage() {
       
       // Try to upload to Supabase storage
       try {
+        // Ensure we're using the proper content type from the file itself
+        console.log('Uploading with content type:', file.type);
         const { data, error } = await supabase.storage
           .from('gallery')
           .upload(uniqueFileName, file, {

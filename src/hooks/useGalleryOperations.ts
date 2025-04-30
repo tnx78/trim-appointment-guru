@@ -30,7 +30,8 @@ export function useGalleryOperations() {
   
   const { 
     isUploading, 
-    createImageUrl
+    createImageUrl,
+    validateImageFile
   } = useGalleryFileUpload();
 
   // Wrap the hook methods to ensure they update the UI and reload data
@@ -47,6 +48,7 @@ export function useGalleryOperations() {
 
   const addImage = async (image: Omit<GalleryImage, 'id'>): Promise<GalleryImage | null> => {
     try {
+      console.log('Adding image with data:', image);
       const result = await addImageHook(image);
       return result;
     } catch (err: any) {
@@ -64,7 +66,24 @@ export function useGalleryOperations() {
         return null;
       }
       
-      return await createImageUrl(file);
+      // Validate the file
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        toast.error(validation.error);
+        return null;
+      }
+      
+      console.log('Uploading file:', file.name, 'type:', file.type);
+      
+      // Attempt to create image URL
+      const imageUrl = await createImageUrl(file);
+      
+      if (!imageUrl) {
+        throw new Error('Failed to upload image');
+      }
+      
+      console.log('Image uploaded successfully, URL:', imageUrl);
+      return imageUrl;
     } catch (err: any) {
       console.error('Error in uploadImage:', err);
       toast.error('Failed to upload image: ' + (err.message || 'Unknown error'));
