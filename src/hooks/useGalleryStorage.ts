@@ -37,62 +37,9 @@ export function useGalleryStorage() {
     });
   };
 
-  // Verify storage bucket exists
-  const verifyBucket = async (): Promise<boolean> => {
-    try {
-      console.log('Verifying gallery bucket exists...');
-      
-      // Get actual bucket info from Supabase
-      const { data, error } = await supabase.storage.getBucket('gallery');
-      
-      if (error) {
-        console.error('Error checking gallery bucket:', error);
-        
-        // Check if bucket doesn't exist
-        if (error.message.includes('does not exist')) {
-          console.log('Attempting to create gallery bucket...');
-          
-          try {
-            const { data: createData, error: createError } = await supabase.storage.createBucket('gallery', {
-              public: true,
-              fileSizeLimit: 5242880, // 5MB
-              allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg']
-            });
-            
-            if (createError) {
-              console.error('Error creating gallery bucket:', createError);
-              return false;
-            }
-            
-            console.log('Gallery bucket created successfully:', createData);
-            return true;
-          } catch (createErr) {
-            console.error('Exception creating bucket:', createErr);
-            return false;
-          }
-        }
-        
-        return false;
-      }
-      
-      console.log('Gallery bucket verified:', data);
-      return true;
-    } catch (error) {
-      console.error('Exception checking bucket:', error);
-      return false;
-    }
-  };
-
   // Upload image to Supabase storage
   const uploadToSupabase = async (file: File): Promise<string | null> => {
     try {
-      // Verify bucket exists first
-      const bucketExists = await verifyBucket();
-      if (!bucketExists) {
-        toast.error('Gallery storage is not configured properly. Please contact support.');
-        return null;
-      }
-
       const fileExtension = file.name.split('.').pop() || '';
       const uniqueFileName = `${uuidv4()}.${fileExtension}`;
       console.log('Uploading file to Supabase with name:', uniqueFileName, 'type:', file.type, 'size:', file.size);
@@ -107,7 +54,9 @@ export function useGalleryStorage() {
       
       if (error) {
         console.error('Upload error:', error);
-        if (error.message.includes('mime type')) {
+        if (error.message.includes('does not exist')) {
+          toast.error('Gallery storage is not available. Please contact support.');
+        } else if (error.message.includes('mime type')) {
           toast.error('Unsupported file type. Please use JPG, PNG or GIF images.');
         } else {
           toast.error(`Upload failed: ${error.message}`);

@@ -7,61 +7,29 @@ import { v4 as uuidv4 } from 'uuid';
 export function useServiceStorage() {
   const [isUploading, setIsUploading] = useState(false);
 
-  // Verify bucket exists
-  const verifyBucket = async (): Promise<boolean> => {
-    try {
-      console.log('Verifying services bucket exists...');
-      
-      // First, check if we're in demo mode
-      const { data: sessionData } = await supabase.auth.getSession();
-      const hasRealSession = !!sessionData.session;
-      const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
-      
-      // Skip actual verification for demo mode
-      if (inDemoMode) {
-        console.log('Demo mode: Skipping bucket verification');
-        return true;
-      }
-      
-      // Get actual bucket info from Supabase
-      const { data, error } = await supabase.storage.getBucket('services');
-      
-      if (error) {
-        console.error('Error checking services bucket:', error);
-        
-        // Check if bucket doesn't exist
-        if (error.message.includes('does not exist')) {
-          console.log('Attempting to create services bucket...');
-          
-          try {
-            const { data: createData, error: createError } = await supabase.storage.createBucket('services', {
-              public: true,
-              fileSizeLimit: 5242880, // 5MB
-              allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg']
-            });
-            
-            if (createError) {
-              console.error('Error creating services bucket:', createError);
-              return false;
-            }
-            
-            console.log('Services bucket created successfully:', createData);
-            return true;
-          } catch (createErr) {
-            console.error('Exception creating bucket:', createErr);
-            return false;
-          }
-        }
-        
-        return false;
-      }
-      
-      console.log('Services bucket verified:', data);
-      return true;
-    } catch (error) {
-      console.error('Exception checking bucket:', error);
-      return false;
-    }
+  // Check if we're in demo mode
+  const checkDemoMode = async (): Promise<boolean> => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const hasRealSession = !!sessionData.session;
+    return !hasRealSession && localStorage.getItem('isAdmin') === 'true';
+  };
+
+  // Handle demo mode image upload
+  const handleDemoModeUpload = (file: File): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        toast.success('Image uploaded successfully (Demo Mode)');
+        resolve(dataUrl);
+      };
+      reader.onerror = () => {
+        console.error('Demo mode: Failed to read image file');
+        toast.error('Failed to read image file');
+        resolve(null);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const uploadImage = async (file: File): Promise<string | null> => {
@@ -86,32 +54,14 @@ export function useServiceStorage() {
       console.log('Starting service image upload for file:', file.name, 'type:', file.type, 'size:', file.size);
       
       // Check if we're in demo mode
-      const { data: sessionData } = await supabase.auth.getSession();
-      const hasRealSession = !!sessionData.session;
-      const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
+      const inDemoMode = await checkDemoMode();
       
       // For demo mode, create a data URL
       if (inDemoMode) {
         console.log('Demo mode: Creating data URL for image');
-        return new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const dataUrl = reader.result as string;
-            toast.success('Image uploaded successfully (Demo Mode)');
-            resolve(dataUrl);
-          };
-          reader.readAsDataURL(file);
-        });
+        return handleDemoModeUpload(file);
       }
 
-      // Verify bucket exists
-      const bucketExists = await verifyBucket();
-      if (!bucketExists) {
-        console.error('Services bucket verification failed');
-        toast.error('Services storage is not configured properly. Please contact support.');
-        return null;
-      }
-      
       // Generate a unique filename to avoid conflicts
       const fileExtension = file.name.split('.').pop() || '';
       const uniqueFileName = `${uuidv4()}.${fileExtension}`;
@@ -127,7 +77,9 @@ export function useServiceStorage() {
       
       if (error) {
         console.error('Upload error:', error);
-        if (error.message.includes('mime type')) {
+        if (error.message.includes('does not exist')) {
+          toast.error('Service storage is not available. Please contact support.');
+        } else if (error.message.includes('mime type')) {
           toast.error('Unsupported file type. Please use JPG, PNG or GIF images.');
         } else {
           toast.error(`Upload failed: ${error.message}`);
@@ -173,9 +125,7 @@ export function useServiceStorage() {
       }
       
       // Check if we're in demo mode
-      const { data: sessionData } = await supabase.auth.getSession();
-      const hasRealSession = !!sessionData.session;
-      const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
+      const inDemoMode = await checkDemoMode();
       
       if (inDemoMode) {
         console.log('Demo mode: Simulating image deletion');

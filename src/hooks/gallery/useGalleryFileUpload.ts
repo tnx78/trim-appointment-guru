@@ -22,52 +22,6 @@ export const validateImageFile = (file: File): { valid: boolean; error?: string 
 export function useGalleryFileUpload() {
   const [isUploading, setIsUploading] = useState(false);
 
-  // Verify bucket exists
-  const verifyBucket = async (): Promise<boolean> => {
-    try {
-      console.log('Verifying gallery bucket exists...');
-      
-      // Get actual bucket info from Supabase
-      const { data, error } = await supabase.storage.getBucket('gallery');
-      
-      if (error) {
-        console.error('Error checking gallery bucket:', error);
-        
-        // Check if bucket doesn't exist
-        if (error.message.includes('does not exist')) {
-          console.log('Attempting to create gallery bucket...');
-          
-          try {
-            const { data: createData, error: createError } = await supabase.storage.createBucket('gallery', {
-              public: true,
-              fileSizeLimit: 5242880, // 5MB
-              allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg']
-            });
-            
-            if (createError) {
-              console.error('Error creating gallery bucket:', createError);
-              return false;
-            }
-            
-            console.log('Gallery bucket created successfully:', createData);
-            return true;
-          } catch (createErr) {
-            console.error('Exception creating bucket:', createErr);
-            return false;
-          }
-        }
-        
-        return false;
-      }
-      
-      console.log('Gallery bucket verified:', data);
-      return true;
-    } catch (error) {
-      console.error('Exception checking bucket:', error);
-      return false;
-    }
-  };
-
   // Upload and return a URL for the image
   const uploadImageFile = async (file: File): Promise<string | null> => {
     if (!file) {
@@ -102,14 +56,6 @@ export function useGalleryFileUpload() {
         });
       }
       
-      // Verify bucket exists
-      const bucketExists = await verifyBucket();
-      if (!bucketExists) {
-        console.error('Gallery bucket verification failed');
-        toast.error('Gallery storage is not configured properly. Please contact support.');
-        return null;
-      }
-      
       // Generate a unique filename to avoid conflicts
       const fileExtension = file.name.split('.').pop() || '';
       const uniqueFileName = `${uuidv4()}.${fileExtension}`;
@@ -126,18 +72,21 @@ export function useGalleryFileUpload() {
       
       if (error) {
         console.error('Supabase storage upload error:', error);
-        if (error.message.includes('mime type')) {
+        if (error.message.includes('does not exist')) {
+          toast.error('Gallery storage is not available. Please contact support.');
+        } else if (error.message.includes('mime type')) {
           console.error('MIME type issue detected. File type:', file.type);
           toast.error(`Upload failed: Unsupported file type. Please use JPG, PNG or GIF images.`);
         } else {
           toast.error(`Upload failed: ${error.message}`);
         }
-        throw new Error(`Storage upload failed: ${error.message}`);
+        return null;
       }
       
       if (!data || !data.path) {
         console.error('No file path returned from upload');
-        throw new Error('No file path returned from upload');
+        toast.error('Upload failed: No file path returned');
+        return null;
       }
       
       // Get the public URL for the uploaded file
@@ -146,10 +95,12 @@ export function useGalleryFileUpload() {
         .getPublicUrl(data.path);
       
       console.log('File uploaded successfully to Supabase, public URL:', publicUrl);
+      toast.success('Image uploaded successfully');
       return publicUrl;
     } catch (error: any) {
       console.error('Error in uploadImageFile:', error);
-      throw error;
+      toast.error(`Upload error: ${error.message || 'Unknown error'}`);
+      return null;
     } finally {
       setIsUploading(false);
     }
