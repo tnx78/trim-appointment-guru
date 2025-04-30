@@ -39,10 +39,12 @@ export function useServiceStorage() {
       const fileExtension = file.name.split('.').pop() || '';
       const uniqueFileName = `${uuidv4()}.${fileExtension}`;
       
-      // FIXED: Direct file upload without transformation
+      // Direct file upload with content-type explicitly set
       const { data, error } = await supabase.storage
         .from('services')
-        .upload(uniqueFileName, file);
+        .upload(uniqueFileName, file, {
+          contentType: file.type // Explicitly set content type
+        });
       
       if (error) {
         console.error('Upload error:', error);

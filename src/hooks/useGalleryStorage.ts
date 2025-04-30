@@ -44,10 +44,12 @@ export function useGalleryStorage() {
       const uniqueFileName = `${uuidv4()}.${fileExtension}`;
       console.log('Uploading file to Supabase with name:', uniqueFileName);
       
-      // FIXED: Don't use object form for upload, directly use File object
+      // Direct file upload with explicit content type
       const { data, error } = await supabase.storage
         .from('gallery')
-        .upload(uniqueFileName, file);
+        .upload(uniqueFileName, file, {
+          contentType: file.type // Explicitly set content type
+        });
       
       if (error) {
         console.error('Upload error:', error);
