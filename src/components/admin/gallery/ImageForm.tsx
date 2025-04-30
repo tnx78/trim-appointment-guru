@@ -38,6 +38,8 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
       // Reset the form for new image
       if (categories.length > 0) {
         setCategoryId(categories[0].id);
+      } else {
+        setCategoryId('');
       }
     }
   }, [image, categories]);
@@ -91,6 +93,11 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
       return;
     }
 
+    // Prevent multiple submissions
+    if (isSubmitting || isUploading) {
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
@@ -106,11 +113,13 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
       // If there's a file, upload it first
       if (imageFile) {
         console.log('Uploading file:', imageFile.name);
-        imageUrl = await uploadImage(imageFile) || '';
+        const uploadedUrl = await uploadImage(imageFile);
         
-        if (!imageUrl) {
+        if (!uploadedUrl) {
           throw new Error('Failed to upload image');
         }
+        
+        imageUrl = uploadedUrl;
       }
       
       // Now submit with the image URL
@@ -120,7 +129,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
         description: description || undefined,
         image_url: imageUrl,
         sort_order: image?.sort_order
-      });
+      }, imageFile);
       
     } catch (error: any) {
       console.error('Error submitting image:', error);
@@ -168,7 +177,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
                 size="icon"
                 className="absolute top-2 right-2"
                 onClick={removeImage}
-                disabled={isUploading}
+                disabled={isUploading || isSubmitting}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -189,7 +198,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
                 accept="image/*"
                 onChange={handleImageChange}
                 className="hidden"
-                disabled={isUploading}
+                disabled={isUploading || isSubmitting}
               />
               <label
                 htmlFor="image-upload"
@@ -207,6 +216,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Image title"
+          disabled={isSubmitting || isUploading}
         />
       </div>
 
@@ -218,6 +228,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
           onChange={(e) => setDescription(e.target.value)}
           placeholder="A brief description of this image"
           rows={3}
+          disabled={isSubmitting || isUploading}
         />
       </div>
 

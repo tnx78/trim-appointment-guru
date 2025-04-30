@@ -27,21 +27,30 @@ export function useGalleryStorage() {
         return new Promise((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => {
-            const dataUrl = reader.result as string;
-            toast.success('Image uploaded successfully (Demo Mode)');
-            resolve(dataUrl);
+            setTimeout(() => {
+              const dataUrl = reader.result as string;
+              toast.success('Image uploaded successfully (Demo Mode)');
+              resolve(dataUrl);
+            }, 1000); // Add a small delay to simulate network request
+          };
+          reader.onerror = () => {
+            toast.error('Failed to read image file');
+            resolve(null);
           };
           reader.readAsDataURL(file);
         });
       }
       
       // Generate a unique filename to avoid conflicts
-      const uniqueFileName = `${uuidv4()}-${file.name}`;
+      const uniqueFileName = `${uuidv4()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
       
       // Upload file to Supabase storage
       const { data, error } = await supabase.storage
         .from('gallery')
-        .upload(uniqueFileName, file);
+        .upload(uniqueFileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
       
       if (error) {
         console.error('Upload error:', error);
@@ -87,6 +96,8 @@ export function useGalleryStorage() {
       
       if (inDemoMode) {
         console.log('Demo mode: Simulating image deletion');
+        // Add slight delay to simulate network request
+        await new Promise(resolve => setTimeout(resolve, 500));
         toast.success('Image deleted successfully (Demo Mode)');
         return true;
       }

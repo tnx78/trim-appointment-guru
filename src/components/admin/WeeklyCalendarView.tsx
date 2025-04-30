@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, isSameDay, addWeeks, subWeeks } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -97,7 +97,8 @@ export function WeeklyCalendarView({
     setShowDetails(true);
   };
 
-  const handleCompleteAppointment = async () => {
+  // Use useCallback to prevent unnecessary re-renders
+  const handleCompleteAppointment = useCallback(async () => {
     if (selectedAppointment && !isCompleting) {
       try {
         setIsCompleting(true);
@@ -105,10 +106,10 @@ export function WeeklyCalendarView({
         
         if (success) {
           // Update the selected appointment state to match the updated status
-          setSelectedAppointment({
-            ...selectedAppointment,
+          setSelectedAppointment(prev => prev ? {
+            ...prev,
             status: 'completed'
-          });
+          } : null);
         }
       } catch (error) {
         console.error('Error during completion:', error);
@@ -116,49 +117,52 @@ export function WeeklyCalendarView({
         setIsCompleting(false);
       }
     }
-  };
+  }, [selectedAppointment, isCompleting, onComplete]);
 
-  const handleOpenCancelDialog = () => {
+  const handleOpenCancelDialog = useCallback(() => {
     setShowCancelDialog(true);
-  };
+  }, []);
 
-  const handleCancelAppointment = async () => {
-    if (selectedAppointment && !isCancelling) {
-      try {
-        setIsCancelling(true);
-        const success = await onCancel(selectedAppointment.id);
-        
-        if (success) {
-          // Update the selected appointment state to match the updated status
-          setSelectedAppointment(prev => prev ? {
-            ...prev,
-            status: 'cancelled'
-          } : null);
-          
-          // Safely close dialogs with a delay between them
-          setShowCancelDialog(false);
-          
-          // Use setTimeout to close details dialog after cancel dialog animation completes
-          setTimeout(() => {
-            setShowDetails(false);
-            setIsCancelling(false); // Move this here to ensure it happens after dialog closes
-          }, 300);
-          
-          return; // Exit early to prevent setting isCancelling = false prematurely
-        }
-      } catch (error) {
-        console.error('Error during cancellation:', error);
-      }
+  // Modified cancel handler with proper state management
+  const handleCancelAppointment = useCallback(async () => {
+    if (!selectedAppointment || isCancelling) return;
+    
+    setIsCancelling(true);
+    
+    try {
+      const success = await onCancel(selectedAppointment.id);
       
-      // Only reached if cancellation failed or there was an error
-      setShowCancelDialog(false);
+      if (success) {
+        // First update the appointment status in our local state
+        setSelectedAppointment(prev => prev ? {
+          ...prev,
+          status: 'cancelled'
+        } : null);
+        
+        // Close the cancel dialog first
+        setShowCancelDialog(false);
+        
+        // Wait a moment before closing the details dialog to avoid UI issues
+        setTimeout(() => {
+          setShowDetails(false);
+          // Finally, when everything is closed, reset the cancelling state
+          setTimeout(() => {
+            setIsCancelling(false);
+          }, 100);
+        }, 300);
+      } else {
+        setIsCancelling(false);
+        setShowCancelDialog(false);
+      }
+    } catch (error) {
+      console.error('Error during cancellation:', error);
       setIsCancelling(false);
+      setShowCancelDialog(false);
     }
-  };
+  }, [selectedAppointment, isCancelling, onCancel]);
 
   // Create a map to track appointments by day and time
-  // This helps prevent duplicate renders of appointments that span multiple slots
-  const createDayAppointmentMap = () => {
+  const createDayAppointmentMap = useCallback(() => {
     const dayMap = new Map<string, Map<string, Appointment>>();
     
     weekDays.forEach(day => {
@@ -175,22 +179,22 @@ export function WeeklyCalendarView({
     });
     
     return dayMap;
-  };
+  }, [weekDays, appointments]);
 
   const dayAppointmentMap = createDayAppointmentMap();
 
-  // Handle safe dialog closing
-  const handleDetailsDialogChange = (open: boolean) => {
+  // Safely handle dialog changes
+  const handleDetailsDialogChange = useCallback((open: boolean) => {
     if (!open && !isCancelling && !isCompleting) {
       setShowDetails(false);
     }
-  };
+  }, [isCancelling, isCompleting]);
 
-  const handleCancelDialogChange = (open: boolean) => {
+  const handleCancelDialogChange = useCallback((open: boolean) => {
     if (!open && !isCancelling) {
       setShowCancelDialog(false);
     }
-  };
+  }, [isCancelling]);
 
   return (
     <Card className="w-full">
