@@ -1,10 +1,7 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { useGalleryCategories } from '@/hooks/useGalleryCategories';
-import { useGalleryImages } from '@/hooks/useGalleryImages';
-import { useGalleryStorage } from '@/hooks/useGalleryStorage';
+import { useGalleryOperations } from '@/hooks/useGalleryOperations';
 import { useAuth } from '@/context/AuthContext';
 
 export interface GalleryCategory {
@@ -46,116 +43,24 @@ interface GalleryContextType {
 const GalleryContext = createContext<GalleryContextType | undefined>(undefined);
 
 export function GalleryProvider({ children }: { children: ReactNode }) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { isAuthenticated, isAdmin } = useAuth();
-  
-  const { 
-    categories, 
-    setCategories,
-    addCategory: addCategoryHook, 
-    updateCategory, 
+  const { isAuthenticated } = useAuth();
+  const {
+    categories,
+    images,
+    isLoading,
+    error,
+    isUploading,
+    demoMode,
+    loadGalleryData,
+    addCategory,
+    updateCategory,
     deleteCategory,
-    demoMode 
-  } = useGalleryCategories();
-  
-  const { 
-    images, 
-    setImages,
-    addImage: addImageHook, 
-    updateImage, 
+    addImage,
+    updateImage,
     deleteImage,
-    loadImages 
-  } = useGalleryImages();
-  
-  const { 
-    isUploading, 
-    uploadImage 
-  } = useGalleryStorage();
-
-  const loadGalleryData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      console.log('Loading gallery data...');
-
-      // Check if we're in demo mode
-      const { data: sessionData } = await supabase.auth.getSession();
-      const hasRealSession = !!sessionData.session;
-      const inDemoMode = !hasRealSession && localStorage.getItem('isAdmin') === 'true';
-      
-      if (inDemoMode) {
-        console.log('Loading gallery data in demo mode');
-        
-        // Use our refactored hooks to load data
-        await Promise.all([
-          (async () => {
-            try {
-              // Load categories from localStorage
-              const demoCategories = JSON.parse(
-                localStorage.getItem('demoCategories') || '[]'
-              ) as GalleryCategory[];
-              setCategories(demoCategories);
-            } catch (err) {
-              console.error('Error loading demo categories:', err);
-            }
-          })(),
-          loadImages()
-        ]);
-        
-        return;
-      }
-
-      // With real session, load from Supabase
-      await Promise.all([
-        (async () => {
-          try {
-            // Fetch categories from Supabase
-            const { data: categoriesData, error: categoriesError } = await supabase
-              .from('gallery_categories')
-              .select('*')
-              .order('sort_order', { ascending: true });
-
-            if (categoriesError) {
-              console.error('Error fetching categories from Supabase:', categoriesError);
-              setError(categoriesError.message);
-              toast.error('Error loading categories: ' + categoriesError.message);
-              return;
-            }
-            
-            console.log('Fetched categories from Supabase:', categoriesData);
-            setCategories(categoriesData || []);
-          } catch (err: any) {
-            console.error('Error fetching categories:', err);
-            toast.error('Error loading categories: ' + err.message);
-          }
-        })(),
-        loadImages()
-      ]);
-    } catch (error: any) {
-      console.error('Error loading gallery data:', error.message);
-      setError(error.message);
-      toast.error('Error loading gallery data: ' + error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Wrap the hook methods to ensure they update the UI and reload data
-  const addCategory = async (category: Omit<GalleryCategory, 'id'>): Promise<GalleryCategory | null> => {
-    const result = await addCategoryHook(category);
-    return result;
-  };
-
-  const addImage = async (image: Omit<GalleryImage, 'id'>): Promise<GalleryImage | null> => {
-    const result = await addImageHook(image);
-    return result;
-  };
-
-  const getImagesByCategory = (categoryId: string): GalleryImage[] => {
-    return images.filter(image => image.category_id === categoryId);
-  };
+    getImagesByCategory,
+    uploadImage
+  } = useGalleryOperations();
 
   useEffect(() => {
     console.log('GalleryProvider mounted');

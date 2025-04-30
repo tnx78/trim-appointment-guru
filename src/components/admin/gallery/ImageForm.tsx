@@ -24,6 +24,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(image?.image_url || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const { isUploading, uploadImage } = useGalleryStorage();
 
   // Reset the form if the image prop changes
@@ -34,6 +35,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
       setCategoryId(image.category_id);
       setPreviewUrl(image.image_url);
       setImageFile(null);
+      setUploadError(null);
     } else {
       // Reset the form for new image
       if (categories.length > 0) {
@@ -41,21 +43,25 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
       } else {
         setCategoryId('');
       }
+      setUploadError(null);
     }
   }, [image, categories]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUploadError(null);
     const file = e.target.files?.[0];
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
         toast.error('Please select an image file');
+        setUploadError('Invalid file type. Please select an image file.');
         return;
       }
       
       // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size should be less than 5MB');
+        setUploadError('File too large. Image size should be less than 5MB.');
         return;
       }
       
@@ -77,10 +83,12 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
     } else {
       setPreviewUrl(image.image_url);
     }
+    setUploadError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setUploadError(null);
     
     if (!categoryId) {
       toast.error('Please select a category');
@@ -116,6 +124,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
         const uploadedUrl = await uploadImage(imageFile);
         
         if (!uploadedUrl) {
+          setUploadError('Failed to upload image. Please try again.');
           throw new Error('Failed to upload image');
         }
         
@@ -133,6 +142,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
       
     } catch (error: any) {
       console.error('Error submitting image:', error);
+      setUploadError(error.message || 'Unknown error');
       toast.error('Error submitting image: ' + (error.message || 'Unknown error'));
     } finally {
       setIsSubmitting(false);
@@ -205,6 +215,10 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
                 className="absolute inset-0 cursor-pointer"
               />
             </div>
+          )}
+
+          {uploadError && (
+            <div className="text-sm text-destructive mt-1">{uploadError}</div>
           )}
         </div>
       </div>

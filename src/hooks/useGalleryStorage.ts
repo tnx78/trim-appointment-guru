@@ -15,6 +15,7 @@ export function useGalleryStorage() {
 
     try {
       setIsUploading(true);
+      console.log('Starting image upload process for file:', file.name);
       
       // Check if we're in demo mode
       const { data: sessionData } = await supabase.auth.getSession();
@@ -29,11 +30,13 @@ export function useGalleryStorage() {
           reader.onloadend = () => {
             setTimeout(() => {
               const dataUrl = reader.result as string;
+              console.log('Demo mode: Successfully created data URL');
               toast.success('Image uploaded successfully (Demo Mode)');
               resolve(dataUrl);
             }, 1000); // Add a small delay to simulate network request
           };
           reader.onerror = () => {
+            console.error('Demo mode: Failed to read image file');
             toast.error('Failed to read image file');
             resolve(null);
           };
@@ -43,6 +46,17 @@ export function useGalleryStorage() {
       
       // Generate a unique filename to avoid conflicts
       const uniqueFileName = `${uuidv4()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      console.log('Uploading file with name:', uniqueFileName);
+      
+      // Check if the gallery bucket exists, if not, let the user know
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const galleryBucketExists = buckets?.some(bucket => bucket.name === 'gallery');
+      
+      if (!galleryBucketExists) {
+        console.error('Gallery bucket does not exist. Please create it in Supabase.');
+        toast.error('Gallery storage bucket not configured. Please contact administrator.');
+        return null;
+      }
       
       // Upload file to Supabase storage
       const { data, error } = await supabase.storage
@@ -55,6 +69,12 @@ export function useGalleryStorage() {
       if (error) {
         console.error('Upload error:', error);
         toast.error(`Upload failed: ${error.message}`);
+        return null;
+      }
+      
+      if (!data || !data.path) {
+        console.error('Upload succeeded but no path returned');
+        toast.error('Upload failed: No file path returned');
         return null;
       }
       
