@@ -19,7 +19,7 @@ interface ServiceFormProps {
 export function ServiceForm({ service, onComplete }: ServiceFormProps) {
   const { categories } = useCategoryContext();
   const { addService, updateService } = useServiceContext();
-  const { uploadImage, deleteStorageImage, isUploading: isImageUploading } = useServiceStorage();
+  const { uploadImage, deleteImage, isUploading: isImageUploading } = useServiceStorage();
   
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -68,7 +68,7 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
   const handleRemoveImage = async () => {
     if (image) {
       try {
-        await deleteStorageImage(image);
+        await deleteImage(image);
         setImage(undefined);
         setFileInputKey(Date.now());
       } catch (error) {
@@ -101,7 +101,7 @@ export function ServiceForm({ service, onComplete }: ServiceFormProps) {
         // If image has changed and old image exists, delete it
         if (service.image && service.image !== image) {
           try {
-            await deleteStorageImage(service.image);
+            await deleteImage(service.image);
           } catch (error) {
             console.error('Failed to delete old image:', error);
             // Continue with update even if delete fails
