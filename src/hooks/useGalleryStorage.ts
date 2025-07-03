@@ -68,15 +68,14 @@ export function useGalleryStorage() {
       }
       
       // Generate a unique filename with correct extension
-      const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
+      const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
       const uniqueFileName = `${uuidv4()}.${fileExtension}`;
       console.log('Uploading file to Supabase with name:', uniqueFileName, 'type:', file.type);
       
-      // Direct upload to Supabase - IMPORTANT: Don't use FormData, upload the file directly
+      // Upload the file directly as a File object - DO NOT convert to FormData or JSON
       const { data, error } = await supabase.storage
         .from('gallery')
         .upload(uniqueFileName, file, {
-          contentType: file.type,
           cacheControl: '3600',
           upsert: false
         });
