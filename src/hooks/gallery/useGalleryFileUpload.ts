@@ -62,17 +62,14 @@ export function useGalleryFileUpload() {
       const uniqueFileName = `${uuidv4()}.${fileExtension}`;
       console.log('Uploading file with name:', uniqueFileName, 'type:', file.type, 'size:', file.size);
       
-      // Create formData object with proper content-type
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // Direct file upload
+      // Direct file upload - IMPORTANT: Don't use FormData, upload the file directly
       console.log('Starting upload to Supabase storage...');
       const { data, error } = await supabase.storage
         .from('gallery')
         .upload(uniqueFileName, file, {
           contentType: file.type,
-          cacheControl: '3600'
+          cacheControl: '3600',
+          upsert: false
         });
       
       if (error) {

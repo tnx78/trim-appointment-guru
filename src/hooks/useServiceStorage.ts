@@ -15,37 +15,42 @@ export function useServiceStorage() {
   };
 
   // Handle demo mode image upload
-  const handleDemoModeUpload = (file: File): Promise<string | null> => {
+  const uploadDemoImage = async (file: File): Promise<string | null> => {
+    console.log('Demo mode: Creating data URL for service image');
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        toast.success('Image uploaded successfully (Demo Mode)');
-        resolve(dataUrl);
+        setTimeout(() => {
+          const dataUrl = reader.result as string;
+          console.log('Demo mode: Successfully created service data URL');
+          toast.success('Service image uploaded successfully (Demo Mode)');
+          resolve(dataUrl);
+        }, 500);
       };
       reader.onerror = () => {
-        console.error('Demo mode: Failed to read image file');
-        toast.error('Failed to read image file');
+        console.error('Demo mode: Failed to read service image file');
+        toast.error('Failed to read service image file');
         resolve(null);
       };
       reader.readAsDataURL(file);
     });
   };
 
+  // Upload image to services bucket or create data URL in demo mode
   const uploadImage = async (file: File): Promise<string | null> => {
     if (!file) {
+      console.error('No file provided for service upload');
       toast.error('No file selected');
       return null;
     }
 
-    // Validate file type
+    // Validate file
     const validMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
     if (!validMimeTypes.includes(file.type)) {
       toast.error('Unsupported file type. Please use JPG, PNG or GIF images.');
       return null;
     }
-
-    // Validate file size
+    
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image size should be less than 5MB');
       return null;
@@ -55,37 +60,30 @@ export function useServiceStorage() {
       setIsUploading(true);
       console.log('Starting service image upload for file:', file.name, 'type:', file.type, 'size:', file.size);
       
-      // Check if we're in demo mode
       const inDemoMode = await checkDemoMode();
       
       // For demo mode, create a data URL
       if (inDemoMode) {
-        console.log('Demo mode: Creating data URL for image');
-        return handleDemoModeUpload(file);
+        return await uploadDemoImage(file);
       }
-
-      // Generate a unique filename to avoid conflicts
+      
+      // Generate a unique filename with correct extension
       const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
       const uniqueFileName = `${uuidv4()}.${fileExtension}`;
       console.log('Uploading to services bucket with name:', uniqueFileName);
       
-      // Direct file upload with content-type explicitly set
+      // Direct upload to Supabase - IMPORTANT: Don't use FormData, upload the file directly
       const { data, error } = await supabase.storage
         .from('services')
         .upload(uniqueFileName, file, {
           contentType: file.type,
-          cacheControl: '3600'
+          cacheControl: '3600',
+          upsert: false
         });
       
       if (error) {
         console.error('Upload error:', error);
-        if (error.message.includes('does not exist')) {
-          toast.error('Service storage bucket not found. Please contact support.');
-        } else if (error.message.includes('mime type')) {
-          toast.error('Unsupported file type. Please use JPG, PNG or GIF images.');
-        } else {
-          toast.error(`Upload failed: ${error.message}`);
-        }
+        toast.error(`Upload failed: ${error.message}`);
         return null;
       }
       
@@ -100,67 +98,72 @@ export function useServiceStorage() {
         .from('services')
         .getPublicUrl(data.path);
       
-      console.log('File uploaded successfully:', publicUrl);
-      toast.success('Image uploaded successfully');
+      console.log('Service file uploaded successfully:', publicUrl);
+      toast.success('Service image uploaded successfully');
       
       return publicUrl;
     } catch (error: any) {
-      console.error('Error uploading image:', error);
-      toast.error(`Upload error: ${error.message || 'Unknown error'}`);
+      console.error('Error uploading service image:', error);
+      toast.error(`Service upload error: ${error.message || 'Unknown error'}`);
       return null;
     } finally {
       setIsUploading(false);
     }
   };
 
-  const deleteStorageImage = async (url: string): Promise<boolean> => {
+  // Delete a service image from storage
+  const deleteImage = async (url: string): Promise<boolean> => {
     if (!url) {
-      console.log('No URL provided for deletion');
+      console.log('No URL provided for service deletion');
       return false;
     }
     
     try {
       // Skip deletion for data URLs
       if (url.startsWith('data:')) {
-        console.log('Skipping deletion for data URL');
+        console.log('Skipping deletion for service data URL');
         return true;
       }
       
-      // Check if we're in demo mode
       const inDemoMode = await checkDemoMode();
       
       if (inDemoMode) {
-        console.log('Demo mode: Simulating image deletion');
-        toast.success('Image deleted successfully (Demo Mode)');
+        console.log('Demo mode: Simulating service image deletion');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        toast.success('Service image deleted successfully (Demo Mode)');
         return true;
       }
       
       // Extract the filename from the URL
-      const pathParts = url.split('/');
-      const fileName = pathParts[pathParts.length - 1];
-      
-      if (!fileName) {
-        console.error('Could not extract filename from URL:', url);
+      try {
+        const fileName = url.split('/').pop();
+        
+        if (!fileName) {
+          console.error('Could not extract filename from service URL:', url);
+          return false;
+        }
+        
+        console.log(`Deleting service file ${fileName} from services bucket`);
+        
+        const { error } = await supabase.storage
+          .from('services')
+          .remove([fileName]);
+        
+        if (error) {
+          console.error('Error deleting service file:', error);
+          toast.error(`Service deletion failed: ${error.message}`);
+          return false;
+        }
+        
+        toast.success('Service image deleted successfully');
+        return true;
+      } catch (parseError) {
+        console.error('Error parsing service URL for deletion:', parseError, url);
         return false;
       }
-      
-      console.log(`Deleting file ${fileName} from services bucket`);
-      
-      const { error } = await supabase.storage
-        .from('services')
-        .remove([fileName]);
-      
-      if (error) {
-        console.error('Error deleting file:', error);
-        toast.error(`Deletion failed: ${error.message}`);
-        return false;
-      }
-      
-      toast.success('Image deleted successfully');
-      return true;
     } catch (error: any) {
-      console.error('Error deleting image:', error);
-      toast.error(`Deletion error: ${error.message || 'Unknown error'}`);
+      console.error('Error deleting service image:', error);
+      toast.error(`Service deletion error: ${error.message || 'Unknown error'}`);
       return false;
     }
   };
@@ -168,6 +171,6 @@ export function useServiceStorage() {
   return {
     isUploading,
     uploadImage,
-    deleteStorageImage
+    deleteImage
   };
 }

@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
-import { validateImageFile } from './gallery/useGalleryFileUpload';
 
 export function useGalleryStorage() {
   const [isUploading, setIsUploading] = useState(false);
@@ -26,7 +25,7 @@ export function useGalleryStorage() {
           console.log('Demo mode: Successfully created data URL');
           toast.success('Image uploaded successfully (Demo Mode)');
           resolve(dataUrl);
-        }, 500); // Small delay to simulate network request
+        }, 500);
       };
       reader.onerror = () => {
         console.error('Demo mode: Failed to read image file');
@@ -73,23 +72,18 @@ export function useGalleryStorage() {
       const uniqueFileName = `${uuidv4()}.${fileExtension}`;
       console.log('Uploading file to Supabase with name:', uniqueFileName, 'type:', file.type);
       
-      // Direct upload to Supabase
+      // Direct upload to Supabase - IMPORTANT: Don't use FormData, upload the file directly
       const { data, error } = await supabase.storage
         .from('gallery')
         .upload(uniqueFileName, file, {
           contentType: file.type,
-          cacheControl: '3600'
+          cacheControl: '3600',
+          upsert: false
         });
       
       if (error) {
         console.error('Upload error:', error);
-        if (error.message.includes('does not exist')) {
-          toast.error('Gallery storage bucket not found. Please contact support.');
-        } else if (error.message.includes('mime type')) {
-          toast.error('Unsupported file type. Please use JPG, PNG or GIF images.');
-        } else {
-          toast.error(`Upload failed: ${error.message}`);
-        }
+        toast.error(`Upload failed: ${error.message}`);
         return null;
       }
       
@@ -135,7 +129,6 @@ export function useGalleryStorage() {
       
       if (inDemoMode) {
         console.log('Demo mode: Simulating image deletion');
-        // Add slight delay to simulate network request
         await new Promise(resolve => setTimeout(resolve, 500));
         toast.success('Image deleted successfully (Demo Mode)');
         return true;
