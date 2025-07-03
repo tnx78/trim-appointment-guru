@@ -172,6 +172,27 @@ export type Database = {
           },
         ]
       }
+      hero_settings: {
+        Row: {
+          background_image_url: string | null
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          background_image_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          background_image_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       salon_hours: {
         Row: {
           close_time: string
@@ -308,6 +329,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      site_content: {
+        Row: {
+          content_key: string
+          content_value: string
+          created_at: string
+          description: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          content_key: string
+          content_value: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          content_key?: string
+          content_value?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_profiles: {
         Row: {

@@ -7,9 +7,10 @@ import { SalonHoursTab } from '@/components/admin/SalonHoursTab';
 import { DayOffTab } from '@/components/admin/DayOffTab';
 import { EmailTemplatesTab } from '@/components/admin/EmailTemplatesTab';
 import { GalleryTab } from '@/components/admin/GalleryTab';
+import { ContentManagementTab } from '@/components/admin/ContentManagementTab';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Calendar, FolderOpen, ChevronRight, Clock, ImageIcon, LogOut, Mail, Settings, Sparkles } from 'lucide-react';
+import { Calendar, FolderOpen, ChevronRight, Clock, ImageIcon, LogOut, Mail, Settings, Sparkles, FileText } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -80,7 +81,8 @@ export default function AdminPage() {
     { id: "hours", label: "Opening Hours", icon: <Clock className="h-5 w-5" /> },
     { id: "daysoff", label: "Days Off", icon: <Calendar className="h-5 w-5" /> },
     { id: "emails", label: "Emails", icon: <Mail className="h-5 w-5" /> },
-    { id: "gallery", label: "Gallery", icon: <ImageIcon className="h-5 w-5" /> }
+    { id: "gallery", label: "Gallery", icon: <ImageIcon className="h-5 w-5" /> },
+    { id: "content", label: "Content", icon: <FileText className="h-5 w-5" /> }
   ];
 
   return (
@@ -148,11 +150,12 @@ export default function AdminPage() {
             {activeTab === "daysoff" && <DayOffTab />}
             {activeTab === "emails" && <EmailTemplatesTab />}
             {activeTab === "gallery" && <GalleryTab />}
+            {activeTab === "content" && <ContentManagementTab />}
           </div>
         </div>
       ) : (
         <Tabs defaultValue="appointments" className="w-full" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             {tabItems.map((tab) => (
               <TabsTrigger key={tab.id} value={tab.id} className="flex gap-2 items-center">
                 {tab.icon}
@@ -187,6 +190,10 @@ export default function AdminPage() {
           
           <TabsContent value="gallery" className="pt-6">
             <GalleryTab />
+          </TabsContent>
+          
+          <TabsContent value="content" className="pt-6">
+            <ContentManagementTab />
           </TabsContent>
         </Tabs>
       )}
