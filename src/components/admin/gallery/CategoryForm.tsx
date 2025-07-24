@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { GalleryCategory } from '@/context/GalleryContext';
-import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { Loader2, Shield } from 'lucide-react';
+import { useAdminCheck } from '@/hooks/gallery/useAdminCheck';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -21,15 +21,13 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
   const [description, setDescription] = useState(category?.description || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAdmin, isAuthenticated, checkAdminAccess } = useAdminCheck();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     
-    if (!isAuthenticated) {
-      setErrorMsg('You must be logged in to perform this action');
-      toast.error('Authentication required');
+    if (!checkAdminAccess('manage categories')) {
       return;
     }
     
@@ -56,7 +54,7 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
       await onSubmit({
         name,
         description: description || undefined,
-        sort_order: category?.sort_order ?? (Date.now() % 1000) // Default sort order if not provided
+        sort_order: category?.sort_order ?? (Date.now() % 1000)
       });
       
       // Clear form after successful submission
@@ -75,6 +73,22 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
       setIsSubmitting(false);
     }
   };
+
+  // Show admin requirement notice if user is not admin
+  if (!isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
+        <Shield className="h-12 w-12 text-muted-foreground" />
+        <h3 className="text-lg font-semibold">Admin Access Required</h3>
+        <p className="text-muted-foreground">
+          You need administrator privileges to manage gallery categories.
+        </p>
+        <Button variant="outline" onClick={onCancel}>
+          Close
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

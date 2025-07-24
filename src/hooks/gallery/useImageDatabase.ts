@@ -2,8 +2,11 @@
 import { supabase } from '@/integrations/supabase/client';
 import { GalleryImage } from '@/context/GalleryContext';
 import { toast } from 'sonner';
+import { useAdminCheck } from './useAdminCheck';
 
 export function useImageDatabase() {
+  const { checkAdminAccess } = useAdminCheck();
+
   const loadImagesFromDatabase = async (): Promise<GalleryImage[]> => {
     try {
       const { data, error } = await supabase
@@ -26,6 +29,10 @@ export function useImageDatabase() {
   };
   
   const addImageToDatabase = async (image: Omit<GalleryImage, 'id'>): Promise<GalleryImage | null> => {
+    if (!checkAdminAccess('add images')) {
+      return null;
+    }
+
     try {
       const { data, error } = await supabase
         .from('gallery_images')
@@ -35,7 +42,12 @@ export function useImageDatabase() {
         
       if (error) {
         console.error('Error adding image to database:', error);
-        toast.error('Error adding image: ' + error.message);
+        
+        if (error.message.includes('policy')) {
+          toast.error('Admin access required to add images');
+        } else {
+          toast.error('Error adding image: ' + error.message);
+        }
         return null;
       }
       
@@ -48,6 +60,10 @@ export function useImageDatabase() {
   };
   
   const updateImageInDatabase = async (image: GalleryImage): Promise<GalleryImage | null> => {
+    if (!checkAdminAccess('update images')) {
+      return null;
+    }
+
     try {
       const { data, error } = await supabase
         .from('gallery_images')
@@ -58,7 +74,12 @@ export function useImageDatabase() {
 
       if (error) {
         console.error('Error updating image in database:', error);
-        toast.error('Error updating image: ' + error.message);
+        
+        if (error.message.includes('policy')) {
+          toast.error('Admin access required to update images');
+        } else {
+          toast.error('Error updating image: ' + error.message);
+        }
         return null;
       }
 
@@ -71,6 +92,10 @@ export function useImageDatabase() {
   };
   
   const deleteImageFromDatabase = async (id: string): Promise<boolean> => {
+    if (!checkAdminAccess('delete images')) {
+      return false;
+    }
+
     try {
       const { error } = await supabase
         .from('gallery_images')
@@ -79,7 +104,12 @@ export function useImageDatabase() {
 
       if (error) {
         console.error('Error deleting image from database:', error);
-        toast.error('Error deleting image: ' + error.message);
+        
+        if (error.message.includes('policy')) {
+          toast.error('Admin access required to delete images');
+        } else {
+          toast.error('Error deleting image: ' + error.message);
+        }
         return false;
       }
       

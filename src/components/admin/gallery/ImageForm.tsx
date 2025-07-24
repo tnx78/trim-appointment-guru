@@ -3,6 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { GalleryCategory, GalleryImage } from '@/context/GalleryContext';
 import { toast } from 'sonner';
 import { validateImageFile } from '@/hooks/gallery/useGalleryFileUpload';
+import { useAdminCheck } from '@/hooks/gallery/useAdminCheck';
+import { Shield } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { CategorySelector } from './formComponents/CategorySelector';
 import { ImageSelector } from './formComponents/ImageSelector';
 import { ImageDetailsForm } from './formComponents/ImageDetailsForm';
@@ -23,6 +26,7 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
   const [previewUrl, setPreviewUrl] = useState<string | null>(image?.image_url || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const { isAdmin, checkAdminAccess } = useAdminCheck();
 
   // Reset the form if the image prop changes
   useEffect(() => {
@@ -47,6 +51,22 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
       setUploadError(null);
     }
   }, [image, categories]);
+
+  // Show admin requirement notice if user is not admin
+  if (!isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
+        <Shield className="h-12 w-12 text-muted-foreground" />
+        <h3 className="text-lg font-semibold">Admin Access Required</h3>
+        <p className="text-muted-foreground">
+          You need administrator privileges to manage gallery images.
+        </p>
+        <Button variant="outline" onClick={onCancel}>
+          Close
+        </Button>
+      </div>
+    );
+  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUploadError(null);
@@ -95,6 +115,10 @@ export function ImageForm({ image, categories, onSubmit, onCancel }: ImageFormPr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploadError(null);
+    
+    if (!checkAdminAccess('manage images')) {
+      return;
+    }
     
     if (!categoryId) {
       toast.error('Please select a category');

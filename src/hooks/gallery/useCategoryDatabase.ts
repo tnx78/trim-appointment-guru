@@ -2,8 +2,11 @@
 import { supabase } from '@/integrations/supabase/client';
 import { GalleryCategory } from '@/context/GalleryContext';
 import { toast } from 'sonner';
+import { useAdminCheck } from './useAdminCheck';
 
 export function useCategoryDatabase() {
+  const { checkAdminAccess } = useAdminCheck();
+
   const loadCategoriesFromDatabase = async (): Promise<GalleryCategory[]> => {
     try {
       const { data, error } = await supabase
@@ -27,6 +30,10 @@ export function useCategoryDatabase() {
   };
   
   const addCategoryToDatabase = async (category: Omit<GalleryCategory, 'id'>): Promise<GalleryCategory | null> => {
+    if (!checkAdminAccess('add categories')) {
+      return null;
+    }
+
     try {
       const { data, error } = await supabase
         .from('gallery_categories')
@@ -38,7 +45,7 @@ export function useCategoryDatabase() {
         console.error('Error adding category to database:', error);
         
         if (error.message.includes('policy')) {
-          toast.error('Permission denied: You might not have the right permissions');
+          toast.error('Admin access required to add categories');
         } else if (error.message.includes('JWT')) {
           toast.error('Authentication error: Your session may have expired');
         } else {
@@ -56,6 +63,10 @@ export function useCategoryDatabase() {
   };
   
   const updateCategoryInDatabase = async (category: GalleryCategory): Promise<GalleryCategory | null> => {
+    if (!checkAdminAccess('update categories')) {
+      return null;
+    }
+
     try {
       const { data, error } = await supabase
         .from('gallery_categories')
@@ -68,7 +79,7 @@ export function useCategoryDatabase() {
         console.error('Error updating category in database:', error);
         
         if (error.message.includes('policy')) {
-          toast.error('Permission denied: You might not have the right permissions');
+          toast.error('Admin access required to update categories');
         } else if (error.message.includes('JWT')) {
           toast.error('Authentication error: Your session may have expired');
         } else {
@@ -86,6 +97,10 @@ export function useCategoryDatabase() {
   };
   
   const deleteCategoryFromDatabase = async (id: string): Promise<boolean> => {
+    if (!checkAdminAccess('delete categories')) {
+      return false;
+    }
+
     try {
       const { error } = await supabase
         .from('gallery_categories')
@@ -96,7 +111,7 @@ export function useCategoryDatabase() {
         console.error('Error deleting category from database:', error);
         
         if (error.message.includes('policy')) {
-          toast.error('Permission denied: You might not have the right permissions');
+          toast.error('Admin access required to delete categories');
         } else if (error.message.includes('JWT')) {
           toast.error('Authentication error: Your session may have expired');
         } else {

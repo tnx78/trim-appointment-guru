@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Shield } from 'lucide-react';
+import { useAdminCheck } from '@/hooks/gallery/useAdminCheck';
 import { toast } from 'sonner';
 
 interface ServiceCategoryFormProps {
@@ -18,6 +20,7 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isAdmin, checkAdminAccess } = useAdminCheck();
 
   useEffect(() => {
     if (category) {
@@ -26,9 +29,30 @@ export function ServiceCategoryForm({ category, onComplete }: ServiceCategoryFor
     }
   }, [category]);
 
+  // Show admin requirement notice if user is not admin
+  if (!isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
+        <Shield className="h-12 w-12 text-muted-foreground" />
+        <h3 className="text-lg font-semibold">Admin Access Required</h3>
+        <p className="text-muted-foreground">
+          You need administrator privileges to manage service categories.
+        </p>
+        <Button variant="outline" onClick={onComplete}>
+          Close
+        </Button>
+      </div>
+    );
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    if (!checkAdminAccess('manage service categories')) {
+      setIsSubmitting(false);
+      return;
+    }
 
     if (!name.trim()) {
       toast.error('Category name is required');
